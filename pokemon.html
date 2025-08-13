@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Pocket Stadium — Kanto 3v3 (Lv.50 • Gen‑1 Moves + TM/HM • Animations)</title>
+  <title>Pocket Stadium — Kanto 3v3 (Gen‑1 Layout + Status)</title>
 
   <!-- Tailwind Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,7 +11,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { ui: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica'] },
+          fontFamily: { ui: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial'] },
           boxShadow: { soft: '0 6px 30px rgba(0,0,0,.08)' }
         }
       }
@@ -61,31 +61,34 @@
       0%{transform:translate(0,0)} 25%{transform:translate(0,-2px)} 50%{transform:translate(0,0)} 75%{transform:translate(0,2px)} 100%{transform:translate(0,0)}
     }
 
-    /* Projectile */
-    .proj {
-      position:absolute; width:10px; height:10px; border-radius:999px;
-      box-shadow: 0 0 10px rgba(0,0,0,.25);
-      transform: translate(-50%, -50%);
-      pointer-events:none;
-    }
-
-    /* Impact spark */
-    @keyframes spark {
-      0% { transform: scale(.6); opacity: 0.9; }
-      100% { transform: scale(1.6); opacity: 0; }
-    }
-    .spark {
-      position:absolute; width:24px; height:24px; border-radius:50%;
-      box-shadow: 0 0 18px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9);
-      animation: spark .35s ease forwards;
-      pointer-events:none;
-    }
-
-    /* Screen shake (camera) */
+    .proj { position:absolute; width:10px; height:10px; border-radius:999px; box-shadow: 0 0 10px rgba(0,0,0,.25); transform: translate(-50%, -50%); pointer-events:none; }
+    @keyframes spark { 0% { transform: scale(.6); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
+    .spark { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow: 0 0 18px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation: spark .35s ease forwards; pointer-events:none; }
     .camshake { animation: jiggle .25s ease; }
 
-    /* Stage overflow for projectiles */
+    /* ====== Gen‑1 battle layout ====== */
     .stage { position:relative; overflow:hidden; }
+    .battle { position:relative; height: 300px;
+      background: radial-gradient(ellipse at 20% 85%, rgba(0,0,0,.06), transparent 45%),
+                  radial-gradient(ellipse at 80% 15%, rgba(0,0,0,.06), transparent 45%);
+      border-radius: .75rem; }
+    @media (min-width: 640px){ .battle { height: 360px; } }
+
+    /* GB-style HP box */
+    .hpbox { min-width: 210px; background:#fff; border:2px solid #111827; border-radius:.5rem; padding:.35rem .5rem .5rem; box-shadow: inset 0 0 0 2px #e5e7eb; }
+    .hpbox-title { font-weight:800; font-size:.8rem; letter-spacing:.02em; }
+    .hpbox-hp { font-size:.65rem; color:#475569; display:flex; justify-content:space-between; align-items:center; }
+    .hpbar { height:8px; width:100%; background:#e5e7eb; border-radius:999px; overflow:hidden; }
+    .lv { font-size:.7rem; font-weight:800; color:#111827; }
+    .st-dot { width:8px; height:8px; border-radius:999px; border:1px solid #0f172a; }
+    .st-tag { font-size:.6rem; font-weight:800; padding:.05rem .3rem; border:1px solid #0f172a; border-radius:.25rem; }
+
+    /* Positions */
+    .opp-hp{ position:absolute; top:10px; left:10px; }
+    .opp-sprite{ position:absolute; top:56px; right:18px; width:140px; height:140px; }
+    .ply-sprite{ position:absolute; bottom:64px; left:18px; width:140px; height:140px; }
+    .ply-hp{ position:absolute; bottom:10px; right:10px; }
+    @media (min-width:640px){ .opp-sprite{ width:168px; height:168px; top:60px; right:26px; } .ply-sprite{ width:168px; height:168px; bottom:72px; left:26px; } .hpbox{ min-width:230px; } }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white font-ui text-slate-800">
@@ -93,7 +96,7 @@
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
       <img alt="Pokeball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
       <h1 class="text-lg font-bold">Pocket Stadium — Kanto 3v3</h1>
-      <span class="ml-auto text-xs text-slate-500">Lv.50 • Gen‑1 move sets • TM/HM • Animations</span>
+      <span class="ml-auto text-xs text-slate-500">Gen‑1 layout • Lv.50 • TM/HM • Animations • Status</span>
     </div>
   </header>
 
@@ -171,31 +174,41 @@
         </div>
       </div>
 
-      <!-- Stage -->
+      <!-- Stage (Gen‑1 layout) -->
       <div class="card p-4 stage" id="stage">
-        <div class="grid grid-cols-2 gap-2 items-center">
-          <!-- Opponent -->
-          <div class="flex flex-col items-center">
-            <div class="text-sm font-semibold mb-1" id="nameB">???</div>
-            <img id="spriteB" class="w-36 h-36 pixel" alt="Opponent sprite"/>
-            <div class="w-full max-w-xs mt-2">
-              <div class="text-xs mb-1">HP <span id="hpTextB"></span></div>
-              <div class="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
-                <div id="hpBarB" class="hpbar-inner h-full" style="width:100%"></div>
+        <div class="battle">
+          <!-- Opponent HP (top-left) -->
+          <div class="hpbox opp-hp">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span id="dotB" class="st-dot"></span>
+                <div id="nameB" class="hpbox-title">???</div>
+                <span id="stTextB" class="st-tag hidden">OK</span>
               </div>
+              <div class="lv">Lv 50</div>
             </div>
+            <div class="hpbox-hp"><span>HP <span id="hpTextB"></span></span></div>
+            <div class="hpbar mt-1"><div id="hpBarB" class="hpbar-inner h-full" style="width:100%"></div></div>
           </div>
 
-          <!-- You -->
-          <div class="flex flex-col items-center">
-            <div class="text-sm font-semibold mb-1" id="nameA">???</div>
-            <img id="spriteA" class="w-36 h-36 pixel" alt="Your sprite"/>
-            <div class="w-full max-w-xs mt-2">
-              <div class="text-xs mb-1">HP <span id="hpTextA"></span></div>
-              <div class="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
-                <div id="hpBarA" class="hpbar-inner h-full" style="width:100%"></div>
+          <!-- Opponent sprite (top-right) -->
+          <img id="spriteB" class="pixel opp-sprite" alt="Opponent sprite"/>
+
+          <!-- Player sprite (bottom-left) -->
+          <img id="spriteA" class="pixel ply-sprite" alt="Your sprite"/>
+
+          <!-- Player HP (bottom-right) -->
+          <div class="hpbox ply-hp">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span id="dotA" class="st-dot"></span>
+                <div id="nameA" class="hpbox-title">???</div>
+                <span id="stTextA" class="st-tag hidden">OK</span>
               </div>
+              <div class="lv">Lv 50</div>
             </div>
+            <div class="hpbox-hp"><span>HP <span id="hpTextA"></span></span></div>
+            <div class="hpbar mt-1"><div id="hpBarA" class="hpbar-inner h-full" style="width:100%"></div></div>
           </div>
         </div>
 
@@ -296,15 +309,22 @@
       ghost:{ normal:0, psychic:0, ghost:2 },
       dragon:{ dragon:2 }
     };
-    function effMultiplier(moveType, targetTypes){
-      let mult = 1;
-      for(const t of targetTypes){ mult *= (chart[moveType]?.[t] ?? 1); }
-      return mult;
-    }
+    function effMultiplier(moveType, targetTypes){ let mult = 1; for(const t of targetTypes){ mult *= (chart[moveType]?.[t] ?? 1); } return mult; }
     function categoryFromType(t){ return SPECIAL_TYPES.has(t) ? 'special' : 'physical'; }
 
     // Pace multiplier (bigger = slower)
     function P(ms){ const m = Number($('#pace')?.value || 1.0); return Math.round(ms * m); }
+
+    // Status constants
+    const PAR_SPEED = 0.5;      // paralysis speed modifier
+    const BRN_PHYS  = 0.5;      // burn physical damage modifier
+    const THAW_CHANCE = 0.2;    // 20% to thaw each turn
+    const RESIDUAL_FRACTION = 16; // 1/16 max HP
+
+    const AIL_MAP = {
+      paralysis:'par', burn:'brn', poison:'psn', 'bad-poison':'psn', freeze:'frz', sleep:'slp',
+      confusion:'cnf' // optional, not fully simulated
+    };
 
     /* ======= App State ======= */
     const state = {
@@ -370,10 +390,7 @@
           </div>
           <div class="mt-2 flex flex-wrap gap-1 justify-center">${moveChips(p)}</div>
         </div>`;
-      const filler = `
-        <div class="rounded-2xl border border-dashed border-slate-300 h-24 flex items-center justify-center text-slate-400 text-xs">
-          Empty
-        </div>`;
+      const filler = `<div class="rounded-2xl border border-dashed border-slate-300 h-24 flex items-center justify-center text-slate-400 text-xs">Empty</div>`;
 
       const mount=(el, teamKey)=>{
         el.innerHTML='';
@@ -402,7 +419,7 @@
       state.tempPick = new Set((team==='A'?state.teamA:state.teamB).map(p=>p.id));
       $('#pickerLabel').textContent=`Pick — ${team==='A'?'You':'Rival'}`;
       $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
-      document.body.classList.add('no-scroll');   // lock background
+      document.body.classList.add('no-scroll');
       $('#picker').classList.remove('hidden');
       $('#search').value=''; filterGrid('');
     }
@@ -416,7 +433,7 @@
         renderTeams(); updateStartButton();
       }
       $('#picker').classList.add('hidden');
-      document.body.classList.remove('no-scroll'); // unlock
+      document.body.classList.remove('no-scroll');
     }
     $('#donePick').addEventListener('click', ()=>closePicker(true));
     $('#picker').addEventListener('click', (e)=>{ if(e.target.hasAttribute('data-close')) closePicker(false); });
@@ -456,7 +473,7 @@
       $('#mvPickedCount').textContent = `0 / 4 selected`;
       $('#mvSearch').value=''; $('#fltLvl').checked = true; $('#fltTM').checked = true;
       state.mvContext = {team, id, name, types: null};
-      document.body.classList.add('no-scroll');   // lock background
+      document.body.classList.add('no-scroll');
       $('#movePicker').classList.remove('hidden');
 
       const pool = await getMovePool(id);
@@ -477,7 +494,7 @@
         renderTeams();
       }
       $('#movePicker').classList.add('hidden');
-      document.body.classList.remove('no-scroll'); // unlock
+      document.body.classList.remove('no-scroll');
       state.mvContext = null; state.mvTemp = new Set();
     }
     document.addEventListener('click', (e)=>{
@@ -505,7 +522,10 @@
       filtered.sort((a,b)=>{
         const stabA = state.mvContext.types?.includes(a.type) ? 1 : 0;
         const stabB = state.mvContext.types?.includes(b.type) ? 1 : 0;
-        return (stabB-stabA) || (b.power - a.power) || ((b.level||0) - (a.level||0)) || (a.method==='machine'?1:-1);
+        // Prefer STAB ≥ power ≥ level/TM; status moves sprinkled in
+        const catA = a.category==='status'? -1 : 1;
+        const catB = b.category==='status'? -1 : 1;
+        return (stabB-stabA) || (catB-catA) || (b.power - (a.power||0)) || ((b.level||0) - (a.level||0)) || (a.method==='machine'?1:-1);
       });
 
       for(const m of filtered){
@@ -514,11 +534,18 @@
         row.className = 'w-full border rounded-xl p-2 flex items-center gap-3 tap';
         row.style.borderColor = picked ? '#10b981' : '#e5e7eb';
         row.style.boxShadow = picked ? '0 0 0 3px rgba(16,185,129,.15)' : 'none';
+        const ail = m.ailment_code ? ` • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}` : '';
         row.innerHTML = `
           <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
           <div class="flex-1 text-left">
             <div class="font-bold">${m.display}</div>
-            <div class="text-[11px] text-slate-600">Pow ${m.power ?? '—'} • Acc ${m.accuracy ?? '—'}% • ${cap(m.category)} • ${m.method==='machine' ? 'TM/HM' : ('Lv ' + (m.level||'?'))} ${m.sources?.length? '• ' + m.sources.map(src=>src==='red-blue'?'RB':'Y').join('/') : ''}</div>
+            <div class="text-[11px] text-slate-600">
+              ${m.category==='status' ? 'Status' : ('Pow ' + (m.power ?? '—'))}
+              • Acc ${m.accuracy ?? '—'}%
+              • ${cap(m.category)}${ail}
+              • ${m.method==='machine' ? 'TM/HM' : ('Lv ' + (m.level||'?'))}
+              ${m.sources?.length? '• ' + m.sources.map(src=>src==='red-blue'?'RB':'Y').join('/') : ''}
+            </div>
           </div>
           <div class="text-[11px] px-2 py-1 rounded-md ${picked?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-600'}">${picked?'Selected':'Select'}</div>
         `;
@@ -566,9 +593,7 @@
           const rec = agg.get(key);
           rec.methods.add(method);
           rec.sources.add(v.version_group.name);
-          if(method==='level-up'){
-            rec.level = Math.max(rec.level||0, v.level_learned_at||0);
-          }
+          if(method==='level-up'){ rec.level = Math.max(rec.level||0, v.level_learned_at||0); }
         }
       }
       const out = [];
@@ -579,18 +604,27 @@
           state.moveCache.set(name, mv);
         }
         const mv = state.moveCache.get(name);
-        if(mv.damage_class?.name==='status') continue;
         const type = mv.type?.name;
         if(!(type in TYPE_COLORS)) continue;
-        const power = mv.power; if(power==null) continue;
+
+        const category = mv.damage_class?.name || 'status';
+        const power = mv.power ?? null;
+        const accuracy = mv.accuracy ?? 100;
+
+        // read ailment
+        const ailmentRaw = mv.meta?.ailment?.name || 'none';
+        const ailment_chance = mv.meta?.ailment_chance ?? mv.effect_chance ?? 0;
+        const ailment_code = AIL_MAP[ailmentRaw] || (ailmentRaw==='none'? null : ailmentRaw);
 
         if(methods.has('level-up')){
-          out.push({ key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
-            power, accuracy: mv.accuracy ?? 100, method:'level-up', level:level||1, sources:[...sources] });
+          out.push({ key:name, display:cleanMoveName(name), type, category,
+            power, accuracy, method:'level-up', level:level||1, sources:[...sources],
+            ailment_code, ailment_chance });
         }
         if(methods.has('machine')){
-          out.push({ key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
-            power, accuracy: mv.accuracy ?? 100, method:'machine', level:null, sources:[...sources] });
+          out.push({ key:name, display:cleanMoveName(name), type, category,
+            power, accuracy, method:'machine', level:null, sources:[...sources],
+            ailment_code, ailment_chance });
         }
       }
       return out;
@@ -599,15 +633,17 @@
     function cleanMoveName(n){ return n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
     function recommendMoves(pool, attackerTypes=[]){
+      // Lightly encourage 1 utility/status move
       const scored = pool.map(m=>{
         const stab = attackerTypes.includes(m.type) ? 1.5 : 1.0;
-        const score = (m.power||0) * stab + ((m.level||0)/5) + (m.method==='level-up'? 1 : 0);
+        const base = m.category==='status' ? 40 + (m.ailment_code?20:0) : (m.power||0) * stab;
+        const score = base + ((m.level||0)/5) + (m.method==='level-up'? 1 : 0);
         return {score, m};
       });
       scored.sort((a,b)=> b.score - a.score);
       const seen=new Set(), picks=[];
       for(const s of scored){ if(!seen.has(s.m.key)){ seen.add(s.m.key); picks.push(s.m); } if(picks.length>=4) break; }
-      if(!picks.length){ picks.push({key:'bash', display:'Bash', type:'normal', category:'physical', power:50, accuracy:100, method:'level-up', level:1}); }
+      if(!picks.length){ picks.push({key:'tackle', display:'Tackle', type:'normal', category:'physical', power:40, accuracy:100, method:'level-up', level:1}); }
       return picks;
     }
 
@@ -668,8 +704,9 @@
       return {
         id, name:cap(p.name), types,
         front:p.sprites.front_default || gridSpriteURL(id),
-        back: p.sprites.back_default || p.sprites.front_default || gridSpriteURL(id),
-        base, stats:{...derived}, hp:derived.maxHP, moves
+        back:p.sprites.back_default || p.sprites.front_default || gridSpriteURL(id),
+        base, stats:{...derived}, hp:derived.maxHP, moves,
+        status:null // {type:'par'|'brn'|'psn'|'frz'|'slp', turns?:number}
       };
     }
 
@@ -704,6 +741,32 @@
       $('#hpBarB').style.width=pctB+'%'; colorHP($('#hpBarB'), pctB);
       $('#hpTextA').textContent=`${A.hp} / ${A.stats.maxHP}`;
       $('#hpTextB').textContent=`${B.hp} / ${B.stats.maxHP}`;
+      updateStatusUI('A', A); updateStatusUI('B', B);
+    }
+
+    function updateStatusUI(side, mon){
+      const dot = side==='A'? $('#dotA') : $('#dotB');
+      const tag = side==='A'? $('#stTextA') : $('#stTextB');
+      let color='#10b981'; // OK (green)
+      let label=null;
+      if(mon.status?.type){
+        label = mon.status.type.toUpperCase();
+        switch(mon.status.type){
+          case 'par': color='#fbbf24'; break;   // amber
+          case 'brn': color='#f97316'; break;  // orange
+          case 'psn': color='#8b5cf6'; break;  // purple-ish
+          case 'frz': color='#22d3ee'; break;  // cyan
+          case 'slp': color='#64748b'; break;  // slate
+          default: color='#10b981';
+        }
+      } else {
+        const pct = Math.round((mon.hp/mon.stats.maxHP)*100);
+        if(pct<=20) color='#ef4444';
+        else if(pct<=50) color='#f59e0b';
+      }
+      dot.style.backgroundColor=color;
+      if(label){ tag.textContent=label; tag.classList.remove('hidden'); }
+      else { tag.classList.add('hidden'); }
     }
 
     function renderMoveButtons(){
@@ -712,10 +775,14 @@
         const btn=document.createElement('button');
         btn.className='move-btn tap';
         btn.style.background = `linear-gradient(180deg, ${typeColor(m.type)}, #333333)`;
+        const ail = m.ailment_code ? ` • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}` : '';
         btn.innerHTML = `
           <div class="text-left">
             <div class="font-bold">${m.display}</div>
-            <div class="text-[10px] opacity-90">Pow ${m.power} • Acc ${m.accuracy}% • ${cap(m.category)}</div>
+            <div class="text-[10px] opacity-90">
+              ${m.category==='status' ? 'Status' : ('Pow ' + (m.power ?? '—'))}
+              • Acc ${m.accuracy ?? '—'}% • ${cap(m.category)}${ail}
+            </div>
           </div>
           <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
         `;
@@ -751,12 +818,27 @@
       return aliveA && aliveB;
     }
 
+    function effectiveSpeed(mon){
+      let s = mon.stats.spe;
+      if(mon.status?.type==='par') s = Math.floor(s * PAR_SPEED);
+      return s;
+    }
+
     function bestMoveAgainst(attacker, defender){
+      // prefer non-incapacitating if status-only and defender already has status
       let best = attacker.moves[0];
-      let bestDmg = -1;
+      let bestScore = -1;
       for(const m of attacker.moves){
-        const est = estimateDamage(attacker, defender, m);
-        if(est>bestDmg){ bestDmg=est; best=m; }
+        let score;
+        if(m.category==='status'){
+          const willDoAnything = !defender.status?.type && m.ailment_code;
+          score = willDoAnything ? 50 + (m.ailment_chance||0) : 10;
+        } else {
+          score = estimateDamage(attacker, defender, m);
+          // sprinkle bonus if it can also status
+          if(m.ailment_code) score += (m.ailment_chance||0)/2;
+        }
+        if(score>bestScore){ bestScore=score; best=m; }
       }
       return best;
     }
@@ -770,9 +852,10 @@
 
       await sleep(P(200));
 
-      // Speed order, coin flip on tie
+      // Speed order with paralysis considered; coin flip on tie
+      const aSpd = effectiveSpeed(A), bSpd = effectiveSpeed(B);
       let order = [{ side:'A', move:state.queuedMove }, { side:'B', move:cpuMove }];
-      if(B.stats.spe > A.stats.spe || (B.stats.spe===A.stats.spe && Math.random()<0.5)) order.reverse();
+      if(bSpd > aSpd || (bSpd===aSpd && Math.random()<0.5)) order.reverse();
 
       state.waitingForPlayerChoice=false;
       $('#btnNext').disabled = true;
@@ -787,8 +870,32 @@
 
         const m = step.move;
 
-        // Accuracy
+        // Pre-move status checks (SLP/FRZ/PAR)
+        if(handlePreMoveStatus(atk)){
+          setHPBars();
+          await sleep(P(350));
+          continue; // turn lost
+        }
+
+        // Accuracy & announce (status moves announce too)
         await announce(`${atk.name} used ${m.display}!`);
+
+        // If pure status move: just attempt to apply
+        if(m.category==='status' && (!m.power || m.power===0)){
+          if(Math.random()*100 > (m.accuracy ?? 100)){
+            log(`${atk.name}'s ${m.display} missed!`);
+            await impactMiss(defSide); await sleep(P(250));
+          } else {
+            await animateAttack(atkSide, defSide, m);
+            const applied = tryApplyStatus(def, m.ailment_code, m.ailment_chance || 100);
+            if(applied){ log(`${def.name} is now ${applied.toUpperCase()}!`); updateStatusUI(defSide, def); }
+            else { log(`But it failed!`); }
+            await sleep(P(300));
+          }
+          continue;
+        }
+
+        // Damaging move flow
         await animateAttack(atkSide, defSide, m);
         if(Math.random()*100 > (m.accuracy ?? 100)){
           await impactMiss(defSide);
@@ -805,7 +912,13 @@
         await impactHit(defSide, m.type);
         setHPBars();
         log(`It dealt ${dmg} damage.`);
-        await sleep(P(350));
+        await sleep(P(300));
+
+        // Secondary status chance
+        if(def.hp>0 && m.ailment_code){
+          const applied = tryApplyStatus(def, m.ailment_code, m.ailment_chance || 0);
+          if(applied){ log(`${def.name} is now ${applied.toUpperCase()}!`); setHPBars(); await sleep(P(200)); }
+        }
 
         if(def.hp<=0){
           log(`${def.name} fainted!`);
@@ -818,10 +931,17 @@
             if(next!==-1) state.aIdx=next;
           }
           if(!battleAlive()) break;
-          state.round++; setActiveDisplays(); await sleep(P(300));
+          setActiveDisplays(); await sleep(P(300));
         }
 
-        await sleep(P(250));
+        await sleep(P(200));
+      }
+
+      // End-of-turn residuals
+      if(battleAlive()){
+        endOfTurnResidual(currA(), 'A');
+        endOfTurnResidual(currB(), 'B');
+        setHPBars();
       }
 
       if(!battleAlive()){
@@ -841,7 +961,9 @@
     function estimateDamage(attacker, defender, move){
       const A = (move.category==='physical')? attacker.stats.atk : attacker.stats.spa;
       const D = (move.category==='physical')? defender.stats.def : defender.stats.spd;
-      let base = (((2*50/5 + 2) * move.power * (A/Math.max(1,D))) / 50) + 2;
+      let aEff = A;
+      if(move.category==='physical' && attacker.status?.type==='brn'){ aEff = Math.floor(aEff * BRN_PHYS); }
+      let base = (((2*50/5 + 2) * (move.power||0) * (aEff/Math.max(1,D))) / 50) + 2;
       const stab = attacker.types.includes(move.type)? 1.5 : 1.0;
       const eff = effMultiplier(move.type, defender.types);
       return base * stab * eff * 0.925;
@@ -852,11 +974,49 @@
       return Math.max(1, Math.floor(base * roll));
     }
 
-    /* ======= Animations & Effects ======= */
-    async function announce(text){
-      log(text);
-      await sleep(P(250));
+    /* ======= Status system ======= */
+    function handlePreMoveStatus(mon){
+      if(mon.status?.type==='slp'){
+        mon.status.turns = (mon.status.turns ?? 1);
+        if(mon.status.turns>0){ mon.status.turns--; log(`${mon.name} is fast asleep…`); return true; }
+        // wake up
+        log(`${mon.name} woke up!`); mon.status = null; return false;
+      }
+      if(mon.status?.type==='frz'){
+        if(Math.random() < THAW_CHANCE){ log(`${mon.name} thawed out!`); mon.status=null; return false; }
+        log(`${mon.name} is frozen solid!`); return true;
+      }
+      if(mon.status?.type==='par'){
+        if(Math.random() < 0.25){ log(`${mon.name} is fully paralyzed!`); return true; }
+      }
+      return false;
     }
+
+    function tryApplyStatus(target, code, chancePct){
+      if(!code || target.status?.type || target.hp<=0) return null;
+      if(Math.random()*100 > chancePct) return null;
+      switch(code){
+        case 'slp': target.status = {type:'slp', turns: Math.floor(Math.random()*3)+1}; break;
+        case 'frz': target.status = {type:'frz'}; break;
+        case 'par': target.status = {type:'par'}; break;
+        case 'brn': target.status = {type:'brn'}; break;
+        case 'psn': target.status = {type:'psn'}; break;
+        default: return null;
+      }
+      return code;
+    }
+
+    function endOfTurnResidual(mon, side){
+      if(mon.hp<=0) return;
+      if(mon.status?.type==='brn' || mon.status?.type==='psn'){
+        const dmg = Math.max(1, Math.floor(mon.stats.maxHP / RESIDUAL_FRACTION));
+        mon.hp = Math.max(0, mon.hp - dmg);
+        log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`);
+      }
+    }
+
+    /* ======= Animations & Effects ======= */
+    async function announce(text){ log(text); await sleep(P(250)); }
 
     async function animateAttack(attackerSide, defenderSide, move){
       const atkImg = attackerSide==='A' ? $('#spriteA') : $('#spriteB');
@@ -872,29 +1032,11 @@
         const atkRect = atkImg.getBoundingClientRect();
         const defRect = defImg.getBoundingClientRect();
         const stRect = stage.getBoundingClientRect();
-
-        const start = {
-          x: (atkRect.left + atkRect.right)/2 - stRect.left + (attackerSide==='A'? 26 : -26),
-          y: (atkRect.top + atkRect.bottom)/2 - stRect.top - 8
-        };
-        const end = {
-          x: (defRect.left + defRect.right)/2 - stRect.left + (defenderSide==='A'? 26 : -26),
-          y: (defRect.top + defRect.bottom)/2 - stRect.top - 8
-        };
-
-        const proj = document.createElement('div');
-        proj.className='proj';
-        proj.style.background = typeColor(move.type);
-        stage.appendChild(proj);
-
-        const steps = 22, dx=(end.x-start.x)/steps, dy=(end.y-start.y)/steps;
-        for(let i=0;i<=steps;i++){
-          const t=i/steps;
-          const arc = -30 * Math.sin(Math.PI*t);
-          proj.style.left = (start.x + dx*i) + 'px';
-          proj.style.top  = (start.y + dy*i + arc) + 'px';
-          await sleep(P(10));
-        }
+        const start = { x:(atkRect.left+atkRect.right)/2 - stRect.left + (attackerSide==='A'?26:-26), y:(atkRect.top+atkRect.bottom)/2 - stRect.top - 8 };
+        const end   = { x:(defRect.left+defRect.right)/2 - stRect.left + (defenderSide==='A'?26:-26), y:(defRect.top+defRect.bottom)/2 - stRect.top - 8 };
+        const proj = document.createElement('div'); proj.className='proj'; proj.style.background = typeColor(move.type); stage.appendChild(proj);
+        const steps=22, dx=(end.x-start.x)/steps, dy=(end.y-start.y)/steps;
+        for(let i=0;i<=steps;i++){ const t=i/steps, arc=-30*Math.sin(Math.PI*t); proj.style.left=(start.x+dx*i)+'px'; proj.style.top=(start.y+dy*i+arc)+'px'; await sleep(P(10)); }
         proj.remove();
       }
       await sleep(P(120));
@@ -904,12 +1046,10 @@
       const defImg = defenderSide==='A' ? $('#spriteA') : $('#spriteB');
       const stage = $('#stage');
       defImg.classList.add('flash','shake');
-      const r = defImg.getBoundingClientRect();
-      const st = stage.getBoundingClientRect();
-      const spark = document.createElement('div');
-      spark.className='spark';
-      spark.style.left = ( (r.left+r.right)/2 - st.left ) + 'px';
-      spark.style.top  = ( (r.top+r.bottom)/2 - st.top ) + 'px';
+      const r = defImg.getBoundingClientRect(), st = stage.getBoundingClientRect();
+      const spark = document.createElement('div'); spark.className='spark';
+      spark.style.left = ((r.left+r.right)/2 - st.left) + 'px';
+      spark.style.top  = ((r.top+r.bottom)/2 - st.top) + 'px';
       spark.style.background = typeColor(type);
       stage.appendChild(spark);
       await sleep(P(350));
@@ -917,20 +1057,8 @@
       spark.remove();
       await sleep(P(120));
     }
-
-    async function impactMiss(defenderSide){
-      const stage = $('#stage');
-      stage.classList.add('camshake');
-      await sleep(P(220));
-      stage.classList.remove('camshake');
-    }
-
-    async function screenShake(){
-      const stage = $('#stage');
-      stage.classList.add('camshake');
-      await sleep(P(260));
-      stage.classList.remove('camshake');
-    }
+    async function impactMiss(){ const stage = $('#stage'); stage.classList.add('camshake'); await sleep(P(220)); stage.classList.remove('camshake'); }
+    async function screenShake(){ const stage = $('#stage'); stage.classList.add('camshake'); await sleep(P(260)); stage.classList.remove('camshake'); }
 
     /* ======= Log & Toast ======= */
     function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; }
