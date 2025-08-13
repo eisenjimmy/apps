@@ -5,26 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Jimmy’s Bible</title>
 <meta name="theme-color" content="#111827" />
-<!-- Inline SVG favicon (book + cross) -->
 <link rel="icon" type="image/svg+xml"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111827'/%3E%3Cpath d='M30 8h4v20h20v4H34v24h-4V32H10v-4h20z' fill='%23f59e0b'/%3E%3C/svg%3E">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  html { scroll-behavior: smooth; }
-  .verse { cursor: pointer; }
-  .verse[data-hl="1"] { background: rgba(234,179,8,.35); }
-  .nav-arrow {
-    position:fixed; top:50%; transform:translateY(-50%); z-index:50;
-    width:2.75rem; height:2.75rem; display:grid; place-items:center;
-    border-radius:9999px; background:rgba(0,0,0,.55); color:#fff;
-    box-shadow:0 10px 20px rgba(0,0,0,.25)
-  }
-  .nav-left{ left:.5rem } .nav-right{ right:.5rem }
-  .nav-arrow:active{ transform:translateY(-50%) scale(.97) }
-  .sticky-top{ position:sticky; top:0; z-index:40 }
-  .vnum{ user-select:none; opacity:.55; margin-right:.35rem; font-size:.75rem }
-  mark{ padding:0 .1em; border-radius:.2em }
-  .search-chip{ font-variant-numeric: tabular-nums; }
+  html{scroll-behavior:smooth}
+  .verse{cursor:pointer}
+  .verse[data-hl="1"]{background:rgba(234,179,8,.35)}
+  .nav-arrow{position:fixed;top:50%;transform:translateY(-50%);z-index:50;width:2.75rem;height:2.75rem;display:grid;place-items:center;border-radius:9999px;background:rgba(0,0,0,.55);color:#fff;box-shadow:0 10px 20px rgba(0,0,0,.25)}
+  .nav-left{left:.5rem}.nav-right{right:.5rem}
+  .nav-arrow:active{transform:translateY(-50%) scale(.97)}
+  .sticky-top{position:sticky;top:0;z-index:40}
+  .vnum{user-select:none;opacity:.55;margin-right:.35rem;font-size:.75rem}
+  mark{padding:0 .1em;border-radius:.2em}
+  .search-chip{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900">
@@ -34,15 +28,44 @@
       <div class="flex items-center gap-2">
         <div class="font-semibold text-lg">Jimmy’s Bible</div>
         <div class="ml-auto grid grid-cols-2 sm:flex gap-2 w-auto">
+          <!-- VERSION (hard-coded so it's visible even if JS dies) -->
           <label class="sr-only" for="verSel">Version</label>
-          <select id="verSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
+          <select id="verSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm">
+            <option value="WEB_API">WEB (English)</option>
+            <option value="KJV_API">KJV (English)</option>
+            <option value="KOREAN">Korean (개역한글)</option>
+            <option value="KOREAN_KJV">Korean KJV</option>
+          </select>
 
+          <!-- BOOK -->
           <label class="sr-only" for="bookSel">Book</label>
-          <select id="bookSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
+          <select id="bookSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm">
+            <option>Genesis</option><option>Exodus</option><option>Leviticus</option><option>Numbers</option><option>Deuteronomy</option>
+            <option>Joshua</option><option>Judges</option><option>Ruth</option><option>1 Samuel</option><option>2 Samuel</option>
+            <option>1 Kings</option><option>2 Kings</option><option>1 Chronicles</option><option>2 Chronicles</option><option>Ezra</option>
+            <option>Nehemiah</option><option>Esther</option><option>Job</option><option>Psalms</option><option>Proverbs</option>
+            <option>Ecclesiastes</option><option>Song of Solomon</option><option>Isaiah</option><option>Jeremiah</option><option>Lamentations</option>
+            <option>Ezekiel</option><option>Daniel</option><option>Hosea</option><option>Joel</option><option>Amos</option><option>Obadiah</option>
+            <option>Jonah</option><option>Micah</option><option>Nahum</option><option>Habakkuk</option><option>Zephaniah</option><option>Haggai</option>
+            <option>Zechariah</option><option>Malachi</option><option>Matthew</option><option>Mark</option><option>Luke</option>
+            <option>John</option><option>Acts</option><option>Romans</option><option>1 Corinthians</option><option>2 Corinthians</option>
+            <option>Galatians</option><option>Ephesians</option><option>Philippians</option><option>Colossians</option><option>1 Thessalonians</option>
+            <option>2 Thessalonians</option><option>1 Timothy</option><option>2 Timothy</option><option>Titus</option><option>Philemon</option>
+            <option>Hebrews</option><option>James</option><option>1 Peter</option><option>2 Peter</option><option>1 John</option>
+            <option>2 John</option><option>3 John</option><option>Jude</option><option>Revelation</option>
+          </select>
 
+          <!-- CHAPTER (starts at Genesis 1..50; will update on book change) -->
           <label class="sr-only" for="chapSel">Chapter</label>
-          <select id="chapSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
+          <select id="chapSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm">
+            <!-- 1..50 for Genesis -->
+            <script>
+              // prefill chapters 1..50 so something is visible without JS below
+              for (var i=1;i<=50;i++){document.write('<option>'+i+'</option>');}
+            </script>
+          </select>
 
+          <!-- VERSE jump -->
           <label class="sr-only" for="verseSel">Verse</label>
           <select id="verseSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm">
             <option value="">(verse)</option>
@@ -54,16 +77,15 @@
       <div class="flex items-center gap-2">
         <div class="relative flex-1">
           <input id="searchBox" type="search" inputmode="search" placeholder="Search in this chapter…"
-                 class="w-full rounded-lg border border-zinc-300 px-3 py-2 pr-20 text-sm"
-                 autocomplete="off" />
+                 class="w-full rounded-lg border border-zinc-300 px-3 py-2 pr-20 text-sm" autocomplete="off" />
           <div class="absolute inset-y-0 right-2 flex items-center gap-2">
             <span id="searchCount" class="text-xs text-zinc-500 search-chip"></span>
-            <button id="searchClear" class="text-xs text-zinc-600 hover:text-zinc-900 px-2 py-1 rounded-md border border-zinc-300">Clear</button>
+            <button id="searchClear" class="text-xs text-zinc-600 hover:text-zinc-900 px-2 py-1 rounded-md border border-zinc-300" type="button">Clear</button>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button id="searchPrev" class="px-3 py-2 text-sm rounded-lg border border-zinc-300 bg-white">Prev</button>
-          <button id="searchNext" class="px-3 py-2 text-sm rounded-lg border border-zinc-300 bg-white">Next</button>
+          <button id="searchPrev" class="px-3 py-2 text-sm rounded-lg border border-zinc-300 bg-white" type="button">Prev</button>
+          <button id="searchNext" class="px-3 py-2 text-sm rounded-lg border border-zinc-300 bg-white" type="button">Next</button>
         </div>
       </div>
     </div>
@@ -86,297 +108,295 @@
   </main>
 
   <!-- Floating arrows -->
-  <button id="prevBtn" class="nav-arrow nav-left" title="Previous chapter" aria-label="Previous chapter">‹</button>
-  <button id="nextBtn" class="nav-arrow nav-right" title="Next chapter" aria-label="Next chapter">›</button>
+  <button id="prevBtn" class="nav-arrow nav-left" title="Previous chapter" aria-label="Previous chapter" type="button">‹</button>
+  <button id="nextBtn" class="nav-arrow nav-right" title="Next chapter" aria-label="Next chapter" type="button">›</button>
 
-<script>
-/* ===============================
-   Versions (stable, CORS‑friendly)
-   =============================== */
-const VERSIONS = [
-  { id: "WEB_API",      label: "WEB (English)",    type: "BIBLEAPI_PASSAGE", credit: 'World English Bible via bible-api.com', base: "https://bible-api.com/", lang:"en", params: "" },
-  { id: "KJV_API",      label: "KJV (English)",    type: "BIBLEAPI_PASSAGE", credit: 'KJV via bible-api.com',                base: "https://bible-api.com/", lang:"en", params: "translation=kjv" },
-  { id: "KOREAN",       label: "Korean (개역한글)", type: "GETBIBLE_CHAPTER",  credit: 'GetBible v2 — korean',               base: "https://api.getbible.net/v2/korean/",    lang:"ko" },
-  { id: "KOREAN_KJV",   label: "Korean KJV",       type: "GETBIBLE_CHAPTER",  credit: 'GetBible v2 — koreankjv',            base: "https://api.getbible.net/v2/koreankjv/", lang:"ko" }
-];
+<!-- ——— JS (defer so DOM exists) ——— -->
+<script defer>
+(function(){
+  // ===== Canon and versions =====
+  var BOOKS = [
+    ["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],
+    ["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],
+    ["1 Kings",22],["2 Kings",25],["1 Chronicles",29],["2 Chronicles",36],["Ezra",10],
+    ["Nehemiah",13],["Esther",10],["Job",42],["Psalms",150],["Proverbs",31],
+    ["Ecclesiastes",12],["Song of Solomon",8],["Isaiah",66],["Jeremiah",52],["Lamentations",5],
+    ["Ezekiel",48],["Daniel",12],["Hosea",14],["Joel",3],["Amos",9],["Obadiah",1],
+    ["Jonah",4],["Micah",7],["Nahum",3],["Habakkuk",3],["Zephaniah",3],["Haggai",2],
+    ["Zechariah",14],["Malachi",4],["Matthew",28],["Mark",16],["Luke",24],
+    ["John",21],["Acts",28],["Romans",16],["1 Corinthians",16],["2 Corinthians",13],
+    ["Galatians",6],["Ephesians",6],["Philippians",4],["Colossians",4],["1 Thessalonians",5],
+    ["2 Thessalonians",3],["1 Timothy",6],["2 Timothy",4],["Titus",3],["Philemon",1],
+    ["Hebrews",13],["James",5],["1 Peter",5],["2 Peter",3],["1 John",5],
+    ["2 John",1],["3 John",1],["Jude",1],["Revelation",22]
+  ];
+  var VERSIONS = {
+    "WEB_API":      {type:"BIBLEAPI_PASSAGE", base:"https://bible-api.com/", params:"",           credit:"World English Bible via bible-api.com"},
+    "KJV_API":      {type:"BIBLEAPI_PASSAGE", base:"https://bible-api.com/", params:"translation=kjv", credit:"KJV via bible-api.com"},
+    "KOREAN":       {type:"GETBIBLE_CHAPTER", base:"https://api.getbible.net/v2/korean/",    credit:"GetBible v2 — korean"},
+    "KOREAN_KJV":   {type:"GETBIBLE_CHAPTER", base:"https://api.getbible.net/v2/koreankjv/", credit:"GetBible v2 — koreankjv"}
+  };
 
-/* ===============================
-   Canon (66‑book Protestant order)
-   =============================== */
-const BOOKS = [
-  ["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],
-  ["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],
-  ["1 Kings",22],["2 Kings",25],["1 Chronicles",29],["2 Chronicles",36],["Ezra",10],
-  ["Nehemiah",13],["Esther",10],["Job",42],["Psalms",150],["Proverbs",31],
-  ["Ecclesiastes",12],["Song of Solomon",8],["Isaiah",66],["Jeremiah",52],["Lamentations",5],
-  ["Ezekiel",48],["Daniel",12],["Hosea",14],["Joel",3],["Amos",9],["Obadiah",1],
-  ["Jonah",4],["Micah",7],["Nahum",3],["Habakkuk",3],["Zephaniah",3],["Haggai",2],
-  ["Zechariah",14],["Malachi",4],["Matthew",28],["Mark",16],["Luke",24],
-  ["John",21],["Acts",28],["Romans",16],["1 Corinthians",16],["2 Corinthians",13],
-  ["Galatians",6],["Ephesians",6],["Philippians",4],["Colossians",4],["1 Thessalonians",5],
-  ["2 Thessalonians",3],["1 Timothy",6],["2 Timothy",4],["Titus",3],["Philemon",1],
-  ["Hebrews",13],["James",5],["1 Peter",5],["2 Peter",3],["1 John",5],
-  ["2 John",1],["3 John",1],["Jude",1],["Revelation",22]
-];
+  // ===== Elements =====
+  var $verSel   = document.getElementById('verSel');
+  var $bookSel  = document.getElementById('bookSel');
+  var $chapSel  = document.getElementById('chapSel');
+  var $verseSel = document.getElementById('verseSel');
+  var $content  = document.getElementById('content');
+  var $refLine  = document.getElementById('refLine');
+  var $credit   = document.getElementById('credit');
+  var $prev     = document.getElementById('prevBtn');
+  var $next     = document.getElementById('nextBtn');
+  var $statusBar= document.getElementById('statusBar');
+  var $search   = document.getElementById('searchBox');
+  var $sCount   = document.getElementById('searchCount');
+  var $sPrev    = document.getElementById('searchPrev');
+  var $sNext    = document.getElementById('searchNext');
+  var $sClear   = document.getElementById('searchClear');
 
-/* ===============================
-   Elements
-   =============================== */
-const $verSel   = document.getElementById('verSel');
-const $bookSel  = document.getElementById('bookSel');
-const $chapSel  = document.getElementById('chapSel');
-const $verseSel = document.getElementById('verseSel');
-const $content  = document.getElementById('content');
-const $refLine  = document.getElementById('refLine');
-const $credit   = document.getElementById('credit');
-const $prev     = document.getElementById('prevBtn');
-const $next     = document.getElementById('nextBtn');
-const $statusBar= document.getElementById('statusBar');
-const $search   = document.getElementById('searchBox');
-const $sCount   = document.getElementById('searchCount');
-const $sPrev    = document.getElementById('searchPrev');
-const $sNext    = document.getElementById('searchNext');
-const $sClear   = document.getElementById('searchClear');
-
-/* ===============================
-   Status / error helpers
-   =============================== */
-function showStatus(msg){
-  $statusBar.classList.remove('hidden');
-  $statusBar.firstElementChild.textContent = msg;
-}
-function clearStatus(){
-  $statusBar.classList.add('hidden');
-  $statusBar.firstElementChild.textContent = '';
-}
-
-/* ===============================
-   Storage (cookie with LS fallback)
-   =============================== */
-const HL_COOKIE='hl', LOC_COOKIE='locv3';
-function getCookie(name){ const m=document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()[\\]\\/+^])/g,'\\$1')+'=([^;]*)')); return m?decodeURIComponent(m[1]):""; }
-function setCookie(name,val,days=3650){ const d=new Date(); d.setTime(d.getTime()+days*864e5); document.cookie=`${name}=${encodeURIComponent(val)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`; }
-function loadJSONCookie(name){ try{return JSON.parse(getCookie(name)||localStorage.getItem(name)||"{}")}catch{return{}} }
-function saveJSONCookie(name,obj){ const s=JSON.stringify(obj); try{ setCookie(name,s) }catch{ try{ localStorage.setItem(name,s) }catch{} } }
-let HL = loadJSONCookie(HL_COOKIE);
-function keyFor(v,book,chap,verse){ return `${v}|${book}|${chap}|${verse}`; }
-
-/* ===============================
-   Fetchers
-   =============================== */
-async function fetchBibleApiChapter(base, book, chapter, params){
-  const ref = encodeURIComponent(`${book} ${chapter}`);
-  const url = `${base}${ref}${params ? `?${params}` : ''}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error(`bible-api.com error ${res.status}`);
-  const j = await res.json();
-  const verses = Array.isArray(j.verses) ? j.verses.map(v => (v.text||"").trim()) : [];
-  return verses;
-}
-async function fetchGetBibleChapter(base, bookNumber, chapter){
-  const url = `${base}${bookNumber}/${chapter}.json`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error(`GetBible error ${res.status}`);
-  const j = await res.json();
-  const arr = j?.verses || j?.chapter?.verses || [];
-  if(Array.isArray(arr) && arr.length && typeof arr[0]==='object'){
-    return arr.map(v => (v.text || v.content || v.value || "").trim());
+  // ===== Utilities =====
+  function showStatus(msg){
+    $statusBar.classList.remove('hidden');
+    $statusBar.firstElementChild.textContent = msg;
   }
-  return arr.map(x => String(x||"").trim());
-}
+  function clearStatus(){
+    $statusBar.classList.add('hidden');
+    $statusBar.firstElementChild.textContent = '';
+  }
+  function getCookie(name){
+    var m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()[\\]\\/+^])/g,'\\$1')+'=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  function setCookie(name,val,days){
+    if (typeof days === "undefined") days = 3650;
+    var d = new Date(); d.setTime(d.getTime()+days*86400000);
+    document.cookie = name+"="+encodeURIComponent(val)+"; expires="+d.toUTCString()+"; path=/; SameSite=Lax";
+  }
+  function loadJSONCookie(name){
+    try { return JSON.parse(getCookie(name) || localStorage.getItem(name) || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveJSONCookie(name,obj){
+    var s = JSON.stringify(obj);
+    try { setCookie(name,s); } catch(e){ try{ localStorage.setItem(name,s); }catch(_e){} }
+  }
+  function fillChapters(book){
+    var max = 1;
+    for (var i=0;i<BOOKS.length;i++){ if(BOOKS[i][0]===book){ max = BOOKS[i][1]; break; } }
+    var html = "";
+    for (var n=1;n<=max;n++) html += "<option>"+n+"</option>";
+    $chapSel.innerHTML = html;
+  }
+  function fillVerses(max){
+    var html = '<option value="">(verse)</option>';
+    for (var n=1;n<=max;n++) html += "<option>"+n+"</option>";
+    $verseSel.innerHTML = html;
+  }
 
-/* ===============================
-   Search helpers
-   =============================== */
-let CURRENT = { version: "WEB_API", book: "John", chapter: 3, maxVerses: 0 };
-let CURRENT_VERSES = [];
-let SEARCH = { q:"", hits:[], idx:0 };
+  // ===== State =====
+  var HL_COOKIE='hl', LOC_COOKIE='locv3';
+  var HL = loadJSONCookie(HL_COOKIE);
+  function keyFor(v,book,chap,verse){ return v+"|"+book+"|"+chap+"|"+verse; }
+  var CURRENT = { version:"WEB_API", book:"John", chapter:3, maxVerses:0 };
+  var CURRENT_VERSES = [];
+  var SEARCH = { q:"", hits:[], idx:0 };
 
-function escapeHTML(s){
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-function applySearchToVerseText(text, query){
-  if(!query) return escapeHTML(text);
-  const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
-  return escapeHTML(text).replace(re, m => `<mark>${m}</mark>`);
-}
-function updateSearchDisplay(){
-  if(!SEARCH.q){ $sCount.textContent=""; return; }
-  const total = SEARCH.hits.length;
-  $sCount.textContent = total ? `${SEARCH.idx+1} / ${total}` : "0 / 0";
-}
-function scrollToCurrentHit(){
-  if(!SEARCH.hits.length) return;
-  const {verse} = SEARCH.hits[SEARCH.idx];
-  const el = document.getElementById(`v-${verse}`);
-  if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
-}
-function rebuildContent(){
-  const frag = document.createDocumentFragment();
-  CURRENT_VERSES.forEach((txt, i)=>{
-    const vnum = i+1;
-    const p = document.createElement('p');
-    p.className = "verse py-1";
-    p.id = `v-${vnum}`;
-    const key = keyFor(CURRENT.version, CURRENT.book, CURRENT.chapter, vnum);
-    p.dataset.key = key;
-    p.dataset.hl = HL[key] ? "1" : "0";
-
-    const chip = document.createElement('span'); chip.className="vnum text-zinc-500"; chip.textContent=vnum;
-    const span = document.createElement('span'); span.innerHTML = applySearchToVerseText(String(txt||""), SEARCH.q);
-
-    p.appendChild(chip); p.appendChild(span);
-    p.addEventListener('click', ()=>{
-      if(p.dataset.hl==="1"){ p.dataset.hl="0"; delete HL[key]; }
-      else { p.dataset.hl="1"; HL[key]=1; }
-      saveJSONCookie(HL_COOKIE, HL);
+  // ===== Fetchers =====
+  function fetchBibleApiChapter(base, book, chapter, params){
+    var ref = encodeURIComponent(book + " " + chapter);
+    var url = base + ref + (params ? ("?" + params) : "");
+    return fetch(url).then(function(res){
+      if(!res.ok) throw new Error("bible-api.com error "+res.status);
+      return res.json();
+    }).then(function(j){
+      var out = [];
+      if (j && j.verses && j.verses.length){
+        for (var i=0;i<j.verses.length;i++){
+          out.push((j.verses[i].text || "").trim());
+        }
+      }
+      return out;
     });
-
-    frag.appendChild(p);
-  });
-  $content.replaceChildren(frag);
-}
-function runSearch(q){
-  SEARCH.q = q.trim();
-  SEARCH.hits = [];
-  SEARCH.idx = 0;
-  if(!SEARCH.q){
-    rebuildContent();
-    updateSearchDisplay();
-    return;
   }
-  const re = new RegExp(SEARCH.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i');
-  CURRENT_VERSES.forEach((txt, i)=>{
-    if(re.test(txt)) SEARCH.hits.push({ verse: i+1 });
-  });
-  rebuildContent();
-  updateSearchDisplay();
-  scrollToCurrentHit();
-}
-
-/* ===============================
-   Chapter loading & nav
-   =============================== */
-function fillChapters(book){
-  const max = BOOKS.find(b => b[0]===book)?.[1] || 1;
-  $chapSel.innerHTML = Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
-}
-function fillVerses(max){
-  $verseSel.innerHTML = `<option value="">(verse)</option>` + Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
-}
-function updateCredit(vId){
-  const ver = VERSIONS.find(v=>v.id===vId);
-  $credit.textContent = ver ? ver.credit : '';
-}
-async function loadChapter(versionId, book, chapter, jumpToVerse=""){
-  clearStatus();
-  const ver = VERSIONS.find(v=>v.id===versionId);
-  if(!ver){ showStatus("Unknown version"); return; }
-
-  if($verSel.value !== versionId) $verSel.value = versionId;
-  if($bookSel.value !== book) $bookSel.value = book;
-  fillChapters(book);
-  if(String($chapSel.value)!==String(chapter)) $chapSel.value = String(chapter);
-  updateCredit(versionId);
-
-  let verses = [];
-  try{
-    if(ver.type === "BIBLEAPI_PASSAGE"){
-      verses = await fetchBibleApiChapter(ver.base, book, chapter, ver.params);
-    } else if (ver.type === "GETBIBLE_CHAPTER"){
-      const bookNum = BOOKS.findIndex(b=>b[0]===book)+1;
-      verses = await fetchGetBibleChapter(ver.base, bookNum, chapter);
-    }
-    if(!verses || !verses.length){
-      showStatus("No verses returned by the data source for this chapter.");
-    }
-  }catch(e){
-    console.error(e);
-    showStatus(e.message || "Error loading chapter.");
-    $content.innerHTML = `<div class="p-4 text-red-600">Failed to load chapter — try switching versions or chapters.</div>`;
-    return;
+  function fetchGetBibleChapter(base, bookNumber, chapter){
+    var url = base + bookNumber + "/" + chapter + ".json";
+    return fetch(url).then(function(res){
+      if(!res.ok) throw new Error("GetBible error "+res.status);
+      return res.json();
+    }).then(function(j){
+      var arr = (j && j.verses) ? j.verses : (j && j.chapter && j.chapter.verses ? j.chapter.verses : []);
+      var out = [];
+      if (arr && arr.length){
+        if (typeof arr[0] === "object"){
+          for (var i=0;i<arr.length;i++){
+            out.push((arr[i].text || arr[i].content || arr[i].value || "").trim());
+          }
+        } else {
+          for (var k=0;k<arr.length;k++){ out.push(String(arr[k]||"").trim()); }
+        }
+      }
+      return out;
+    });
   }
 
-  CURRENT = { version: versionId, book, chapter, maxVerses: verses.length };
-  CURRENT_VERSES = verses;
-  saveJSONCookie(LOC_COOKIE, CURRENT);
-  fillVerses(verses.length);
-  $refLine.textContent = `${book} ${chapter} — ${ver.label}`;
-
-  // Clear search on chapter change (keeps query text if you want to re-run)
-  const q = $search.value;
-  runSearch("");               // render clean
-  if (q) { $search.value = q; runSearch(q); } // reapply if present
-
-  if(jumpToVerse){
-    const el = document.getElementById(`v-${jumpToVerse}`);
+  // ===== Search / render helpers =====
+  function escapeHTML(s){ return String(s).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
+  function applySearchToVerseText(text, query){
+    if(!query) return escapeHTML(text);
+    try {
+      var re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+      return escapeHTML(text).replace(re, function(m){ return "<mark>"+m+"</mark>"; });
+    } catch(e){ return escapeHTML(text); }
+  }
+  function updateSearchDisplay(){
+    if(!SEARCH.q){ $sCount.textContent=""; return; }
+    var total = SEARCH.hits.length;
+    $sCount.textContent = total ? (SEARCH.idx+1)+" / "+total : "0 / 0";
+  }
+  function scrollToCurrentHit(){
+    if(!SEARCH.hits.length) return;
+    var verse = SEARCH.hits[SEARCH.idx].verse;
+    var el = document.getElementById("v-"+verse);
     if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
   }
-}
-function prevChapter(){
-  const i = BOOKS.findIndex(b=>b[0]===CURRENT.book);
-  if(CURRENT.chapter>1) return loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter-1);
-  if(i>0){ const [pb,max] = BOOKS[i-1]; return loadChapter(CURRENT.version, pb, max); }
-}
-function nextChapter(){
-  const i = BOOKS.findIndex(b=>b[0]===CURRENT.book);
-  const max = BOOKS[i][1];
-  if(CURRENT.chapter<max) return loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter+1);
-  if(i<BOOKS.length-1){ const [nb] = BOOKS[i+1]; return loadChapter(CURRENT.version, nb, 1); }
-}
-function nextPrevWrapper(fn){
-  // Keep the search query but re-run it on the new text after navigation
-  return async ()=>{ await fn(); if($search.value) runSearch($search.value); };
-}
+  function rebuildContent(){
+    var frag = document.createDocumentFragment();
+    for (var i=0;i<CURRENT_VERSES.length;i++){
+      var vnum = i+1;
+      var p = document.createElement('p');
+      p.className = "verse py-1";
+      p.id = "v-"+vnum;
+      var key = keyFor(CURRENT.version, CURRENT.book, CURRENT.chapter, vnum);
+      p.dataset.key = key;
+      p.dataset.hl = HL[key] ? "1" : "0";
 
-/* ===============================
-   Events
-   =============================== */
-function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
-$verSel.addEventListener('change', ()=> loadChapter($verSel.value, $bookSel.value, +$chapSel.value));
-$bookSel.addEventListener('change', ()=> { fillChapters($bookSel.value); loadChapter($verSel.value, $bookSel.value, 1); });
-$chapSel.addEventListener('change', ()=> loadChapter($verSel.value, $bookSel.value, +$chapSel.value));
-$verseSel.addEventListener('change', ()=>{
-  const v = +$verseSel.value; if(!v) return;
-  const el = document.getElementById(`v-${v}`); if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
-});
-$prev.addEventListener('click', nextPrevWrapper(prevChapter));
-$next.addEventListener('click', nextPrevWrapper(nextChapter));
-window.addEventListener('keydown', (e)=>{
-  if(['INPUT','SELECT','TEXTAREA'].includes(e.target?.tagName)) return;
-  if(e.key==='ArrowLeft')  prevChapter();
-  if(e.key==='ArrowRight') nextChapter();
-});
-// Search interactions
-$search.addEventListener('input', debounce(()=> runSearch($search.value), 120));
-$sClear.addEventListener('click', ()=>{ $search.value=""; runSearch(""); $search.focus(); });
-$sPrev.addEventListener('click', ()=>{
-  if(!SEARCH.hits.length) return;
-  SEARCH.idx = (SEARCH.idx - 1 + SEARCH.hits.length) % SEARCH.hits.length;
-  updateSearchDisplay(); scrollToCurrentHit();
-});
-$sNext.addEventListener('click', ()=>{
-  if(!SEARCH.hits.length) return;
-  SEARCH.idx = (SEARCH.idx + 1) % SEARCH.hits.length;
-  updateSearchDisplay(); scrollToCurrentHit();
-});
-$search.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter'){ e.preventDefault(); $sNext.click(); }
-});
+      var chip = document.createElement('span'); chip.className="vnum text-zinc-500"; chip.textContent=vnum;
+      var span = document.createElement('span'); span.innerHTML = applySearchToVerseText(CURRENT_VERSES[i]||"", SEARCH.q);
 
-/* ===============================
-   Boot
-   =============================== */
-(function boot(){
-  // Populate selects
-  $verSel.innerHTML  = VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
-  $bookSel.innerHTML = BOOKS.map(([n]) => `<option value="${n}">${n}</option>`).join('');
-  const start = loadJSONCookie(LOC_COOKIE);
-  const v = start.version || "WEB_API";
-  const b = start.book || "John";
-  const c = start.chapter || 3;
-  fillChapters(b);
-  loadChapter(v, b, c);
+      p.appendChild(chip); p.appendChild(span);
+      p.addEventListener('click', (function(k,elem){
+        return function(){
+          if (elem.dataset.hl==="1"){ elem.dataset.hl="0"; delete HL[k]; }
+          else { elem.dataset.hl="1"; HL[k]=1; }
+          saveJSONCookie(HL_COOKIE, HL);
+        };
+      })(key,p));
+      frag.appendChild(p);
+    }
+    $content.replaceChildren(frag);
+  }
+  function runSearch(q){
+    SEARCH.q = (q||"").trim();
+    SEARCH.hits = [];
+    SEARCH.idx = 0;
+    if(!SEARCH.q){
+      rebuildContent(); updateSearchDisplay(); return;
+    }
+    var re;
+    try { re = new RegExp(SEARCH.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i'); }
+    catch(e){ rebuildContent(); updateSearchDisplay(); return; }
+    for (var i=0;i<CURRENT_VERSES.length;i++){
+      if (re.test(CURRENT_VERSES[i])) SEARCH.hits.push({verse:i+1});
+    }
+    rebuildContent(); updateSearchDisplay(); scrollToCurrentHit();
+  }
+
+  // ===== Chapter loading & nav =====
+  function updateCredit(vId){ $credit.textContent = VERSIONS[vId] ? VERSIONS[vId].credit : ""; }
+  function loadChapter(versionId, book, chapter, jumpToVerse){
+    clearStatus();
+    var ver = VERSIONS[versionId];
+    if(!ver){ showStatus("Unknown version"); return; }
+
+    if($verSel.value !== versionId) $verSel.value = versionId;
+    if($bookSel.value !== book) { $bookSel.value = book; fillChapters(book); }
+    if(String($chapSel.value)!==String(chapter)) $chapSel.value = String(chapter);
+    updateCredit(versionId);
+
+    var promise;
+    if (ver.type === "BIBLEAPI_PASSAGE"){
+      promise = fetchBibleApiChapter(ver.base, book, chapter, ver.params);
+    } else {
+      var bookNum = 1; for (var i=0;i<BOOKS.length;i++){ if(BOOKS[i][0]===book){ bookNum=i+1; break; } }
+      promise = fetchGetBibleChapter(ver.base, bookNum, chapter);
+    }
+
+    promise.then(function(verses){
+      if(!verses || !verses.length){ showStatus("No verses returned for this chapter."); }
+      CURRENT = { version:versionId, book:book, chapter:chapter, maxVerses: verses.length };
+      CURRENT_VERSES = verses.slice();
+      saveJSONCookie(LOC_COOKIE, CURRENT);
+      fillVerses(verses.length);
+      $refLine.textContent = book+" "+chapter+" — "+(versionId==="WEB_API"?"WEB":versionId==="KJV_API"?"KJV":versionId==="KOREAN"?"Korean":"Korean KJV");
+
+      var q = $search.value;
+      runSearch("");
+      if(q){ $search.value = q; runSearch(q); }
+
+      if(jumpToVerse){
+        var el = document.getElementById("v-"+jumpToVerse);
+        if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+      }
+    }).catch(function(e){
+      console.error(e);
+      showStatus(e && e.message ? e.message : "Error loading chapter.");
+      $content.innerHTML = '<div class="p-4 text-red-600">Failed to load chapter — try switching versions or chapters.</div>';
+    });
+  }
+  function prevChapter(){
+    var idx=-1; for (var i=0;i<BOOKS.length;i++){ if(BOOKS[i][0]===CURRENT.book){ idx=i; break; } }
+    if (CURRENT.chapter>1) loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter-1);
+    else if (idx>0) loadChapter(CURRENT.version, BOOKS[idx-1][0], BOOKS[idx-1][1]);
+  }
+  function nextChapter(){
+    var idx=-1; for (var i=0;i<BOOKS.length;i++){ if(BOOKS[i][0]===CURRENT.book){ idx=i; break; } }
+    var max = BOOKS[idx][1];
+    if (CURRENT.chapter<max) loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter+1);
+    else if (idx<BOOKS.length-1) loadChapter(CURRENT.version, BOOKS[idx+1][0], 1);
+  }
+
+  // ===== Events =====
+  function debounce(fn,ms){ var t; return function(){ var a=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(null,a); }, ms); }; }
+  $verSel.addEventListener('change', function(){ loadChapter($verSel.value, $bookSel.value, parseInt($chapSel.value,10)||1); });
+  $bookSel.addEventListener('change', function(){ fillChapters($bookSel.value); loadChapter($verSel.value, $bookSel.value, 1); });
+  $chapSel.addEventListener('change', function(){ loadChapter($verSel.value, $bookSel.value, parseInt($chapSel.value,10)||1); });
+  $verseSel.addEventListener('change', function(){
+    var v = parseInt($verseSel.value,10)||0; if(!v) return;
+    var el = document.getElementById("v-"+v); if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+  });
+  $prev.addEventListener('click', function(){ prevChapter(); if($search.value) runSearch($search.value); });
+  $next.addEventListener('click', function(){ nextChapter(); if($search.value) runSearch($search.value); });
+  window.addEventListener('keydown', function(e){
+    var tag = e && e.target && e.target.tagName ? e.target.tagName : "";
+    if(tag==="INPUT" || tag==="SELECT" || tag==="TEXTAREA") return;
+    if(e.key==="ArrowLeft") prevChapter();
+    if(e.key==="ArrowRight") nextChapter();
+  });
+  $search.addEventListener('input', debounce(function(){ runSearch($search.value); }, 120));
+  $sClear.addEventListener('click', function(){ $search.value=""; runSearch(""); $search.focus(); });
+  $sPrev.addEventListener('click', function(){
+    if(!SEARCH.hits.length) return;
+    SEARCH.idx = (SEARCH.idx - 1 + SEARCH.hits.length) % SEARCH.hits.length;
+    updateSearchDisplay(); scrollToCurrentHit();
+  });
+  $sNext.addEventListener('click', function(){
+    if(!SEARCH.hits.length) return;
+    SEARCH.idx = (SEARCH.idx + 1) % SEARCH.hits.length;
+    updateSearchDisplay(); scrollToCurrentHit();
+  });
+  $search.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ e.preventDefault(); $sNext.click(); }
+  });
+
+  // ===== Boot =====
+  (function boot(){
+    var loc = loadJSONCookie(LOC_COOKIE);
+    var v = loc.version || "WEB_API";
+    var b = loc.book || "John";
+    var c = loc.chapter || 3;
+    fillChapters(b); // ensure chapters match book
+    loadChapter(v, b, c);
+  })();
 })();
 </script>
 
