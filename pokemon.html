@@ -1,1 +1,813 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pocket Stadium — Kanto 3v3 (Lv.50, Gen‑1 Moves + TM/HM)</title>
 
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { ui: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica'] },
+          boxShadow: { soft: '0 6px 30px rgba(0,0,0,.08)' }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
+    .hpbar-inner { transition: width .35s ease; }
+    .card { background: rgba(255,255,255,.8); backdrop-filter: blur(8px); border:1px solid #e5e7eb; border-radius: 1rem; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius: .75rem; padding:.5rem 1rem; font-weight:600; color:#fff; background: linear-gradient(180deg, #22c55e, #16a34a); }
+    .btn:active { opacity:.9 }
+    .btn-secondary { color:#111827; background: linear-gradient(180deg, #e5e7eb, #d1d5db); }
+    .btn-warn { background: linear-gradient(180deg, #f59e0b, #d97706); color:#111827; }
+    .btn-ghost { background: transparent; color:#334155; }
+    .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.25rem .625rem; font-size:.75rem; font-weight:700; background:#f1f5f9; color:#334155; }
+    .grid-auto-fit { display:grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap:.75rem; }
+    .tap { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    .type-badge { font-size:10px; font-weight:800; padding:.125rem .5rem; border-radius:999px; color:#fff; }
+    .move-btn { width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.9rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:space-between; }
+    .tag { font-size:10px; font-weight:700; padding:.125rem .5rem; border-radius:999px; background:#e5e7eb; color:#334155; }
+    .switch { appearance:none; width:36px; height:20px; background:#e5e7eb; border-radius:999px; position:relative; outline:none; cursor:pointer; }
+    .switch:checked { background:#10b981; }
+    .switch:before { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:999px; background:#fff; transition:left .2s ease; }
+    .switch:checked:before { left:18px; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white font-ui text-slate-800">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+      <img alt="Pokeball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
+      <h1 class="text-lg font-bold">Pocket Stadium — Kanto 3v3</h1>
+      <span class="ml-auto text-xs text-slate-500">Lv.50 • Gen‑1 move sets • TM/HM</span>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-4 space-y-6">
+    <!-- Builder -->
+    <section id="builder" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">Build your teams</h2>
+        <div class="flex gap-2">
+          <button id="btnRandomize" class="btn-secondary tap">Randomize teams</button>
+          <button id="btnClear" class="btn-ghost tap">Clear</button>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="chip">You</span>
+            <div class="text-sm text-slate-500">Choose 3 (tap Moves to pick up to 4)</div>
+            <div class="ml-auto"><button id="pickA" class="btn tap">Pick</button></div>
+          </div>
+          <div id="teamA" class="grid grid-cols-3 gap-3"></div>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="chip">Rival</span>
+            <div class="text-sm text-slate-500">Choose 3 (you can set their moves too)</div>
+            <div class="ml-auto"><button id="pickB" class="btn tap">Pick</button></div>
+          </div>
+          <div id="teamB" class="grid grid-cols-3 gap-3"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button id="startBattle" class="btn btn-warn tap disabled:opacity-50" disabled>Start Battle</button>
+        <div id="buildHint" class="text-sm text-slate-500">Pick 3 for each side to begin.</div>
+      </div>
+    </section>
+
+    <!-- Arena -->
+    <section id="arena" class="hidden space-y-4">
+      <div class="flex items-center gap-3">
+        <h2 class="text-xl font-bold">Battle</h2>
+        <span id="roundTag" class="chip">Round 1</span>
+        <div class="ml-auto flex items-center gap-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input id="autoPlay" type="checkbox" class="switch"> <span>Auto play</span>
+          </label>
+          <button id="reset" class="btn-secondary tap">Back to builder</button>
+        </div>
+      </div>
+
+      <!-- Rosters -->
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="chip">You</span><div class="text-xs text-slate-500">Roster</div>
+          </div>
+          <div id="rosterA" class="flex gap-2"></div>
+        </div>
+        <div class="card p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="chip">Rival</span><div class="text-xs text-slate-500">Roster</div>
+          </div>
+          <div id="rosterB" class="flex gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Stage -->
+      <div class="card p-4">
+        <div class="grid grid-cols-2 gap-2 items-center">
+          <!-- Opponent -->
+          <div class="flex flex-col items-center">
+            <div class="text-sm font-semibold mb-1" id="nameB">???</div>
+            <img id="spriteB" class="w-36 h-36 pixel" alt="Opponent sprite"/>
+            <div class="w-full max-w-xs mt-2">
+              <div class="text-xs mb-1">HP <span id="hpTextB"></span></div>
+              <div class="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+                <div id="hpBarB" class="hpbar-inner h-full" style="width:100%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- You -->
+          <div class="flex flex-col items-center">
+            <div class="text-sm font-semibold mb-1" id="nameA">???</div>
+            <img id="spriteA" class="w-36 h-36 pixel" alt="Your sprite"/>
+            <div class="w-full max-w-xs mt-2">
+              <div class="text-xs mb-1">HP <span id="hpTextA"></span></div>
+              <div class="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+                <div id="hpBarA" class="hpbar-inner h-full" style="width:100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Move buttons -->
+        <div class="mt-4 grid grid-cols-2 gap-2" id="moveButtons"></div>
+
+        <div class="mt-2 flex items-center gap-2">
+          <button id="btnNext" class="btn-secondary tap disabled:opacity-50" disabled>Next</button>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="card p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="chip">Battle log</span>
+          <button id="clearLog" class="ml-auto btn-ghost text-sm tap">Clear</button>
+        </div>
+        <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1"></ol>
+      </div>
+    </section>
+  </main>
+
+  <!-- Picker Overlay (Team selection) -->
+  <div id="picker" class="fixed inset-0 z-20 hidden">
+    <div class="absolute inset-0 bg-black/40" data-close></div>
+    <div class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl bg-white p-4 space-y-3">
+      <div class="flex items-center gap-2">
+        <div id="pickerLabel" class="chip">Pick — You</div>
+        <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <button id="donePick" class="btn-secondary tap">Done</button>
+      </div>
+      <div id="pickedCount" class="text-xs text-slate-500">0 / 3 selected</div>
+      <div id="grid" class="grid-auto-fit"></div>
+    </div>
+  </div>
+
+  <!-- Move Picker Overlay -->
+  <div id="movePicker" class="fixed inset-0 z-30 hidden">
+    <div class="absolute inset-0 bg-black/40" data-close-mv></div>
+    <div class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl bg-white p-4 space-y-3">
+      <div class="flex items-center gap-2">
+        <div id="mvTitle" class="chip">Moves — ???</div>
+        <div class="ml-auto flex items-center gap-2 text-xs">
+          <label class="flex items-center gap-1"><input id="fltLvl" type="checkbox" class="switch" checked><span>Level‑Up ≤50</span></label>
+          <label class="flex items-center gap-1"><input id="fltTM" type="checkbox" class="switch" checked><span>TM/HM</span></label>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="mvSearch" type="text" placeholder="Search moves…" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <button id="mvRecommend" class="btn-secondary tap">Recommend 4</button>
+        <button id="mvClear" class="btn-ghost tap">Clear</button>
+        <button id="mvDone" class="btn tap">Done</button>
+      </div>
+      <div id="mvPickedCount" class="text-xs text-slate-500">0 / 4 selected</div>
+      <div id="mvList" class="space-y-2 max-h-[55vh] overflow-auto pr-1">
+        <!-- items -->
+      </div>
+    </div>
+  </div>
+
+  <footer class="max-w-5xl mx-auto px-4 py-8 text-center text-xs text-slate-500">
+    Data & sprites from <a class="underline" href="https://pokeapi.co/" target="_blank" rel="noreferrer">PokéAPI</a>.
+  </footer>
+
+  <script>
+    // =================== Utilities & Constants
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const rand = (min, max) => Math.random() * (max - min) + min;
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const gridSpriteURL = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
+    const TYPE_COLORS = {
+      normal:'#A8A77A', fire:'#EE8130', water:'#6390F0', electric:'#F7D02C', grass:'#7AC74C',
+      ice:'#96D9D6', fighting:'#C22E28', poison:'#A33EA1', ground:'#E2BF65', flying:'#A98FF3',
+      psychic:'#F95587', bug:'#A6B91A', rock:'#B6A136', ghost:'#735797', dragon:'#6F35FC'
+    };
+    const SPECIAL_TYPES = new Set(['fire','water','grass','electric','ice','psychic','dragon']);
+    const typeColor = t => TYPE_COLORS[t] || '#64748b';
+
+    // Gen‑1 type chart (attacker -> defender -> multiplier)
+    const chart = {
+      normal:{ rock:0.5, ghost:0 },
+      fire:{ fire:0.5, water:0.5, grass:2, ice:2, bug:2, rock:0.5, dragon:0.5 },
+      water:{ fire:2, water:0.5, grass:0.5, ground:2, rock:2, dragon:0.5 },
+      electric:{ water:2, electric:0.5, grass:0.5, ground:0, flying:2, dragon:0.5 },
+      grass:{ fire:0.5, water:2, grass:0.5, poison:0.5, ground:2, flying:0.5, bug:0.5, rock:2, dragon:0.5 },
+      ice:{ water:0.5, ice:0.5, grass:2, ground:2, flying:2, dragon:2 },
+      fighting:{ normal:2, ice:2, poison:0.5, flying:0.5, psychic:0.5, bug:0.5, rock:2, ghost:0 },
+      poison:{ grass:2, poison:0.5, ground:0.5, rock:0.5, ghost:0.5 },
+      ground:{ fire:2, electric:2, grass:0.5, poison:2, flying:0, bug:0.5, rock:2 },
+      flying:{ electric:0.5, grass:2, fighting:2, bug:2, rock:0.5 },
+      psychic:{ fighting:2, poison:2, psychic:0.5, steel:1 }, // steel ignored in Gen 1, safe
+      bug:{ fire:0.5, grass:2, fighting:0.5, poison:2, flying:0.5, psychic:2, ghost:0.5 },
+      rock:{ fire:2, ice:2, fighting:0.5, ground:0.5, flying:2, bug:2 },
+      ghost:{ normal:0, psychic:0, ghost:2 },
+      dragon:{ dragon:2 }
+    };
+    function effMultiplier(moveType, targetTypes){
+      let mult = 1;
+      for(const t of targetTypes){ mult *= (chart[moveType]?.[t] ?? 1); }
+      return mult;
+    }
+    function categoryFromType(t){ return SPECIAL_TYPES.has(t) ? 'special' : 'physical'; }
+
+    // =================== App State
+    const state = {
+      allPokemon: [], // [{id,name}]
+      teamA: [], teamB: [],
+      pickingFor: 'A', tempPick: new Set(),
+      // Move editor
+      mvContext: null, // {team: 'A'|'B', id, name, types}
+      mvTemp: new Set(), // chosen move keys in editor
+      mvPoolCache: new Map(), // id -> [{...moveObj}]
+      moveCache: new Map(),   // name -> move detail JSON
+      typesById: new Map(),   // id -> ['electric',...]
+      // Battle
+      rosterA: [], rosterB: [], aIdx:0, bIdx:0, round:1,
+      waitingForPlayerChoice: true, queuedMove: null, autoPlay:false, lock:false
+    };
+
+    // =================== Boot
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderTeams(); wireBuilder(); wireArena();
+      await loadKanto();
+    });
+
+    async function loadKanto(){
+      try {
+        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
+        const data = await res.json();
+        state.allPokemon = data.results.map((p,i)=>({id:i+1, name:cap(p.name)}));
+        renderGrid();
+      } catch (e) { toast('Could not load Kanto list. Try again.'); console.error(e); }
+    }
+
+    // =================== Builder
+    function wireBuilder(){
+      $('#pickA').addEventListener('click', ()=>openPicker('A'));
+      $('#pickB').addEventListener('click', ()=>openPicker('B'));
+      $('#btnClear').addEventListener('click', ()=>{ state.teamA=[]; state.teamB=[]; renderTeams(); updateStartButton(); });
+      $('#btnRandomize').addEventListener('click', ()=>{
+        const ids = Array.from({length:151},(_,i)=>i+1); shuffle(ids);
+        state.teamA = ids.slice(0,3).map(id=>({id,name:nameFor(id)}));
+        state.teamB = ids.slice(3,6).map(id=>({id,name:nameFor(id)}));
+        renderTeams(); updateStartButton();
+      });
+      $('#startBattle').addEventListener('click', startBattle);
+    }
+
+    function nameFor(id){ const p=state.allPokemon.find(x=>x.id===id); return p?p.name:`#${id}`; }
+    function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function renderTeams(){
+      const moveChips = (p) => {
+        const list = p.moves?.slice(0,4) || [];
+        if(!list.length) return '<span class="text-[10px] text-slate-500">No moves chosen</span>';
+        return list.map(n=>`<span class="tag">${cleanMoveName(n)}</span>`).join(' ');
+      };
+      const slot = (teamKey, p, idx) => `
+        <div class="card p-2 flex flex-col items-center">
+          <img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-16 h-16 pixel"/>
+          <div class="text-xs mt-1 text-center">${p.name}</div>
+          <div class="mt-2 flex items-center gap-2">
+            <button class="btn-ghost text-xs tap" data-mv>Edit Moves</button>
+            <button class="btn-ghost text-xs tap text-rose-600" data-remove>Remove</button>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1 justify-center">${moveChips(p)}</div>
+        </div>`;
+      const filler = `
+        <div class="rounded-2xl border border-dashed border-slate-300 h-24 flex items-center justify-center text-slate-400 text-xs">
+          Empty
+        </div>`;
+
+      const mount=(el, teamKey)=>{
+        el.innerHTML='';
+        const team = state[teamKey];
+        team.forEach((p, idx)=>{
+          const wrap=document.createElement('div'); wrap.innerHTML=slot(teamKey,p,idx);
+          wrap.querySelector('[data-remove]').addEventListener('click', ()=>{ team.splice(idx,1); renderTeams(); updateStartButton(); });
+          wrap.querySelector('[data-mv]').addEventListener('click', ()=> openMovePicker(teamKey, p.id, p.name));
+          el.appendChild(wrap.firstElementChild);
+        });
+        for(let i=team.length;i<3;i++){ const d=document.createElement('div'); d.innerHTML=filler; el.appendChild(d.firstElementChild); }
+      };
+      mount($('#teamA'), 'teamA'); mount($('#teamB'), 'teamB');
+      updateStartButton();
+    }
+
+    function updateStartButton(){
+      const ok=state.teamA.length===3 && state.teamB.length===3;
+      $('#startBattle').disabled=!ok;
+      $('#buildHint').textContent = ok ? 'Optionally edit moves, then Start Battle.' : 'Pick 3 for each side to begin.';
+    }
+
+    // =================== Team Picker (Pokémon)
+    function openPicker(team){
+      state.pickingFor=team;
+      state.tempPick = new Set((team==='A'?state.teamA:state.teamB).map(p=>p.id));
+      $('#pickerLabel').textContent=`Pick — ${team==='A'?'You':'Rival'}`;
+      $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
+      $('#picker').classList.remove('hidden');
+      $('#search').value=''; filterGrid('');
+    }
+    function closePicker(commit=false){
+      if(commit){
+        const list = Array.from(state.tempPick).slice(0,3).map(id=>{
+          const existing = (state.pickingFor==='A'?state.teamA:state.teamB).find(x=>x.id===id);
+          // preserve any previously chosen moves
+          return existing ? existing : ({id, name:nameFor(id)});
+        });
+        if(state.pickingFor==='A') state.teamA=list; else state.teamB=list;
+        renderTeams(); updateStartButton();
+      }
+      $('#picker').classList.add('hidden');
+    }
+    $('#donePick').addEventListener('click', ()=>closePicker(true));
+    $('#picker').addEventListener('click', (e)=>{ if(e.target.hasAttribute('data-close')) closePicker(false); });
+    $('#search').addEventListener('input', (e)=>filterGrid(e.target.value.trim().toLowerCase()));
+
+    function renderGrid(){
+      const grid=$('#grid'); grid.innerHTML='';
+      state.allPokemon.forEach(p=>{
+        const card=document.createElement('button');
+        card.className='tap rounded-2xl border border-slate-200 p-2 flex flex-col items-center hover:border-emerald-400 focus:outline-none';
+        card.setAttribute('data-id', p.id);
+        card.innerHTML=`<img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-14 h-14 pixel"/><div class="text-xs mt-1">${p.name}</div>`;
+        card.addEventListener('click', ()=>toggleTempPick(p.id, card));
+        grid.appendChild(card);
+      });
+    }
+    function filterGrid(q){
+      $$('#grid [data-id]').forEach(el=>{
+        const id=Number(el.getAttribute('data-id'));
+        const name=nameFor(id).toLowerCase();
+        const match=!q || name.includes(q) || String(id).padStart(3,'0').includes(q);
+        el.classList.toggle('hidden', !match);
+        reflectPickedUI(id, el);
+      });
+    }
+    function toggleTempPick(id, el){
+      if(state.tempPick.has(id)) state.tempPick.delete(id);
+      else { if(state.tempPick.size>=3) return; state.tempPick.add(id); }
+      $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
+      reflectPickedUI(id, el);
+    }
+    function reflectPickedUI(id, el){ const picked=state.tempPick.has(id); el.style.borderColor=picked?'#10b981':'#e5e7eb'; el.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.2)':'none'; }
+
+    // =================== Move Picker
+    async function openMovePicker(team, id, name){
+      $('#movePicker').classList.remove('hidden');
+      $('#mvTitle').textContent = `Moves — ${name} (${team==='A'?'You':'Rival'})`;
+      $('#mvPickedCount').textContent = `0 / 4 selected`;
+      $('#mvSearch').value=''; $('#fltLvl').checked = true; $('#fltTM').checked = true;
+      state.mvContext = {team, id, name, types: null};
+
+      const pool = await getMovePool(id);
+      const types = state.typesById.get(id) || [];
+      state.mvContext.types = types;
+
+      // Load existing selection for this mon (if any)
+      const teamArr = state[team === 'A' ? 'teamA' : 'teamB'];
+      const entry = teamArr.find(x=>x.id===id);
+      state.mvTemp = new Set((entry?.moves || []).slice(0,4));
+
+      renderMoveList();
+    }
+    function closeMovePicker(commit=false){
+      if(commit){
+        const teamArr = state[state.mvContext.team === 'A' ? 'teamA' : 'teamB'];
+        const entry = teamArr.find(x=>x.id===state.mvContext.id);
+        if(entry) entry.moves = Array.from(state.mvTemp).slice(0,4);
+        renderTeams();
+      }
+      $('#movePicker').classList.add('hidden');
+      state.mvContext = null; state.mvTemp = new Set();
+    }
+    document.addEventListener('click', (e)=>{
+      if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false);
+    });
+    $('#mvDone').addEventListener('click', ()=>closeMovePicker(true));
+    $('#mvClear').addEventListener('click', ()=>{ state.mvTemp.clear(); renderMoveList(); });
+    $('#mvRecommend').addEventListener('click', ()=>{
+      const pool = getFilteredMovePool(); // based on current filters
+      const picks = recommendMoves(pool, state.mvContext.types).slice(0,4).map(m=>m.key);
+      state.mvTemp = new Set(picks);
+      renderMoveList();
+    });
+    $('#mvSearch').addEventListener('input', renderMoveList);
+    $('#fltLvl').addEventListener('change', renderMoveList);
+    $('#fltTM').addEventListener('change', renderMoveList);
+
+    function renderMoveList(){
+      const list = $('#mvList'); list.innerHTML='';
+      const q = $('#mvSearch').value.trim().toLowerCase();
+      const filtered = getFilteredMovePool().filter(m=>{
+        return !q || m.display.toLowerCase().includes(q) || m.type.includes(q);
+      });
+
+      // Sort: STAB first, then higher power, then level (desc), then method
+      filtered.sort((a,b)=>{
+        const stabA = state.mvContext.types?.includes(a.type) ? 1 : 0;
+        const stabB = state.mvContext.types?.includes(b.type) ? 1 : 0;
+        return (stabB-stabA) || (b.power - a.power) || ((b.level||0) - (a.level||0)) || (a.method==='machine'?1:-1);
+      });
+
+      for(const m of filtered){
+        const row = document.createElement('button');
+        const picked = state.mvTemp.has(m.key);
+        row.className = 'w-full border rounded-xl p-2 flex items-center gap-3 tap';
+        row.style.borderColor = picked ? '#10b981' : '#e5e7eb';
+        row.style.boxShadow = picked ? '0 0 0 3px rgba(16,185,129,.15)' : 'none';
+        row.innerHTML = `
+          <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
+          <div class="flex-1 text-left">
+            <div class="font-bold">${m.display}</div>
+            <div class="text-[11px] text-slate-600">Pow ${m.power ?? '—'} • Acc ${m.accuracy ?? '—'}% • ${cap(m.category)} • ${m.method==='machine' ? 'TM/HM' : ('Lv ' + (m.level||'?'))} ${m.sources?.length? '• ' + m.sources.map(src=>src==='red-blue'?'RB':'Y').join('/') : ''}</div>
+          </div>
+          <div class="text-[11px] px-2 py-1 rounded-md ${picked?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-600'}">${picked?'Selected':'Select'}</div>
+        `;
+        row.addEventListener('click', ()=>{
+          if(picked){ state.mvTemp.delete(m.key); }
+          else {
+            if(state.mvTemp.size>=4) { toast('Max 4 moves.'); return; }
+            state.mvTemp.add(m.key);
+          }
+          $('#mvPickedCount').textContent = `${state.mvTemp.size} / 4 selected`;
+          renderMoveList();
+        });
+        list.appendChild(row);
+      }
+      $('#mvPickedCount').textContent = `${state.mvTemp.size} / 4 selected`;
+    }
+    function getFilteredMovePool(){
+      const pool = state.mvPoolCache.get(state.mvContext.id) || [];
+      const incLvl = $('#fltLvl').checked, incTM = $('#fltTM').checked;
+      return pool.filter(m => (m.method==='level-up' && incLvl) || (m.method==='machine' && incTM));
+    }
+
+    async function getMovePool(id){
+      if(state.mvPoolCache.has(id)) return state.mvPoolCache.get(id);
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+      const p = await res.json();
+      const types = p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name);
+      state.typesById.set(id, types);
+      const pool = await assembleGen1MovePool(p.moves);
+      state.mvPoolCache.set(id, pool);
+      return pool;
+    }
+
+    // Build Gen‑1 pool: Level‑Up ≤50 and TM/HM from red‑blue & yellow; exclude status / power null
+    async function assembleGen1MovePool(movesArray){
+      const vgOK = new Set(['red-blue','yellow']);
+      // name -> aggregated {method, level, sources:Set}
+      const agg = new Map();
+      for(const m of movesArray){
+        for(const v of m.version_group_details){
+          if(!vgOK.has(v.version_group.name)) continue;
+          const method = v.move_learn_method.name; // 'level-up' | 'machine' | ...
+          if(method==='level-up' && v.level_learned_at>50) continue;
+          if(method!=='level-up' && method!=='machine') continue;
+
+          const key = m.move.name;
+          if(!agg.has(key)) agg.set(key, {name:key, methods:new Set(), level:null, sources:new Set()});
+          const rec = agg.get(key);
+          rec.methods.add(method);
+          rec.sources.add(v.version_group.name);
+          if(method==='level-up'){
+            rec.level = Math.max(rec.level||0, v.level_learned_at||0);
+          }
+        }
+      }
+
+      const out = [];
+      for(const {name, methods, level, sources} of agg.values()){
+        // fetch move details
+        if(!state.moveCache.has(name)){
+          const r = await fetch(`https://pokeapi.co/api/v2/move/${name}`);
+          const mv = await r.json();
+          state.moveCache.set(name, mv);
+        }
+        const mv = state.moveCache.get(name);
+        if(mv.damage_class?.name==='status') continue; // skip status
+        const type = mv.type?.name;
+        if(!TYPE_COLORS[type]) continue; // keep to Gen‑1 types
+        const power = mv.power; // may be null for odd moves; skip if null
+        if(power==null) continue;
+
+        // We emit one entry per method present so filters work cleanly
+        if(methods.has('level-up')){
+          out.push({
+            key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
+            power, accuracy: mv.accuracy ?? 100,
+            method:'level-up', level: level || 1, sources:[...sources]
+          });
+        }
+        if(methods.has('machine')){
+          out.push({
+            key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
+            power, accuracy: mv.accuracy ?? 100,
+            method:'machine', level:null, sources:[...sources]
+          });
+        }
+      }
+      return out;
+    }
+
+    function cleanMoveName(n){ return n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+
+    function recommendMoves(pool, attackerTypes=[]){
+      // Rank by STAB, then power, then level (desc), prefer level-up over TM/HM slightly
+      const scored = pool.map(m=>{
+        const stab = attackerTypes.includes(m.type) ? 1.5 : 1.0;
+        const score = (m.power||0) * stab + ((m.level||0)/5) + (m.method==='level-up'? 1 : 0);
+        return {score, m};
+      });
+      scored.sort((a,b)=> b.score - a.score);
+      // Deduplicate by key (a move may appear twice if both methods present)
+      const seen=new Set(), picks=[];
+      for(const s of scored){
+        if(!seen.has(s.m.key)){ seen.add(s.m.key); picks.push(s.m); }
+        if(picks.length>=4) break;
+      }
+      if(!picks.length){
+        picks.push({key:'bash', display:'Bash', type:'normal', category:'physical', power:50, accuracy:100, method:'level-up', level:1});
+      }
+      return picks;
+    }
+
+    // =================== Arena
+    function wireArena(){
+      $('#reset').addEventListener('click', ()=>{ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); });
+      $('#clearLog').addEventListener('click', clearLog);
+      $('#btnNext').addEventListener('click', async ()=>{ if(!state.waitingForPlayerChoice && !state.lock) await resolveTurn(); });
+      $('#autoPlay').addEventListener('change', (e)=>{ state.autoPlay=e.target.checked; if(state.autoPlay) autoLoop(); });
+    }
+
+    async function startBattle(){
+      $('#builder').classList.add('hidden'); $('#arena').classList.remove('hidden'); clearLog();
+      state.rosterA=[]; state.rosterB=[]; state.aIdx=0; state.bIdx=0; state.round=1; state.waitingForPlayerChoice=true; state.queuedMove=null; state.lock=false;
+
+      const all6=[...state.teamA, ...state.teamB];
+      const details = await Promise.all(all6.map(async (p)=>{
+        const mon = await buildMon(p.id);
+        // if custom moves selected for this team entry, use them
+        if(p.moves && p.moves.length){
+          const want = p.moves.slice(0,4);
+          const pool = state.mvPoolCache.get(p.id) || await getMovePool(p.id);
+          const byKey = new Map(pool.map(x=>[x.key,x]));
+          const chosen = [];
+          for(const k of want){
+            if(byKey.has(k)) chosen.push(byKey.get(k));
+          }
+          if(chosen.length){ mon.moves = chosen; }
+        }
+        return mon;
+      }));
+      state.rosterA = details.slice(0,3);
+      state.rosterB = details.slice(3,6);
+
+      updateRosterBadges(); setActiveDisplays(); renderMoveButtons();
+      log(`Battle Start! ${currA().name} vs ${currB().name}.`);
+      if(state.autoPlay) autoLoop();
+    }
+
+    async function buildMon(id){
+      // use cache from move editor if available to save calls
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+      const p = await res.json();
+      const getStat = k => p.stats.find(s=>s.stat.name===k).base_stat;
+      const L=50;
+      const base = { hp:getStat('hp'), atk:getStat('attack'), def:getStat('defense'), spa:getStat('special-attack'), spd:getStat('special-defense'), spe:getStat('speed') };
+      const derived = {
+        maxHP: Math.floor(((2*base.hp)*L)/100) + L + 10,
+        atk: Math.floor(((2*base.atk)*L)/100) + 5,
+        def: Math.floor(((2*base.def)*L)/100) + 5,
+        spa: Math.floor(((2*base.spa)*L)/100) + 5,
+        spd: Math.floor(((2*base.spd)*L)/100) + 5,
+        spe: Math.floor(((2*base.spe)*L)/100) + 5,
+      };
+      const types = p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name);
+      state.typesById.set(id, types);
+
+      // default moves: recommend 4 from pool
+      const pool = state.mvPoolCache.get(id) || await assembleGen1MovePool(p.moves);
+      state.mvPoolCache.set(id, pool);
+      const moves = recommendMoves(pool, types).slice(0,4);
+
+      return {
+        id, name:cap(p.name), types,
+        front:p.sprites.front_default || gridSpriteURL(id),
+        back: p.sprites.back_default || p.sprites.front_default || gridSpriteURL(id),
+        base, stats:{...derived}, hp:derived.maxHP, moves
+      };
+    }
+
+    // Helpers
+    const currA=()=>state.rosterA[state.aIdx];
+    const currB=()=>state.rosterB[state.bIdx];
+
+    function updateRosterBadges(){
+      const mk=(mon,isActive)=>`<div title="${mon.name}" class="w-9 h-9 rounded-full border ${isActive?'ring-2 ring-emerald-400':''} border-slate-300 overflow-hidden ${mon.hp>0?'':'grayscale opacity-50'}">
+        <img class="w-full h-full pixel" src="${gridSpriteURL(mon.id)}" alt="${mon.name}">
+      </div>`;
+      $('#rosterA').innerHTML = state.rosterA.map((m,i)=>mk(m,i===state.aIdx)).join('');
+      $('#rosterB').innerHTML = state.rosterB.map((m,i)=>mk(m,i===state.bIdx)).join('');
+    }
+
+    function setActiveDisplays(){
+      const A=currA(), B=currB();
+      $('#nameA').textContent=A.name; $('#nameB').textContent=B.name;
+      $('#spriteA').src=A.back; $('#spriteB').src=B.front;
+      setHPBars(); $('#roundTag').textContent=`Round ${state.round}`;
+      updateRosterBadges(); renderMoveButtons();
+    }
+
+    function setHPBars(){
+      const A=currA(), B=currB();
+      const pctA=Math.max(0, Math.round((A.hp/A.stats.maxHP)*100));
+      const pctB=Math.max(0, Math.round((B.hp/B.stats.maxHP)*100));
+      const colorHP=(el,pct)=>{ if(pct>50){el.style.background='linear-gradient(90deg,#22c55e,#16a34a)';}
+        else if(pct>20){el.style.background='linear-gradient(90deg,#f59e0b,#d97706)';}
+        else {el.style.background='linear-gradient(90deg,#ef4444,#dc2626)';} };
+      $('#hpBarA').style.width=pctA+'%'; colorHP($('#hpBarA'), pctA);
+      $('#hpBarB').style.width=pctB+'%'; colorHP($('#hpBarB'), pctB);
+      $('#hpTextA').textContent=`${A.hp} / ${A.stats.maxHP}`;
+      $('#hpTextB').textContent=`${B.hp} / ${B.stats.maxHP}`;
+    }
+
+    function renderMoveButtons(){
+      const A=currA(); const box=$('#moveButtons'); box.innerHTML='';
+      A.moves.forEach((m)=>{
+        const btn=document.createElement('button');
+        btn.className='move-btn tap';
+        btn.style.background = `linear-gradient(180deg, ${typeColor(m.type)}, #333333)`;
+        btn.innerHTML = `
+          <div class="text-left">
+            <div class="font-bold">${m.display}</div>
+            <div class="text-[10px] opacity-90">Pow ${m.power} • Acc ${m.accuracy}% • ${cap(m.category)}</div>
+          </div>
+          <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
+        `;
+        btn.addEventListener('click', async ()=>{
+          if(state.lock || !state.waitingForPlayerChoice) return;
+          state.queuedMove = m;
+          await resolveTurn();
+        });
+        box.appendChild(btn);
+      });
+      for(let i=A.moves.length;i<4;i++){
+        const d=document.createElement('div');
+        d.className='move-btn opacity-60 bg-slate-300 cursor-not-allowed';
+        d.innerHTML='<div class="text-left"><div class="font-bold">—</div><div class="text-[10px] opacity-90">No move</div></div>';
+        box.appendChild(d);
+      }
+    }
+
+    async function autoLoop(){
+      while(state.autoPlay && battleAlive()){
+        if(state.waitingForPlayerChoice){
+          const A=currA(), B=currB();
+          state.queuedMove = bestMoveAgainst(A, B);
+        }
+        await resolveTurn();
+        await sleep(600);
+      }
+    }
+
+    function battleAlive(){
+      const aliveA=state.rosterA.some(m=>m.hp>0);
+      const aliveB=state.rosterB.some(m=>m.hp>0);
+      return aliveA && aliveB;
+    }
+
+    function bestMoveAgainst(attacker, defender){
+      let best = attacker.moves[0];
+      let bestDmg = -1;
+      for(const m of attacker.moves){
+        const est = estimateDamage(attacker, defender, m);
+        if(est>bestDmg){ bestDmg=est; best=m; }
+      }
+      return best;
+    }
+
+    async function resolveTurn(){
+      if(state.lock) return; state.lock=true;
+      if(state.waitingForPlayerChoice && !state.queuedMove){ toast('Choose a move.'); state.lock=false; return; }
+
+      const A=currA(), B=currB();
+      const cpuMove = bestMoveAgainst(B, A);
+
+      // Speed order, coin flip on tie
+      let order = [{ side:'A', move:state.queuedMove }, { side:'B', move:cpuMove }];
+      if(B.stats.spe > A.stats.spe || (B.stats.spe===A.stats.spe && Math.random()<0.5)) order.reverse();
+
+      state.waitingForPlayerChoice=false;
+      $('#btnNext').disabled = true;
+
+      for(const step of order){
+        if(!battleAlive()) break;
+        const atk = (step.side==='A')? currA(): currB();
+        const def = (step.side==='A')? currB(): currA();
+        if(atk.hp<=0 || def.hp<=0) continue;
+
+        const m = step.move;
+
+        // Accuracy
+        if(Math.random()*100 > (m.accuracy ?? 100)){
+          log(`${atk.name}'s ${m.display} missed!`);
+          await sleep(300); continue;
+        }
+
+        // Damage
+        let dmg = computeDamage(atk, def, m);
+        const crit = Math.random() < 0.1; // simple crit
+        if(crit){ dmg = Math.floor(dmg*1.75); log('Critical hit!'); }
+        def.hp = Math.max(0, def.hp - dmg);
+        log(`${atk.name} used ${m.display} — ${dmg} dmg!`);
+        setHPBars();
+        await sleep(350);
+
+        if(def.hp<=0){
+          log(`${def.name} fainted!`);
+          await sleep(350);
+          if(step.side==='A'){
+            const next = state.rosterB.findIndex((x,i)=> i>state.bIdx && x.hp>0);
+            if(next!==-1) state.bIdx=next;
+          } else {
+            const next = state.rosterA.findIndex((x,i)=> i>state.aIdx && x.hp>0);
+            if(next!==-1) state.aIdx=next;
+          }
+          if(!battleAlive()) break;
+          state.round++; setActiveDisplays(); await sleep(250);
+        }
+      }
+
+      if(!battleAlive()){
+        const winner = state.rosterA.some(m=>m.hp>0)? 'You win!':'Rival wins!';
+        log(`🏆 ${winner}`);
+        state.lock=false; return;
+      }
+
+      state.round++; setActiveDisplays();
+      state.queuedMove=null; state.waitingForPlayerChoice=true;
+      $('#btnNext').disabled = false;
+      state.lock=false;
+      if(state.autoPlay) autoLoop();
+    }
+
+    function estimateDamage(attacker, defender, move){
+      const A = (move.category==='physical')? attacker.stats.atk : attacker.stats.spa;
+      const D = (move.category==='physical')? defender.stats.def : defender.stats.spd;
+      let base = (((2*50/5 + 2) * move.power * (A/Math.max(1,D))) / 50) + 2;
+      const stab = attacker.types.includes(move.type)? 1.5 : 1.0;
+      const eff = effMultiplier(move.type, defender.types);
+      return base * stab * eff * 0.925; // avg roll
+    }
+
+    function computeDamage(attacker, defender, move){
+      const base = estimateDamage(attacker, defender, move);
+      const roll = rand(0.85, 1.0);
+      return Math.max(1, Math.floor(base * roll));
+    }
+
+    // =================== Log & Toast
+    function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; }
+    function clearLog(){ $('#log').innerHTML=''; }
+    let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-900 text-white text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1600); }
+  </script>
+</body>
+</html>
