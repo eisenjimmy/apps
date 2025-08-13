@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mobile Bible — Multi‑Version (EN/KR) + Search</title>
+<title>Jimmy’s Bible</title>
+<meta name="theme-color" content="#111827" />
+<!-- Inline SVG favicon (book + cross) -->
+<link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23111827'/%3E%3Cpath d='M30 8h4v20h20v4H34v24h-4V32H10v-4h20z' fill='%23f59e0b'/%3E%3C/svg%3E">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   html { scroll-behavior: smooth; }
@@ -28,7 +32,7 @@
   <header class="sticky-top bg-white/90 backdrop-blur border-b border-zinc-200">
     <div class="max-w-screen-md mx-auto px-3 py-2 grid grid-cols-1 gap-2">
       <div class="flex items-center gap-2">
-        <div class="font-semibold text-lg">Bible</div>
+        <div class="font-semibold text-lg">Jimmy’s Bible</div>
         <div class="ml-auto grid grid-cols-2 sm:flex gap-2 w-auto">
           <label class="sr-only" for="verSel">Version</label>
           <select id="verSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
@@ -169,7 +173,6 @@ async function fetchBibleApiChapter(base, book, chapter, params){
   const verses = Array.isArray(j.verses) ? j.verses.map(v => (v.text||"").trim()) : [];
   return verses;
 }
-
 async function fetchGetBibleChapter(base, bookNumber, chapter){
   const url = `${base}${bookNumber}/${chapter}.json`;
   const res = await fetch(url);
@@ -183,39 +186,32 @@ async function fetchGetBibleChapter(base, bookNumber, chapter){
 }
 
 /* ===============================
-   Render
+   Search helpers
    =============================== */
 let CURRENT = { version: "WEB_API", book: "John", chapter: 3, maxVerses: 0 };
-let CURRENT_VERSES = [];       // plain text verses for current chapter
-let SEARCH = { q:"", hits:[], idx:0 }; // search state
+let CURRENT_VERSES = [];
+let SEARCH = { q:"", hits:[], idx:0 };
 
 function escapeHTML(s){
   return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
-
 function applySearchToVerseText(text, query){
   if(!query) return escapeHTML(text);
-  // word-boundary-ish, case-insensitive
   const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
   return escapeHTML(text).replace(re, m => `<mark>${m}</mark>`);
 }
-
 function updateSearchDisplay(){
   if(!SEARCH.q){ $sCount.textContent=""; return; }
   const total = SEARCH.hits.length;
-  if(!total){ $sCount.textContent="0 / 0"; return; }
-  $sCount.textContent = `${SEARCH.idx+1} / ${total}`;
+  $sCount.textContent = total ? `${SEARCH.idx+1} / ${total}` : "0 / 0";
 }
-
 function scrollToCurrentHit(){
   if(!SEARCH.hits.length) return;
   const {verse} = SEARCH.hits[SEARCH.idx];
   const el = document.getElementById(`v-${verse}`);
   if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
 }
-
 function rebuildContent(){
-  // Re-render verses with search highlights
   const frag = document.createDocumentFragment();
   CURRENT_VERSES.forEach((txt, i)=>{
     const vnum = i+1;
@@ -240,7 +236,6 @@ function rebuildContent(){
   });
   $content.replaceChildren(frag);
 }
-
 function runSearch(q){
   SEARCH.q = q.trim();
   SEARCH.hits = [];
@@ -259,17 +254,30 @@ function runSearch(q){
   scrollToCurrentHit();
 }
 
+/* ===============================
+   Chapter loading & nav
+   =============================== */
+function fillChapters(book){
+  const max = BOOKS.find(b => b[0]===book)?.[1] || 1;
+  $chapSel.innerHTML = Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+}
+function fillVerses(max){
+  $verseSel.innerHTML = `<option value="">(verse)</option>` + Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+}
+function updateCredit(vId){
+  const ver = VERSIONS.find(v=>v.id===vId);
+  $credit.textContent = ver ? ver.credit : '';
+}
 async function loadChapter(versionId, book, chapter, jumpToVerse=""){
   clearStatus();
   const ver = VERSIONS.find(v=>v.id===versionId);
   if(!ver){ showStatus("Unknown version"); return; }
 
-  // sync controls
   if($verSel.value !== versionId) $verSel.value = versionId;
   if($bookSel.value !== book) $bookSel.value = book;
   fillChapters(book);
   if(String($chapSel.value)!==String(chapter)) $chapSel.value = String(chapter);
-  $credit.textContent = ver.credit;
+  updateCredit(versionId);
 
   let verses = [];
   try{
@@ -285,7 +293,7 @@ async function loadChapter(versionId, book, chapter, jumpToVerse=""){
   }catch(e){
     console.error(e);
     showStatus(e.message || "Error loading chapter.");
-    $content.innerHTML = `<div class="p-4 text-red-600">Failed to load ${ver.label} — try switching versions or chapters.</div>`;
+    $content.innerHTML = `<div class="p-4 text-red-600">Failed to load chapter — try switching versions or chapters.</div>`;
     return;
   }
 
@@ -295,19 +303,16 @@ async function loadChapter(versionId, book, chapter, jumpToVerse=""){
   fillVerses(verses.length);
   $refLine.textContent = `${book} ${chapter} — ${ver.label}`;
 
-  // Clear search when changing chapters to avoid confusing counts from old text
-  $search.value = "";
-  runSearch(""); // renders clean text
+  // Clear search on chapter change (keeps query text if you want to re-run)
+  const q = $search.value;
+  runSearch("");               // render clean
+  if (q) { $search.value = q; runSearch(q); } // reapply if present
 
   if(jumpToVerse){
     const el = document.getElementById(`v-${jumpToVerse}`);
     if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
   }
 }
-
-/* ===============================
-   Nav
-   =============================== */
 function prevChapter(){
   const i = BOOKS.findIndex(b=>b[0]===CURRENT.book);
   if(CURRENT.chapter>1) return loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter-1);
@@ -319,10 +324,15 @@ function nextChapter(){
   if(CURRENT.chapter<max) return loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter+1);
   if(i<BOOKS.length-1){ const [nb] = BOOKS[i+1]; return loadChapter(CURRENT.version, nb, 1); }
 }
+function nextPrevWrapper(fn){
+  // Keep the search query but re-run it on the new text after navigation
+  return async ()=>{ await fn(); if($search.value) runSearch($search.value); };
+}
 
 /* ===============================
    Events
    =============================== */
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
 $verSel.addEventListener('change', ()=> loadChapter($verSel.value, $bookSel.value, +$chapSel.value));
 $bookSel.addEventListener('change', ()=> { fillChapters($bookSel.value); loadChapter($verSel.value, $bookSel.value, 1); });
 $chapSel.addEventListener('change', ()=> loadChapter($verSel.value, $bookSel.value, +$chapSel.value));
@@ -337,9 +347,7 @@ window.addEventListener('keydown', (e)=>{
   if(e.key==='ArrowLeft')  prevChapter();
   if(e.key==='ArrowRight') nextChapter();
 });
-
 // Search interactions
-function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
 $search.addEventListener('input', debounce(()=> runSearch($search.value), 120));
 $sClear.addEventListener('click', ()=>{ $search.value=""; runSearch(""); $search.focus(); });
 $sPrev.addEventListener('click', ()=>{
@@ -353,27 +361,14 @@ $sNext.addEventListener('click', ()=>{
   updateSearchDisplay(); scrollToCurrentHit();
 });
 $search.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter'){ // Enter = Next
-    e.preventDefault(); $sNext.click();
-  }
+  if(e.key==='Enter'){ e.preventDefault(); $sNext.click(); }
 });
-
-function nextPrevWrapper(fn){
-  // When moving chapters, keep the search query but re-run it on the new text
-  return async ()=>{ await fn(); if($search.value) runSearch($search.value); }
-}
 
 /* ===============================
    Boot
    =============================== */
-function fillChapters(book){
-  const max = BOOKS.find(b => b[0]===book)?.[1] || 1;
-  $chapSel.innerHTML = Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
-}
-function fillVerses(max){
-  $verseSel.innerHTML = `<option value="">(verse)</option>` + Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
-}
 (function boot(){
+  // Populate selects
   $verSel.innerHTML  = VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
   $bookSel.innerHTML = BOOKS.map(([n]) => `<option value="${n}">${n}</option>`).join('');
   const start = loadJSONCookie(LOC_COOKIE);
