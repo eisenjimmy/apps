@@ -204,7 +204,7 @@
           <label class="flex items-center gap-2 text-sm">
             <input id="autoPlay" type="checkbox" class="accent-emerald-600"> Auto play
           </label>
-          <button id="reset" class="btn-secondary tap">Back to builder</button>
+          <button id="reset" class="btn btn-secondary tap">Back to builder</button>
         </div>
       </div>
 
@@ -271,7 +271,7 @@
         <div class="mt-3 grid grid-cols-2 gap-2" id="moveButtons"></div>
 
         <div class="mt-2 flex items-center gap-2">
-          <button id="btnNext" class="btn-secondary tap disabled:opacity-50" disabled>Next</button>
+          <button id="btnNext" class="btn btn-secondary tap disabled:opacity-50" disabled>Next</button>
         </div>
       </div>
 
@@ -279,6 +279,8 @@
       <details class="card p-3">
         <summary class="text-sm cursor-pointer">Show battle log (debug)</summary>
         <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1 mt-2"></ol>
+        <!-- Optional clear button; binding is guarded -->
+        <div class="mt-2"><button id="clearLog" class="btn btn-ghost tap">Clear log</button></div>
       </details>
     </section>
   </main>
@@ -290,7 +292,7 @@
       <div class="flex items-center gap-2">
         <div id="pickerLabel" class="chip">Pick — You</div>
         <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        <button id="donePick" class="btn-secondary tap">Done</button>
+        <button id="donePick" class="btn btn-secondary tap">Done</button>
       </div>
       <div id="pickedCount" class="text-xs text-slate-500">0 / 3 selected</div>
       <div class="sheet-scroll pr-1">
@@ -312,8 +314,8 @@
       </div>
       <div class="flex items-center gap-2">
         <input id="mvSearch" type="text" placeholder="Search moves…" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-        <button id="mvRecommend" class="btn-secondary tap">Recommend 4</button>
-        <button id="mvClear" class="btn-ghost tap">Clear</button>
+        <button id="mvRecommend" class="btn btn-secondary tap">Recommend 4</button>
+        <button id="mvClear" class="btn btn-ghost tap">Clear</button>
         <button id="mvDone" class="btn tap">Done</button>
       </div>
       <div id="mvPickedCount" class="text-xs text-slate-500">0 / 4 selected</div>
@@ -352,7 +354,7 @@
       </div>
       <div class="flex gap-2 justify-center">
         <button id="btnRematch" class="btn tap">Try Again?</button>
-        <button id="btnBack" class="btn-secondary tap">Back to Builder</button>
+        <button id="btnBack" class="btn btn-secondary tap">Back to Builder</button>
       </div>
     </div>
   </div>
@@ -434,9 +436,7 @@
     /* ======= Boot ======= */
     document.addEventListener('DOMContentLoaded', async () => {
       renderTeams(); wireBuilder(); wireArena(); wireResults();
-      await loadKanto();
-      autoSeedRival();                 // Random rival on load
-      renderTeams(); updateStartButton();
+      await loadKanto();   // seeds Rival inside after Kanto list ready
     });
 
     // Fetch with timeout
@@ -453,14 +453,16 @@
         if(!res.ok) throw new Error('HTTP '+res.status);
         const data = await res.json();
         state.allPokemon = data.results.map((p,i)=>({id:i+1, name:cap(p.name)}));
-        renderGrid();
       } catch (e) {
         console.warn('Falling back to built-in Kanto list:', e);
-        // Fallback: always populate grid
         state.allPokemon = KANTO_FALLBACK.map((name,i)=>({id:i+1, name}));
-        renderGrid();
         toast('Using offline Kanto list.');
       }
+      // Always render grid and seed Rival AFTER list is ready
+      renderGrid();
+      autoSeedRival();
+      renderTeams();
+      updateStartButton();
     }
 
     /* ======= Builder ======= */
@@ -735,7 +737,6 @@
         const power = mv.power ?? null;
         const accuracy = mv.accuracy ?? 100;
 
-        // Ailment
         const ailmentRaw = mv.meta?.ailment?.name || 'none';
         const ailment_chance = mv.meta?.ailment_chance ?? mv.effect_chance ?? 0;
         const ailment_code = AIL_MAP[ailmentRaw] || (ailmentRaw==='none'? null : ailmentRaw);
@@ -773,7 +774,7 @@
     /* ======= Arena ======= */
     function wireArena(){
       $('#reset').addEventListener('click', ()=>{ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); });
-      $('#clearLog').addEventListener('click', clearLog);
+      const clearBtn = $('#clearLog'); if(clearBtn) clearBtn.addEventListener('click', clearLog); // guarded
       $('#btnNext').addEventListener('click', async ()=>{ if(!state.waitingForPlayerChoice && !state.lock) await resolveTurn(); });
       $('#autoPlay').addEventListener('change', (e)=>{ state.autoPlay=e.target.checked; if(state.autoPlay) autoLoop(); });
     }
@@ -832,7 +833,7 @@
         front:p.sprites.front_default || gridSpriteURL(id),
         back: p.sprites.back_default || p.sprites.front_default || gridSpriteURL(id),
         base, stats:{...derived}, hp:derived.maxHP, moves,
-        status:null // {type:'par'|'brn'|'psn'|'frz'|'slp', turns?:number}
+        status:null
       };
     }
 
@@ -1130,8 +1131,8 @@
       const A = (move.category==='physical')? attacker.stats.atk : attacker.stats.spa;
       const D = (move.category==='physical')? defender.stats.def : defender.stats.spd;
       let aEff = A;
-      if(move.category==='physical' && attacker.status?.type==='brn'){ aEff = Math.floor(aEff * BRN_PHYS); }
-      let base = (((2*50/5 + 2) * (move.power||0) * (aEff/Math.max(1,D))) / 50) + 2;
+      if(move.category==='physical' && attacker.status?.type==='brn'){ aEff = Math.floor(aEff * 0.5); }
+      let base = (((2*50/5 + 2) * (m.power||0) * (aEff/Math.max(1,D))) / 50) + 2;
       const stab = attacker.types.includes(move.type)? 1.5 : 1.0;
       const eff = effMultiplier(move.type, defender.types);
       const dmg = base * stab * eff * 0.925;
@@ -1174,12 +1175,10 @@
     function endOfTurnResidual(mon){
       if(mon.hp<=0) return;
       if(mon.status?.type==='brn' || mon.status?.type==='psn'){
-        const dmg = Math.max(1, Math.floor(mon.stats.maxHP / RESIDUAL_FRACTION));
+        const dmg = Math.max(1, Math.floor(mon.stats.maxHP / 16));
         mon.hp = Math.max(0, mon.hp - dmg);
         log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`);
         setBanner(`${mon.name} takes damage from ${mon.status.type==='brn'?'burn':'poison'}…`, 'info');
-        if(mon===currA()) state.stats.dmgB += 0; // no-op; residual not counted to attacker
-        if(mon===currB()) state.stats.dmgA += 0;
       }
     }
 
@@ -1192,7 +1191,7 @@
       $('#rsDmgA').textContent = state.stats.dmgA;
       $('#rsDmgB').textContent = state.stats.dmgB;
       const st = state.stats.statusCounts;
-      const mk = (k,l,c)=>`<span class="px-2 py-1 rounded-full text-slate-700" style="border:1px solid #94a3b8;background:#f8fafc">${l}: ${st[k]||0}</span>`;
+      const mk = (k,l)=>`<span class="px-2 py-1 rounded-full text-slate-700" style="border:1px solid #94a3b8;background:#f8fafc">${l}: ${st[k]||0}</span>`;
       $('#rsStatus').innerHTML = mk('par','PAR')+mk('brn','BRN')+mk('psn','PSN')+mk('frz','FRZ')+mk('slp','SLP');
       $('#resultModal').classList.add('show');
     }
