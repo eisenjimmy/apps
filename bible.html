@@ -1,1 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mobile Bible — Multi‑Version (EN/KR) + Search</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  .verse { cursor: pointer; }
+  .verse[data-hl="1"] { background: rgba(234,179,8,.35); }
+  .nav-arrow {
+    position:fixed; top:50%; transform:translateY(-50%); z-index:50;
+    width:2.75rem; height:2.75rem; display:grid; place-items:center;
+    border-radius:9999px; background:rgba(0,0,0,.55); color:#fff;
+    box-shadow:0 10px 20px rgba(0,0,0,.25)
+  }
+  .nav-left{ left:.5rem } .nav-right{ right:.5rem }
+  .nav-arrow:active{ transform:translateY(-50%) scale(.97) }
+  .sticky-top{ position:sticky; top:0; z-index:40 }
+  .vnum{ user-select:none; opacity:.55; margin-right:.35rem; font-size:.75rem }
+  mark{ padding:0 .1em; border-radius:.2em }
+  .search-chip{ font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body class="bg-zinc-50 text-zinc-900">
+  <!-- Header / Controls -->
+  <header class="sticky-top bg-white/90 backdrop-blur border-b border-zinc-200">
+    <div class="max-w-screen-md mx-auto px-3 py-2 grid grid-cols-1 gap-2">
+      <div class="flex items-center gap-2">
+        <div class="font-semibold text-lg">Bible</div>
+        <div class="ml-auto grid grid-cols-2 sm:flex gap-2 w-auto">
+          <label class="sr-only" for="verSel">Version</label>
+          <select id="verSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
 
+          <label class="sr-only" for="bookSel">Book</label>
+          <select id="bookSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
+
+          <label class="sr-only" for="chapSel">Chapter</label>
+          <select id="chapSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"></select>
+
+          <label class="sr-only" for="verseSel">Verse</label>
+          <select id="verseSel" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm">
+            <option value="">(verse)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Search row -->
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <input id="searchBox" type="search" inputmode="search" placeholder="Search in this chapter…"
+                 class="w-full rounded-lg border border-zinc-300 px-3 py-2 pr-20 text-sm"
+                 autocomplete="off" />
+          <div class="absolute inset-y-0 right-2 flex items-center gap-2">
+            <span id="searchCount" class="text-xs text-zinc-500 search-chip"></span>
+            <button id="searchClear" class="text-xs text-zinc-600 hover:text-zinc-900 px-2 py-1 rounded-md border border-zinc-300">Clear</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="searchPrev" class="px-3 py-2 text-sm rounded-lg border border-zinc-300 bg-white">Prev</button>
+          <button id="searchNext" class="px-3 py-2 text-sm rounded-lg border border-zinc-300 bg-white">Next</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Inline error/status -->
+  <div id="statusBar" class="hidden max-w-screen-md mx-auto mt-2 px-4">
+    <div class="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm px-3 py-2"></div>
+  </div>
+
+  <div class="max-w-screen-md mx-auto px-4 pt-3 pb-1">
+    <div id="refLine" class="text-sm text-zinc-600"></div>
+  </div>
+
+  <main class="max-w-screen-md mx-auto px-4 pb-24">
+    <article class="mt-2 rounded-xl bg-white shadow-sm border border-zinc-200">
+      <div id="content" class="p-4 leading-8 text-[1.06rem]"></div>
+    </article>
+    <div class="text-xs text-zinc-500 mt-3" id="credit"></div>
+  </main>
+
+  <!-- Floating arrows -->
+  <button id="prevBtn" class="nav-arrow nav-left" title="Previous chapter" aria-label="Previous chapter">‹</button>
+  <button id="nextBtn" class="nav-arrow nav-right" title="Next chapter" aria-label="Next chapter">›</button>
+
+<script>
+/* ===============================
+   Versions (stable, CORS‑friendly)
+   =============================== */
+const VERSIONS = [
+  { id: "WEB_API",      label: "WEB (English)",    type: "BIBLEAPI_PASSAGE", credit: 'World English Bible via bible-api.com', base: "https://bible-api.com/", lang:"en", params: "" },
+  { id: "KJV_API",      label: "KJV (English)",    type: "BIBLEAPI_PASSAGE", credit: 'KJV via bible-api.com',                base: "https://bible-api.com/", lang:"en", params: "translation=kjv" },
+  { id: "KOREAN",       label: "Korean (개역한글)", type: "GETBIBLE_CHAPTER",  credit: 'GetBible v2 — korean',               base: "https://api.getbible.net/v2/korean/",    lang:"ko" },
+  { id: "KOREAN_KJV",   label: "Korean KJV",       type: "GETBIBLE_CHAPTER",  credit: 'GetBible v2 — koreankjv',            base: "https://api.getbible.net/v2/koreankjv/", lang:"ko" }
+];
+
+/* ===============================
+   Canon (66‑book Protestant order)
+   =============================== */
+const BOOKS = [
+  ["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],
+  ["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],
+  ["1 Kings",22],["2 Kings",25],["1 Chronicles",29],["2 Chronicles",36],["Ezra",10],
+  ["Nehemiah",13],["Esther",10],["Job",42],["Psalms",150],["Proverbs",31],
+  ["Ecclesiastes",12],["Song of Solomon",8],["Isaiah",66],["Jeremiah",52],["Lamentations",5],
+  ["Ezekiel",48],["Daniel",12],["Hosea",14],["Joel",3],["Amos",9],["Obadiah",1],
+  ["Jonah",4],["Micah",7],["Nahum",3],["Habakkuk",3],["Zephaniah",3],["Haggai",2],
+  ["Zechariah",14],["Malachi",4],["Matthew",28],["Mark",16],["Luke",24],
+  ["John",21],["Acts",28],["Romans",16],["1 Corinthians",16],["2 Corinthians",13],
+  ["Galatians",6],["Ephesians",6],["Philippians",4],["Colossians",4],["1 Thessalonians",5],
+  ["2 Thessalonians",3],["1 Timothy",6],["2 Timothy",4],["Titus",3],["Philemon",1],
+  ["Hebrews",13],["James",5],["1 Peter",5],["2 Peter",3],["1 John",5],
+  ["2 John",1],["3 John",1],["Jude",1],["Revelation",22]
+];
+
+/* ===============================
+   Elements
+   =============================== */
+const $verSel   = document.getElementById('verSel');
+const $bookSel  = document.getElementById('bookSel');
+const $chapSel  = document.getElementById('chapSel');
+const $verseSel = document.getElementById('verseSel');
+const $content  = document.getElementById('content');
+const $refLine  = document.getElementById('refLine');
+const $credit   = document.getElementById('credit');
+const $prev     = document.getElementById('prevBtn');
+const $next     = document.getElementById('nextBtn');
+const $statusBar= document.getElementById('statusBar');
+const $search   = document.getElementById('searchBox');
+const $sCount   = document.getElementById('searchCount');
+const $sPrev    = document.getElementById('searchPrev');
+const $sNext    = document.getElementById('searchNext');
+const $sClear   = document.getElementById('searchClear');
+
+/* ===============================
+   Status / error helpers
+   =============================== */
+function showStatus(msg){
+  $statusBar.classList.remove('hidden');
+  $statusBar.firstElementChild.textContent = msg;
+}
+function clearStatus(){
+  $statusBar.classList.add('hidden');
+  $statusBar.firstElementChild.textContent = '';
+}
+
+/* ===============================
+   Storage (cookie with LS fallback)
+   =============================== */
+const HL_COOKIE='hl', LOC_COOKIE='locv3';
+function getCookie(name){ const m=document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()[\\]\\/+^])/g,'\\$1')+'=([^;]*)')); return m?decodeURIComponent(m[1]):""; }
+function setCookie(name,val,days=3650){ const d=new Date(); d.setTime(d.getTime()+days*864e5); document.cookie=`${name}=${encodeURIComponent(val)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`; }
+function loadJSONCookie(name){ try{return JSON.parse(getCookie(name)||localStorage.getItem(name)||"{}")}catch{return{}} }
+function saveJSONCookie(name,obj){ const s=JSON.stringify(obj); try{ setCookie(name,s) }catch{ try{ localStorage.setItem(name,s) }catch{} } }
+let HL = loadJSONCookie(HL_COOKIE);
+function keyFor(v,book,chap,verse){ return `${v}|${book}|${chap}|${verse}`; }
+
+/* ===============================
+   Fetchers
+   =============================== */
+async function fetchBibleApiChapter(base, book, chapter, params){
+  const ref = encodeURIComponent(`${book} ${chapter}`);
+  const url = `${base}${ref}${params ? `?${params}` : ''}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`bible-api.com error ${res.status}`);
+  const j = await res.json();
+  const verses = Array.isArray(j.verses) ? j.verses.map(v => (v.text||"").trim()) : [];
+  return verses;
+}
+
+async function fetchGetBibleChapter(base, bookNumber, chapter){
+  const url = `${base}${bookNumber}/${chapter}.json`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`GetBible error ${res.status}`);
+  const j = await res.json();
+  const arr = j?.verses || j?.chapter?.verses || [];
+  if(Array.isArray(arr) && arr.length && typeof arr[0]==='object'){
+    return arr.map(v => (v.text || v.content || v.value || "").trim());
+  }
+  return arr.map(x => String(x||"").trim());
+}
+
+/* ===============================
+   Render
+   =============================== */
+let CURRENT = { version: "WEB_API", book: "John", chapter: 3, maxVerses: 0 };
+let CURRENT_VERSES = [];       // plain text verses for current chapter
+let SEARCH = { q:"", hits:[], idx:0 }; // search state
+
+function escapeHTML(s){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function applySearchToVerseText(text, query){
+  if(!query) return escapeHTML(text);
+  // word-boundary-ish, case-insensitive
+  const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+  return escapeHTML(text).replace(re, m => `<mark>${m}</mark>`);
+}
+
+function updateSearchDisplay(){
+  if(!SEARCH.q){ $sCount.textContent=""; return; }
+  const total = SEARCH.hits.length;
+  if(!total){ $sCount.textContent="0 / 0"; return; }
+  $sCount.textContent = `${SEARCH.idx+1} / ${total}`;
+}
+
+function scrollToCurrentHit(){
+  if(!SEARCH.hits.length) return;
+  const {verse} = SEARCH.hits[SEARCH.idx];
+  const el = document.getElementById(`v-${verse}`);
+  if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+}
+
+function rebuildContent(){
+  // Re-render verses with search highlights
+  const frag = document.createDocumentFragment();
+  CURRENT_VERSES.forEach((txt, i)=>{
+    const vnum = i+1;
+    const p = document.createElement('p');
+    p.className = "verse py-1";
+    p.id = `v-${vnum}`;
+    const key = keyFor(CURRENT.version, CURRENT.book, CURRENT.chapter, vnum);
+    p.dataset.key = key;
+    p.dataset.hl = HL[key] ? "1" : "0";
+
+    const chip = document.createElement('span'); chip.className="vnum text-zinc-500"; chip.textContent=vnum;
+    const span = document.createElement('span'); span.innerHTML = applySearchToVerseText(String(txt||""), SEARCH.q);
+
+    p.appendChild(chip); p.appendChild(span);
+    p.addEventListener('click', ()=>{
+      if(p.dataset.hl==="1"){ p.dataset.hl="0"; delete HL[key]; }
+      else { p.dataset.hl="1"; HL[key]=1; }
+      saveJSONCookie(HL_COOKIE, HL);
+    });
+
+    frag.appendChild(p);
+  });
+  $content.replaceChildren(frag);
+}
+
+function runSearch(q){
+  SEARCH.q = q.trim();
+  SEARCH.hits = [];
+  SEARCH.idx = 0;
+  if(!SEARCH.q){
+    rebuildContent();
+    updateSearchDisplay();
+    return;
+  }
+  const re = new RegExp(SEARCH.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i');
+  CURRENT_VERSES.forEach((txt, i)=>{
+    if(re.test(txt)) SEARCH.hits.push({ verse: i+1 });
+  });
+  rebuildContent();
+  updateSearchDisplay();
+  scrollToCurrentHit();
+}
+
+async function loadChapter(versionId, book, chapter, jumpToVerse=""){
+  clearStatus();
+  const ver = VERSIONS.find(v=>v.id===versionId);
+  if(!ver){ showStatus("Unknown version"); return; }
+
+  // sync controls
+  if($verSel.value !== versionId) $verSel.value = versionId;
+  if($bookSel.value !== book) $bookSel.value = book;
+  fillChapters(book);
+  if(String($chapSel.value)!==String(chapter)) $chapSel.value = String(chapter);
+  $credit.textContent = ver.credit;
+
+  let verses = [];
+  try{
+    if(ver.type === "BIBLEAPI_PASSAGE"){
+      verses = await fetchBibleApiChapter(ver.base, book, chapter, ver.params);
+    } else if (ver.type === "GETBIBLE_CHAPTER"){
+      const bookNum = BOOKS.findIndex(b=>b[0]===book)+1;
+      verses = await fetchGetBibleChapter(ver.base, bookNum, chapter);
+    }
+    if(!verses || !verses.length){
+      showStatus("No verses returned by the data source for this chapter.");
+    }
+  }catch(e){
+    console.error(e);
+    showStatus(e.message || "Error loading chapter.");
+    $content.innerHTML = `<div class="p-4 text-red-600">Failed to load ${ver.label} — try switching versions or chapters.</div>`;
+    return;
+  }
+
+  CURRENT = { version: versionId, book, chapter, maxVerses: verses.length };
+  CURRENT_VERSES = verses;
+  saveJSONCookie(LOC_COOKIE, CURRENT);
+  fillVerses(verses.length);
+  $refLine.textContent = `${book} ${chapter} — ${ver.label}`;
+
+  // Clear search when changing chapters to avoid confusing counts from old text
+  $search.value = "";
+  runSearch(""); // renders clean text
+
+  if(jumpToVerse){
+    const el = document.getElementById(`v-${jumpToVerse}`);
+    if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+}
+
+/* ===============================
+   Nav
+   =============================== */
+function prevChapter(){
+  const i = BOOKS.findIndex(b=>b[0]===CURRENT.book);
+  if(CURRENT.chapter>1) return loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter-1);
+  if(i>0){ const [pb,max] = BOOKS[i-1]; return loadChapter(CURRENT.version, pb, max); }
+}
+function nextChapter(){
+  const i = BOOKS.findIndex(b=>b[0]===CURRENT.book);
+  const max = BOOKS[i][1];
+  if(CURRENT.chapter<max) return loadChapter(CURRENT.version, CURRENT.book, CURRENT.chapter+1);
+  if(i<BOOKS.length-1){ const [nb] = BOOKS[i+1]; return loadChapter(CURRENT.version, nb, 1); }
+}
+
+/* ===============================
+   Events
+   =============================== */
+$verSel.addEventListener('change', ()=> loadChapter($verSel.value, $bookSel.value, +$chapSel.value));
+$bookSel.addEventListener('change', ()=> { fillChapters($bookSel.value); loadChapter($verSel.value, $bookSel.value, 1); });
+$chapSel.addEventListener('change', ()=> loadChapter($verSel.value, $bookSel.value, +$chapSel.value));
+$verseSel.addEventListener('change', ()=>{
+  const v = +$verseSel.value; if(!v) return;
+  const el = document.getElementById(`v-${v}`); if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+});
+$prev.addEventListener('click', nextPrevWrapper(prevChapter));
+$next.addEventListener('click', nextPrevWrapper(nextChapter));
+window.addEventListener('keydown', (e)=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target?.tagName)) return;
+  if(e.key==='ArrowLeft')  prevChapter();
+  if(e.key==='ArrowRight') nextChapter();
+});
+
+// Search interactions
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
+$search.addEventListener('input', debounce(()=> runSearch($search.value), 120));
+$sClear.addEventListener('click', ()=>{ $search.value=""; runSearch(""); $search.focus(); });
+$sPrev.addEventListener('click', ()=>{
+  if(!SEARCH.hits.length) return;
+  SEARCH.idx = (SEARCH.idx - 1 + SEARCH.hits.length) % SEARCH.hits.length;
+  updateSearchDisplay(); scrollToCurrentHit();
+});
+$sNext.addEventListener('click', ()=>{
+  if(!SEARCH.hits.length) return;
+  SEARCH.idx = (SEARCH.idx + 1) % SEARCH.hits.length;
+  updateSearchDisplay(); scrollToCurrentHit();
+});
+$search.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ // Enter = Next
+    e.preventDefault(); $sNext.click();
+  }
+});
+
+function nextPrevWrapper(fn){
+  // When moving chapters, keep the search query but re-run it on the new text
+  return async ()=>{ await fn(); if($search.value) runSearch($search.value); }
+}
+
+/* ===============================
+   Boot
+   =============================== */
+function fillChapters(book){
+  const max = BOOKS.find(b => b[0]===book)?.[1] || 1;
+  $chapSel.innerHTML = Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+}
+function fillVerses(max){
+  $verseSel.innerHTML = `<option value="">(verse)</option>` + Array.from({length:max}, (_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+}
+(function boot(){
+  $verSel.innerHTML  = VERSIONS.map(v => `<option value="${v.id}">${v.label}</option>`).join('');
+  $bookSel.innerHTML = BOOKS.map(([n]) => `<option value="${n}">${n}</option>`).join('');
+  const start = loadJSONCookie(LOC_COOKIE);
+  const v = start.version || "WEB_API";
+  const b = start.book || "John";
+  const c = start.chapter || 3;
+  fillChapters(b);
+  loadChapter(v, b, c);
+})();
+</script>
+
+<footer class="fixed bottom-0 inset-x-0 bg-white/95 border-t border-zinc-200">
+  <div class="max-w-screen-md mx-auto px-4 py-2 flex items-center gap-3 text-xs text-zinc-600">
+    <span>Tap any verse to highlight. Saved in a cookie (with localStorage fallback).</span>
+    <span class="ml-auto">Search is local to the current chapter.</span>
+  </div>
+</footer>
+</body>
+</html>
