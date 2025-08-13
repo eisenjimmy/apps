@@ -153,7 +153,7 @@
         <div class="flex items-center gap-2">
           <div class="grow">
             <label for="rightSearch" class="sr-only">Right champion</label>
-            <input id="rightSearch" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm placeholder:text-slate-500 focus:outline:none focus:ring-2 focus:ring-rose-500" placeholder="Search right champion…" list="championsList" autocomplete="off">
+            <input id="rightSearch" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-rose-500" placeholder="Search right champion…" list="championsList" autocomplete="off">
           </div>
           <button id="rightPickRandom" class="tap-highlight-none rounded-md px-3 py-2 text-xs bg-white/10 hover:bg-white/15">Random</button>
         </div>
@@ -304,7 +304,7 @@
 
     async function getJSON(url){
       const res = await fetch(url, { cache: 'no-store' });
-      if(!res.ok) throw new Error(\`HTTP \${res.status} for \${url}\`);
+      if(!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
       return res.json();
     }
 
@@ -330,7 +330,7 @@
         const champShort = await getJSON(ddragonData(state.version, 'champion.json'));
         state.champions = champShort.data;
         state.champArray = Object.values(state.champions).sort((a,b) => a.name.localeCompare(b.name));
-        els.listNode.innerHTML = state.champArray.map(c => \`<option value="\${c.name}" data-id="\${c.id}"></option>\`).join('');
+        els.listNode.innerHTML = state.champArray.map(c => `<option value="${c.name}" data-id="${c.id}"></option>`).join('');
 
         // Parse deep link
         const q = decodeQuery();
@@ -345,7 +345,7 @@
 
         state.turn = 'left'; // P1 starts
         renderAll();
-        logLine(\`Loaded Data Dragon \${state.version}. Player 1 begins.\`);
+        logLine(`Loaded Data Dragon ${state.version}. Player 1 begins.`);
         maybeScheduleAI();
       }catch(e){
         console.error(e);
@@ -373,7 +373,7 @@
     }
 
     async function loadChampionFull(id){
-      const raw = await getJSON(ddragonData(state.version, \`champion/\${id}.json\`));
+      const raw = await getJSON(ddragonData(state.version, `champion/${id}.json`));
       return raw.data[id];
     }
 
@@ -543,7 +543,7 @@
     }
     function pressBtnFX(side, idx){
       const container = side==='left' ? els.leftAbilities : els.rightAbilities;
-      const btn = container.querySelector(`[data-idx="\${idx}"]`);
+      const btn = container.querySelector(`[data-idx="${idx}"]`);
       if(btn){
         btn.classList.add('animate-press');
         setTimeout(()=> btn.classList.remove('animate-press'), 240);
@@ -746,7 +746,7 @@
       cpuClick(idx);
     }
     function cpuClick(idx){
-      const btn = els.rightAbilities.querySelector(`[data-idx="\${idx}"]`);
+      const btn = els.rightAbilities.querySelector(`[data-idx="${idx}"]`);
       if(btn && !btn.disabled) btn.click(); else endTurn();
     }
 
@@ -785,13 +785,13 @@
 
       applyStatusFromSpell(side, spell);
 
-      logLine(\`\${me.name} used \${['Q','W','E','R'][idx]} — \${spell.name} for ~\${dmg} \${type} dmg.\`);
+      logLine(`${me.name} used ${['Q','W','E','R'][idx]} — ${spell.name} for ~${dmg} ${type} dmg.`);
       renderAll();
 
       const w = winner();
       if (w){
         const champ = state[w];
-        logLine(\`🏆 \${champ.name} wins!\`);
+        logLine(`🏆 ${champ.name} wins!`);
         updateTurnBadge();
         return;
       }
@@ -805,12 +805,12 @@
         if(attackerSide==='left') state.leftShield = Math.min(3, 2);
         else state.rightShield = Math.min(3, 2);
         const fac = attackerSide==='left' ? state.leftShieldFactor : state.rightShieldFactor;
-        logLine(\`\${state[attackerSide].name} gains a shield (-\${Math.round(fac*100)}% dmg for 2 turns).\`);
+        logLine(`${state[attackerSide].name} gains a shield (-${Math.round(fac*100)}% dmg for 2 turns).`);
       }
       if(isCCSpell(spell)){
         if(targetSide==='left') state.leftWeaken = 1;
         else state.rightWeaken = 1;
-        logLine(\`\${state[targetSide].name} is weakened (-20% dmg next turn).\`);
+        logLine(`${state[targetSide].name} is weakened (-20% dmg next turn).`);
       }
     }
 
@@ -829,7 +829,7 @@
         renderMiniCard(side, full);
         renderAll();
       }catch(err){
-        console.error(err); logLine(\`Failed to load \${champId}.\`);
+        console.error(err); logLine(`Failed to load ${champId}.`);
       }
     }
 
@@ -909,7 +909,7 @@
     els.shareBtn.addEventListener('click', shareMatch);
 
     // P2 mode (both desktop & mobile controls kept in sync)
-    function setP2Mode(v){ state.p2Mode = (v==='human'?'human':'cpu'); if(els.p2Mode) els.p2Mode.value=v; if(els.p2ModeMobile) els.p2ModeMobile.value=v; renderAll(); maybeScheduleAI(); logLine(\`Player 2 mode: \${state.p2Mode.toUpperCase()}\`); }
+    function setP2Mode(v){ state.p2Mode = (v==='human'?'human':'cpu'); if(els.p2Mode) els.p2Mode.value=v; if(els.p2ModeMobile) els.p2ModeMobile.value=v; renderAll(); maybeScheduleAI(); logLine(`Player 2 mode: ${state.p2Mode.toUpperCase()}`); }
     if(els.p2Mode) els.p2Mode.addEventListener('change', e => setP2Mode(e.target.value));
     if(els.p2ModeMobile) els.p2ModeMobile.addEventListener('change', e => setP2Mode(e.target.value));
 
