@@ -110,15 +110,15 @@
       .hpbox { min-width: 230px; }
     }
 
-    /* ===== GB box (Game Boy-style frame for banner) ===== */
+    /* ===== GB box (Game Boy-style frame for banner & modals) ===== */
     .gb-box{
       position:relative;
       background:#fff;
-      border:2px solid #111827;               /* dark outer stroke */
+      border:2px solid #111827;
       border-radius:.75rem;
       box-shadow:
-        inset 0 0 0 2px #e5e7eb,              /* light inner stroke */
-        0 6px 30px rgba(0,0,0,.06);           /* soft card shadow */
+        inset 0 0 0 2px #e5e7eb,
+        0 6px 30px rgba(0,0,0,.06);
     }
     .gb-box::before, .gb-box::after{
       content:"";
@@ -135,6 +135,10 @@
       font-weight:900; margin-left:.5rem; display:inline-block;
       animation: caret-blink .9s steps(1,end) infinite;
     }
+
+    /* Results modal */
+    .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 40; }
+    .modal.show { display: flex; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white font-ui text-slate-800">
@@ -319,6 +323,40 @@
     </div>
   </div>
 
+  <!-- Results Modal -->
+  <div id="resultModal" class="modal">
+    <div class="gb-box max-w-md w-[92%] p-5 bg-white">
+      <div id="resultTitle" class="text-2xl font-extrabold text-center mb-2">You Win!</div>
+      <div id="resultSubtitle" class="text-center text-slate-600 mb-4">Battle Summary</div>
+      <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+        <div class="border rounded-lg p-3">
+          <div class="font-bold mb-1">Rounds</div>
+          <div id="rsRounds">—</div>
+        </div>
+        <div class="border rounded-lg p-3">
+          <div class="font-bold mb-1">KOs</div>
+          <div id="rsKO">You — / Rival —</div>
+        </div>
+        <div class="border rounded-lg p-3">
+          <div class="font-bold mb-1">Damage (You)</div>
+          <div id="rsDmgA">—</div>
+        </div>
+        <div class="border rounded-lg p-3">
+          <div class="font-bold mb-1">Damage (Rival)</div>
+          <div id="rsDmgB">—</div>
+        </div>
+        <div class="border rounded-lg p-3 col-span-2">
+          <div class="font-bold mb-1">Statuses Inflicted</div>
+          <div id="rsStatus" class="flex flex-wrap gap-2 text-[12px]"></div>
+        </div>
+      </div>
+      <div class="flex gap-2 justify-center">
+        <button id="btnRematch" class="btn tap">Try Again?</button>
+        <button id="btnBack" class="btn-secondary tap">Back to Builder</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="max-w-5xl mx-auto px-4 py-8 text-center text-xs text-slate-500">
     Data & sprites from <a class="underline" href="https://pokeapi.co/" target="_blank" rel="noreferrer">PokéAPI</a>.
   </footer>
@@ -330,6 +368,9 @@
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
     const gridSpriteURL = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
+    // Static fallback Kanto names (1..151) for offline/failed fetch
+    const KANTO_FALLBACK = ["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","Nidoran♀","Nidorina","Nidoqueen","Nidoran♂","Nidorino","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetch’d","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","Mr. Mime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew"];
 
     const TYPE_COLORS = {
       normal:'#A8A77A', fire:'#EE8130', water:'#6390F0', electric:'#F7D02C', grass:'#7AC74C',
@@ -369,7 +410,7 @@
 
     const AIL_MAP = {
       paralysis:'par', burn:'brn', poison:'psn', 'bad-poison':'psn', freeze:'frz', sleep:'slp',
-      confusion:'cnf' // (optional)
+      confusion:'cnf'
     };
 
     /* ======= App State ======= */
@@ -385,24 +426,41 @@
       typesById: new Map(),
       // Battle
       rosterA: [], rosterB: [], aIdx:0, bIdx:0, round:1,
-      waitingForPlayerChoice:true, queuedMove:null, autoPlay:false, lock:false
+      waitingForPlayerChoice:true, queuedMove:null, autoPlay:false, lock:false,
+      // Results tracking
+      stats: { rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts: {par:0, brn:0, psn:0, frz:0, slp:0} }
     };
 
     /* ======= Boot ======= */
     document.addEventListener('DOMContentLoaded', async () => {
-      renderTeams(); wireBuilder(); wireArena();
+      renderTeams(); wireBuilder(); wireArena(); wireResults();
       await loadKanto();
       autoSeedRival();                 // Random rival on load
       renderTeams(); updateStartButton();
     });
 
+    // Fetch with timeout
+    async function fetchWithTimeout(url, ms=6000){
+      const ctl = new AbortController();
+      const t = setTimeout(()=>ctl.abort(), ms);
+      try { const r = await fetch(url, {signal: ctl.signal}); clearTimeout(t); return r; }
+      catch(e){ clearTimeout(t); throw e; }
+    }
+
     async function loadKanto(){
       try {
-        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
+        const res = await fetchWithTimeout('https://pokeapi.co/api/v2/pokemon?limit=151');
+        if(!res.ok) throw new Error('HTTP '+res.status);
         const data = await res.json();
         state.allPokemon = data.results.map((p,i)=>({id:i+1, name:cap(p.name)}));
         renderGrid();
-      } catch (e) { toast('Could not load Kanto list. Try again.'); console.error(e); }
+      } catch (e) {
+        console.warn('Falling back to built-in Kanto list:', e);
+        // Fallback: always populate grid
+        state.allPokemon = KANTO_FALLBACK.map((name,i)=>({id:i+1, name}));
+        renderGrid();
+        toast('Using offline Kanto list.');
+      }
     }
 
     /* ======= Builder ======= */
@@ -421,6 +479,11 @@
         renderTeams(); updateStartButton();
       });
       $('#startBattle').addEventListener('click', startBattle);
+    }
+
+    function wireResults(){
+      $('#btnBack').addEventListener('click', ()=>{ hideResult(); $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); });
+      $('#btnRematch').addEventListener('click', ()=>{ hideResult(); startBattle(); });
     }
 
     function autoSeedRival(){
@@ -480,7 +543,10 @@
       $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
       document.body.classList.add('no-scroll');
       $('#picker').classList.remove('hidden');
+      // Ensure grid is present (fallback safe)
+      if(!state.allPokemon.length){ state.allPokemon = KANTO_FALLBACK.map((n,i)=>({id:i+1, name:n})); }
       $('#search').value=''; filterGrid('');
+      if(!$('#grid').children.length) renderGrid();
     }
     function closePicker(commit=false){
       if(commit){
@@ -714,6 +780,8 @@
 
     async function startBattle(){
       $('#builder').classList.add('hidden'); $('#arena').classList.remove('hidden'); clearLog();
+      // Reset results
+      state.stats = { rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts: {par:0, brn:0, psn:0, frz:0, slp:0} };
       state.rosterA=[]; state.rosterB=[]; state.aIdx=0; state.bIdx=0; state.round=1; state.waitingForPlayerChoice=true; state.queuedMove=null; state.lock=false;
 
       const all6=[...state.teamA, ...state.teamB];
@@ -952,7 +1020,7 @@
           continue;
         }
 
-        // Announce + accuracy for status/damaging
+        // Announce
         setBanner(`${atk.name} used ${m.display}!`, step.side==='A'?'your':'rival');
 
         // Pure status move
@@ -966,6 +1034,7 @@
             if(applied){
               log(`${def.name} is now ${applied.toUpperCase()}!`);
               setBanner(`${def.name} is ${applied.toUpperCase()}!`, 'info');
+              state.stats.statusCounts[applied] = (state.stats.statusCounts[applied]||0)+1;
               updateStatusUI(defSide, def);
             } else {
               log(`But it failed!`);
@@ -990,6 +1059,8 @@
         const crit = Math.random() < 0.1;
         if(crit){ dmg = Math.floor(dmg*1.75); log('Critical hit!'); await screenShake(); }
         def.hp = Math.max(0, def.hp - dmg);
+        if(step.side==='A') state.stats.dmgA += dmg; else state.stats.dmgB += dmg;
+
         await impactHit(defSide, m.type);
         setHPBars();
         log(`${atk.name} dealt ${dmg} damage to ${def.name}.`);
@@ -1000,6 +1071,7 @@
           const applied = tryApplyStatus(def, m.ailment_code, m.ailment_chance || 0);
           if(applied){
             log(`${def.name} is now ${applied.toUpperCase()}!`);
+            state.stats.statusCounts[applied] = (state.stats.statusCounts[applied]||0)+1;
             setBanner(`${def.name} is ${applied.toUpperCase()}!`, 'info');
             setHPBars(); await sleep(P(240));
           }
@@ -1008,6 +1080,7 @@
         // Faint handling
         if(def.hp<=0){
           log(`${def.name} fainted!`);
+          if(step.side==='A') state.stats.koA++; else state.stats.koB++;
           await faintSprite(defSide);
           await sleep(P(250));
           if(step.side==='A'){
@@ -1033,10 +1106,14 @@
         setHPBars();
       }
 
+      // Win check
       if(!battleAlive()){
         const youWin = state.rosterA.some(m=>m.hp>0);
         await screenShake();
         setBanner(youWin? '🏆 You win!' : '🏆 Rival wins!', youWin?'your':'rival');
+        // Show results modal
+        state.stats.rounds = state.round;
+        showResult(youWin);
         state.lock=false; return;
       }
 
@@ -1101,8 +1178,25 @@
         mon.hp = Math.max(0, mon.hp - dmg);
         log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`);
         setBanner(`${mon.name} takes damage from ${mon.status.type==='brn'?'burn':'poison'}…`, 'info');
+        if(mon===currA()) state.stats.dmgB += 0; // no-op; residual not counted to attacker
+        if(mon===currB()) state.stats.dmgA += 0;
       }
     }
+
+    /* ======= Results Modal ======= */
+    function showResult(youWin){
+      $('#resultTitle').textContent = youWin ? 'You Win!' : 'Rival Wins!';
+      $('#resultSubtitle').textContent = 'Battle Summary';
+      $('#rsRounds').textContent = state.stats.rounds;
+      $('#rsKO').textContent = `You ${state.stats.koA} — ${state.stats.koB} Rival`;
+      $('#rsDmgA').textContent = state.stats.dmgA;
+      $('#rsDmgB').textContent = state.stats.dmgB;
+      const st = state.stats.statusCounts;
+      const mk = (k,l,c)=>`<span class="px-2 py-1 rounded-full text-slate-700" style="border:1px solid #94a3b8;background:#f8fafc">${l}: ${st[k]||0}</span>`;
+      $('#rsStatus').innerHTML = mk('par','PAR')+mk('brn','BRN')+mk('psn','PSN')+mk('frz','FRZ')+mk('slp','SLP');
+      $('#resultModal').classList.add('show');
+    }
+    function hideResult(){ $('#resultModal').classList.remove('show'); }
 
     /* ======= Animations & Effects ======= */
     async function faintSprite(side){
@@ -1157,7 +1251,7 @@
     /* ======= Log & Toast ======= */
     function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; }
     function clearLog(){ $('#log').innerHTML=''; }
-    let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-900 text-white text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1600); }
+    let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-900 text-white text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1800); }
   </script>
 </body>
 </html>
