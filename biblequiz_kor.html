@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-  <title>Bible Quiz (Mobile) — 120 Questions</title>
+  <title>모바일 성경 퀴즈 (한국어) — 120문항</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html,body{height:100%}
@@ -19,69 +19,69 @@
 <div class="app">
   <header class="mb-4">
     <div class="card p-4">
-      <h1 class="text-2xl font-semibold text-center">Bible Quiz (English)</h1>
-      <p class="text-sm text-center text-gray-600 mt-1">1 Samuel · 2 Samuel · Ephesians · Philippians · Colossians · Philemon (20 questions each)</p>
-      <p class="text-xs text-center text-gray-500">Wrong-answer notebook · Resume (cookies/localStorage) · Difficulty filter · Chapter intros</p>
+      <h1 class="text-2xl font-semibold text-center">모바일 성경 퀴즈 (한국어)</h1>
+      <p class="text-sm text-center text-gray-600 mt-1">사무엘상 · 사무엘하 · 에베소서 · 빌립보서 · 골로세서 · 빌레몬서 (각 20문항)</p>
+      <p class="text-xs text-center text-gray-500">오답 노트, 진행 저장(쿠키/로컬스토리지), 난이도 필터, 장/서론 포함</p>
     </div>
   </header>
 
   <main class="flex-1">
-    <!-- Selector -->
+    <!-- 선택 섹션 -->
     <section class="card p-4 mb-4" id="selector">
       <div class="grid grid-cols-1 gap-3">
-        <label class="block text-sm font-medium text-gray-700">Choose a Book</label>
+        <label class="block text-sm font-medium text-gray-700">책 선택</label>
         <select id="bookSelect" class="w-full rounded-lg border-gray-200 shadow-sm p-3">
-          <option value="">— Select —</option>
-          <option value="1sam">1 Samuel</option>
-          <option value="2sam">2 Samuel</option>
-          <option value="eph">Ephesians</option>
-          <option value="phil">Philippians</option>
-          <option value="col">Colossians</option>
-          <option value="phm">Philemon</option>
+          <option value="">— 선택 —</option>
+          <option value="1sam">사무엘상</option>
+          <option value="2sam">사무엘하</option>
+          <option value="eph">에베소서</option>
+          <option value="phil">빌립보서</option>
+          <option value="col">골로세서</option>
+          <option value="phm">빌레몬서</option>
         </select>
 
         <div class="grid grid-cols-2 gap-2 mt-2">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Difficulty</label>
+            <label class="block text-sm font-medium text-gray-700">난이도</label>
             <select id="diffSelect" class="w-full rounded-lg border-gray-200 shadow-sm p-3">
-              <option value="all">All</option>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
+              <option value="all">전체</option>
+              <option value="easy">쉬움</option>
+              <option value="medium">보통</option>
+              <option value="hard">어려움</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">Mode</label>
+            <label class="block text-sm font-medium text-gray-700">출제 모드</label>
             <select id="modeSelect" class="w-full rounded-lg border-gray-200 shadow-sm p-3">
-              <option value="normal">All Questions</option>
-              <option value="wrongonly">Wrong-answer Review</option>
+              <option value="normal">전체 문제</option>
+              <option value="wrongonly">오답 노트만</option>
             </select>
           </div>
         </div>
 
         <div class="flex gap-2 mt-3">
-          <button id="startBtn" class="flex-1 bg-blue-600 text-white rounded-lg py-3 font-semibold">Start</button>
-          <button id="resumeBtn" class="flex-1 bg-white border border-gray-200 text-gray-700 rounded-lg py-3">Resume (cookies)</button>
+          <button id="startBtn" class="flex-1 bg-blue-600 text-white rounded-lg py-3 font-semibold">시작</button>
+          <button id="resumeBtn" class="flex-1 bg-white border border-gray-200 text-gray-700 rounded-lg py-3">이어하기(쿠키)</button>
         </div>
       </div>
     </section>
 
-    <!-- Intro -->
+    <!-- 서론 -->
     <section class="card p-4 mb-4 hidden" id="intro">
       <div class="flex items-center justify-between mb-2">
-        <h2 class="font-semibold" id="introTitle">Intro</h2>
+        <h2 class="font-semibold" id="introTitle">서론</h2>
         <span id="introMeta" class="chip text-gray-600"></span>
       </div>
       <div class="text-sm text-gray-800" id="introBody"></div>
     </section>
 
-    <!-- Quiz -->
+    <!-- 퀴즈 영역 -->
     <section id="quizArea" class="hidden card p-4">
       <div class="flex items-center justify-between mb-3">
         <div class="text-sm text-gray-600" id="bookTitle"></div>
         <div class="text-sm text-gray-600 flex items-center gap-2">
           <span id="progress">0 / 0</span>
-          <span id="diffPill" class="chip text-blue-700 bg-blue-50 border-blue-200">All</span>
+          <span id="diffPill" class="chip text-blue-700 bg-blue-50 border-blue-200">전체</span>
         </div>
       </div>
 
@@ -89,294 +89,294 @@
       <div id="explainBox" class="hidden mb-4 explain text-sm text-gray-700"></div>
 
       <div class="flex gap-2">
-        <button id="nextBtn" class="flex-1 bg-green-600 text-white rounded-lg py-3 font-semibold" disabled>Next</button>
-        <button id="quitBtn" class="flex-1 bg-red-50 text-red-600 rounded-lg py-3 border border-red-100">Quit</button>
+        <button id="nextBtn" class="flex-1 bg-green-600 text-white rounded-lg py-3 font-semibold" disabled>다음</button>
+        <button id="quitBtn" class="flex-1 bg-red-50 text-red-600 rounded-lg py-3 border border-red-100">종료</button>
       </div>
     </section>
 
-    <!-- Results -->
+    <!-- 결과 -->
     <section id="resultArea" class="hidden card p-4 mt-4">
       <div class="text-center mb-3">
         <div class="text-lg font-bold" id="finalScore"></div>
         <div class="text-sm text-gray-600" id="finalMsg"></div>
       </div>
       <div class="grid grid-cols-1 gap-2">
-        <button id="reviewBtn" class="w-full bg-blue-600 text-white rounded-lg py-3">See Answers & Explanations</button>
-        <button id="restartBtn" class="w-full bg-white border border-gray-200 rounded-lg py-3">Restart</button>
+        <button id="reviewBtn" class="w-full bg-blue-600 text-white rounded-lg py-3">정답/해설 보기</button>
+        <button id="restartBtn" class="w-full bg-white border border-gray-200 rounded-lg py-3">다시 시작</button>
       </div>
     </section>
 
-    <!-- Review -->
+    <!-- 리뷰 -->
     <section id="reviewArea" class="hidden card p-4 mt-4">
       <div class="flex items-center justify-between mb-2">
-        <h3 class="font-semibold">Answer Review</h3>
-        <button id="exportWrongBtn" class="chip bg-yellow-50 border-yellow-200 text-yellow-700">Export Wrong Notebook</button>
+        <h3 class="font-semibold">정답 및 해설</h3>
+        <button id="exportWrongBtn" class="chip bg-yellow-50 border-yellow-200 text-yellow-700">오답 노트 내보내기</button>
       </div>
       <div id="reviewList" class="space-y-3 max-h-[52vh] overflow-auto pr-2"></div>
       <div class="mt-3 grid grid-cols-1 gap-2">
-        <button id="closeReviewBtn" class="w-full bg-gray-100 rounded-lg py-3">Close</button>
-        <button id="retryWrongBtn" class="w-full bg-orange-600 text-white rounded-lg py-3">Retry Wrong Only</button>
-        <button id="clearWrongBtn" class="w-full bg-white border border-gray-200 rounded-lg py-3">Clear Wrong Notebook</button>
+        <button id="closeReviewBtn" class="w-full bg-gray-100 rounded-lg py-3">닫기</button>
+        <button id="retryWrongBtn" class="w-full bg-orange-600 text-white rounded-lg py-3">오답만 다시풀기</button>
+        <button id="clearWrongBtn" class="w-full bg-white border border-gray-200 rounded-lg py-3">오답 노트 비우기</button>
       </div>
     </section>
   </main>
 
   <footer class="mt-4 text-center text-xs text-gray-500">
-    Works offline. Progress saved to cookies/localStorage.
+    오프라인에서도 동작. 진행상황은 쿠키/로컬스토리지에 저장됩니다.
   </footer>
 </div>
 
 <script>
 /********************
- * Book intros
+ * 서론 데이터
  ********************/
 const bookIntros = {
   '1sam': {
-    title: '1 Samuel',
-    meta: 'Author(s): Samuel (parts), Nathan, Gad · Period: late 11th c. BC',
-    background: 'Transition from the judges to a monarchy. Samuel rises as prophet; Saul becomes the first king; David emerges.',
-    summary: 'Hannah’s prayer and Samuel’s birth, Israel’s demand for a king, Saul’s disobedience and rejection, David anointed, Goliath defeated, Saul’s jealousy and pursuit.',
+    title: '사무엘상',
+    meta: '저자(전통): 사무엘·나단·갓 | 시기: BC 11세기 후반',
+    background: '사사 시대에서 왕정으로 전환되는 분수령. 사무엘의 등장, 사울의 왕위, 다윗의 부상.',
+    summary: '한나의 기도와 사무엘 출생, 백성의 왕 요구, 사울의 실족과 버림, 다윗의 기름부음과 골리앗 격파, 사울의 시기와 추격.',
     characters: [
-      {name:'Samuel', note:'Prophet/priest; anoints Saul and David.'},
-      {name:'Saul', note:'First king; rejected for disobedience.'},
-      {name:'David', note:'Shepherd anointed as future king; slays Goliath.'},
-      {name:'Hannah', note:'Samuel’s mother; model of prayer.'},
-      {name:'Jonathan', note:'Saul’s son; loyal friend to David.'}
+      {name:'사무엘', note:'선지자/제사장, 사울·다윗에게 기름 부음.'},
+      {name:'사울', note:'이스라엘 첫 왕. 불순종으로 버림받음.'},
+      {name:'다윗', note:'목동 출신. 골리앗을 물리치고 차기 왕으로 부상.'},
+      {name:'한나', note:'사무엘의 어머니. 모범적 기도자.'},
+      {name:'요나단', note:'사울의 아들. 다윗의 충성된 친구.'}
     ]
   },
   '2sam': {
-    title: '2 Samuel',
-    meta: 'Author(s): Nathan, Gad (trad.) · Period: early 10th c. BC',
-    background: 'David’s reign: victories and expansion, moral failure and family tragedy, repentance and restoration.',
-    summary: 'David crowned king; conquers Jerusalem; brings the Ark; sins with Bathsheba; Absalom’s revolt; census and plague; concluding psalms and episodes.',
+    title: '사무엘하',
+    meta: '저자(전통): 나단·갓 | 시기: BC 10세기 초',
+    background: '다윗의 통치기: 승리와 확장, 도덕적 실패와 가족 비극, 회개와 회복.',
+    summary: '다윗의 즉위, 예루살렘 정복과 언약궤, 밧세바 사건과 회개, 압살롬 반역, 인구조사로 인한 재앙과 마무리.',
     characters: [
-      {name:'David', note:'King of Israel; poet, warrior, penitent.'},
-      {name:'Nathan', note:'Prophet who confronts David.'},
-      {name:'Joab', note:'David’s general; capable yet ruthless.'},
-      {name:'Absalom', note:'David’s son who rebels.'},
-      {name:'Bathsheba', note:'Uriah’s wife; later David’s wife.'}
+      {name:'다윗', note:'이스라엘 왕. 시인·전사·회개자.'},
+      {name:'나단', note:'다윗을 책망한 선지자.'},
+      {name:'요압', note:'다윗의 장군. 유능하지만 강경함.'},
+      {name:'압살롬', note:'다윗의 아들. 반역 주도.'},
+      {name:'밧세바', note:'우리야의 아내, 후에 다윗의 아내.'}
     ]
   },
   'eph': {
-    title: 'Ephesians',
-    meta: 'Author: Paul · Date: c. AD 60–62 (Roman custody)',
-    background: 'Identity of the church in Christ and unity of Jews and Gentiles; maturity and spiritual warfare.',
-    summary: 'Chs. 1–3: riches in Christ and the “mystery”; Chs. 4–6: walk in unity and holiness, household codes, armor of God.',
+    title: '에베소서',
+    meta: '저자: 바울 | 시기: AD 60–62(로마 구금 중 추정)',
+    background: '교회의 정체성과 연합, 유대인·이방인의 하나 됨, 성도의 성숙과 영적 전쟁.',
+    summary: '1–3장은 그리스도 안의 신령한 복과 교회의 비밀, 4–6장은 성도의 삶(연합·성숙·가정규범·하나님의 전신갑주).',
     characters: [
-      {name:'Paul', note:'Apostle and author.'},
-      {name:'Ephesian believers', note:'Gentile-majority church called to unity and maturity.'}
+      {name:'바울', note:'사도, 서신 저자.'},
+      {name:'에베소 성도', note:'주로 이방인 배경. 교회 일치와 성숙 권면.'}
     ]
   },
   'phil': {
-    title: 'Philippians',
-    meta: 'Author: Paul · Date: c. AD 60–62 (Roman custody)',
-    background: 'Warm, joyful letter to gospel partners in Philippi.',
-    summary: 'Joy, partnership, the Christ-hymn (humility), perseverance, contentment, prayer over anxiety.',
+    title: '빌립보서',
+    meta: '저자: 바울 | 시기: AD 60–62(로마 구금 중 추정)',
+    background: '복음 동역 공동체 빌립보 교회에 보낸 따뜻한 격려의 편지.',
+    summary: '기쁨, 겸손(그리스도 찬가), 복음 진보, 어떤 형편에도 자족, 감사와 기도로 염려 극복.',
     characters: [
-      {name:'Paul', note:'Rejoices despite imprisonment.'},
-      {name:'Timothy', note:'Trusted coworker sent to Philippi.'},
-      {name:'Epaphroditus', note:'Messenger who risked his life to serve Paul.'}
+      {name:'바울', note:'옥중에서도 기쁨을 권면.'},
+      {name:'디모데', note:'신뢰받는 후계 동역자.'},
+      {name:'에바브로디도', note:'바울을 섬긴 사자(메신저).'}
     ]
   },
   'col': {
-    title: 'Colossians',
-    meta: 'Author: Paul · Date: c. AD 60–62 (Roman custody)',
-    background: 'Exalts Christ’s supremacy/sufficiency while warning against hollow philosophy, legalism, and syncretism.',
-    summary: 'Christ as image of God and head of the church; put off the old self, put on the new; prayerful, wise living.',
+    title: '골로세서',
+    meta: '저자: 바울 | 시기: AD 60–62(로마 구금 중 추정)',
+    background: '그리스도의 우월성과 충만을 강조하여 혼합주의·율법주의·천사숭배 등 허탄한 철학을 경계.',
+    summary: '그리스도의 탁월성과 교회의 머리 되심, 옛 사람 벗고 새 사람 입음, 가정·사회 윤리, 기도와 지혜로운 행실.',
     characters: [
-      {name:'Paul', note:'Author; contends for Christ’s supremacy.'},
-      {name:'Epaphras', note:'Founder/servant to the Colossians.'},
-      {name:'Colossian believers', note:'Warned against deceptive teachings.'}
+      {name:'바울', note:'그리스도의 충만·주권을 옹호.'},
+      {name:'에바브라', note:'골로새 교회의 설립/헌신자.'},
+      {name:'골로새 성도', note:'헛된 철학을 경계할 대상.'}
     ]
   },
   'phm': {
-    title: 'Philemon',
-    meta: 'Author: Paul · Date: c. AD 60–62 (Roman custody)',
-    background: 'Personal appeal for reconciliation regarding Onesimus, a runaway slave.',
-    summary: 'Paul urges Philemon to receive Onesimus as a beloved brother; the gospel reshapes relationships.',
+    title: '빌레몬서',
+    meta: '저자: 바울 | 시기: AD 60–62(로마 구금 중 추정)',
+    background: '도망 종 오네시모와 주인 빌레몬 사이의 화해를 위한 개인 서신.',
+    summary: '오네시모를 종이 아닌 사랑받는 형제로 받으라는 바울의 사랑의 간청. 복음이 관계를 새롭게 함.',
     characters: [
-      {name:'Philemon', note:'Recipient; respected Christian host.'},
-      {name:'Onesimus', note:'Former slave; converted helper to Paul.'},
-      {name:'Paul', note:'Author; intercedes in love.'}
+      {name:'빌레몬', note:'수신자. 신실한 가정 교회 리더.'},
+      {name:'오네시모', note:'도망 종. 회심 후 유익한 동역자.'},
+      {name:'바울', note:'중재자. 사랑으로 설득.'}
     ]
   }
 };
 
 /*************************
- * Question bank (20 each)
- * {question, options[4], answer (index), explain, difficulty: 'Easy'|'Medium'|'Hard'}
+ * 문제 데이터 (각 20문) 
+ * {question, options[4], answer(인덱스), explain, difficulty: '쉬움'|'보통'|'어려움'}
  *************************/
 const booksData = {
   '1sam': {
-    title: '1 Samuel',
-    questions: [
-      {question:"Who was Samuel's mother?", options:["Miriam","Hannah","Naomi","Ruth"], answer:1, explain:"Hannah prayed a vow; the Lord gave Samuel whom she dedicated (1 Sam 1).", difficulty:"Easy"},
-      {question:"Under which priest did Samuel minister as a boy?", options:["Aaron","Eli","Zadok","Zechariah"], answer:1, explain:"Samuel grew up under Eli at Shiloh (1 Sam 2–3).", difficulty:"Easy"},
-      {question:"Samuel was taught to reply to God's call with which words?", options:["Here I am","Speak, for your servant is listening","Lord, have mercy","Thy will be done"], answer:1, explain:'Eli coached him to answer, “Speak, for your servant is listening” (1 Sam 3:10).', difficulty:"Easy"},
-      {question:"Who was Israel's first anointed king?", options:["David","Saul","Solomon","Jeroboam"], answer:1, explain:"Saul was anointed when Israel demanded a king (1 Sam 9–10).", difficulty:"Easy"},
-      {question:"The primary reason God rejected Saul was:", options:["Lack of prayer","Failure to fully destroy Amalek","Weak army","Tax issues"], answer:1, explain:"He disobeyed God’s command concerning Amalek (1 Sam 15).", difficulty:"Medium"},
-      {question:"With what did David strike down Goliath?", options:["Sword","Spear","Sling and stone","Bow"], answer:2, explain:"David used a sling and a stone, then finished with Goliath’s sword (1 Sam 17).", difficulty:"Easy"},
-      {question:"David’s father was:", options:["Obed","Jesse","Boaz","Elimelech"], answer:1, explain:"David was the son of Jesse of Bethlehem (1 Sam 16:1).", difficulty:"Easy"},
-      {question:"Saul’s son who formed a covenant friendship with David:", options:["Mephibosheth","Jonathan","Ish-bosheth","Absalom"], answer:1, explain:"Jonathan loved David as his own soul (1 Sam 18–20).", difficulty:"Easy"},
-      {question:"Why did Saul grow jealous of David?", options:["He coveted the throne","The people’s songs of praise","Prophecy about David","Tax disputes"], answer:1, explain:'“Saul has slain his thousands, and David his tens of thousands” (1 Sam 18:7).', difficulty:"Easy"},
-      {question:"Which phrase captures the spiritual climate at the start of 1 Samuel?", options:["Prophetic abundance","Peace and revival","The word of the LORD was rare","Idolatry eradicated"], answer:2, explain:"‘The word of the LORD was rare; visions were infrequent’ (1 Sam 3:1).", difficulty:"Medium"},
-      {question:"What sacred object did Israel carry into battle against the Philistines?", options:["Tabernacle","Ark of the Covenant","Altar of incense","Lampstand"], answer:1, explain:"They brought the Ark but it was captured (1 Sam 4).", difficulty:"Medium"},
-      {question:"The Ark’s return involved which of the following (NOT)?", options:["Plague of tumors","Golden tumors and golden mice","New cart drawn by milch cows","Crossing the Jordan River"], answer:3, explain:"Crossing the Jordan belongs to Joshua; the Ark was returned on a new cart (1 Sam 5–6).", difficulty:"Hard"},
-      {question:"At Gilgal, Saul sinned by:", options:["Idolatry","Offering the burnt offering himself","Killing a priest","Making a false oath"], answer:1, explain:"He offered the offering without waiting for Samuel (1 Sam 13).", difficulty:"Medium"},
-      {question:"Whom did Samuel anoint to be the next king?", options:["David","Jonathan","Abner","Ish-bosheth"], answer:0, explain:"God looks at the heart; Samuel anointed David (1 Sam 16).", difficulty:"Easy"},
-      {question:"Who wisely averted David’s bloodshed in the Nabal incident?", options:["Michal","Abigail","Rebekah","Rahab"], answer:1, explain:"Abigail’s intercession turned David from vengeance (1 Sam 25).", difficulty:"Medium"},
-      {question:"Where did Saul consult a medium?", options:["En-dor","Gilgal","Mizpah","Shiloh"], answer:0, explain:"He sought the medium of En-dor (1 Sam 28).", difficulty:"Medium"},
-      {question:"Why did David refuse to kill Saul?", options:["He feared Saul","Insufficient proof","He was the LORD’s anointed","Jonathan forbade it"], answer:2, explain:"David would not harm the LORD’s anointed (1 Sam 24, 26).", difficulty:"Medium"},
-      {question:"On which mountain did Saul meet his end?", options:["Gilboa","Carmel","Zion","Ebal"], answer:0, explain:"Saul died on Mount Gilboa in battle (1 Sam 31).", difficulty:"Easy"},
-      {question:"Best summary of 1 Samuel’s theme:", options:["Temple construction","Rise of monarchy and the cost of dis/obedience","Exile to Babylon","Legal code development"], answer:1, explain:"It traces the monarchy’s rise and the fruits of obedience vs. disobedience.", difficulty:"Medium"},
-      {question:"Samuel’s initial response to Israel’s demand for a king:", options:["He rejoiced","He grieved and prayed","He instantly agreed","He resigned"], answer:1, explain:"Samuel prayed and sought the Lord (1 Sam 8).", difficulty:"Easy"}
+    title:'사무엘상',
+    questions:[
+      {question:'사무엘의 어머니는 누구인가?',options:['미리암','한나','나오미','룻'],answer:1,explain:'한나는 서원 기도로 사무엘을 낳고 여호와께 드렸습니다(삼상 1).',difficulty:'쉬움'},
+      {question:'사무엘이 섬기던 제사장은?',options:['아론','엘리','사독','스가랴'],answer:1,explain:'사무엘은 엘리 제사장 아래서 자랐습니다(삼상 2–3).',difficulty:'쉬움'},
+      {question:'사무엘이 처음 여호와의 부르심에 응답할 때 배운 말은?',options:['내가 여기 있나이다','말씀 없어서','네 종이 듣나이다','주여 긍휼'],answer:2,explain:'엘리의 조언으로 “말씀하옵소서, 주의 종이 듣나이다”라고 응답합니다(삼상 3:10).',difficulty:'쉬움'},
+      {question:'이스라엘의 첫 왕은 누구인가?',options:['다윗','사울','솔로몬','여로보암'],answer:1,explain:'이스라엘이 왕을 구하자 사울이 기름부음 받았습니다(삼상 9–10).',difficulty:'쉬움'},
+      {question:'사울이 버림받은 주된 이유는?',options:['기도 부족','아말렉 진멸 불순종','군사력 약함','세금 문제'],answer:1,explain:'하나님의 명령을 어기고 아말렉과 그 짐승을 남겼습니다(삼상 15).',difficulty:'보통'},
+      {question:'다윗이 골리앗을 쓰러뜨릴 때 사용한 것은?',options:['검','창','물맷돌','활'],answer:2,explain:'다윗은 물맷돌로 골리앗을 쓰러뜨렸고 칼로 마무리했습니다(삼상 17).',difficulty:'쉬움'},
+      {question:'다윗의 아버지는 누구인가?',options:['오벳','이새','보아스','엘리멜렉'],answer:1,explain:'다윗은 베들레헴 사람 이새의 아들입니다(삼상 16:1).',difficulty:'쉬움'},
+      {question:'다윗과 깊은 우정을 나눈 사울의 아들은?',options:['므비보셋','요나단','이스보셋','압살롬'],answer:1,explain:'요나단은 다윗과 언약을 맺고 생명을 아끼지 않았습니다(삼상 18–20).',difficulty:'쉬움'},
+      {question:'사울이 다윗을 시기한 주요 이유는?',options:['왕좌 노림','백성의 찬양', '예언 때문','세금'],answer:1,explain:'“사울은 천천, 다윗은 만만” 노래로 시기가 타올랐습니다(삼상 18:7).',difficulty:'쉬움'},
+      {question:'사무엘상이 시작되는 영적 분위기를 잘 나타내는 것은?',options:['말씀이 희귀함','부흥','평화','우상 타파'],answer:0,explain:'“여호와의 말씀이 희귀하여 이상이 흔히 보이지 않았다”(삼상 3:1).',difficulty:'보통'},
+      {question:'블레셋과 전투 중 이스라엘이 가져온 성물은?',options:['성막','언약궤','분향단','금촛대'],answer:1,explain:'언약궤를 전장에 가져왔으나 빼앗김을 당합니다(삼상 4).',difficulty:'보통'},
+      {question:'블레셋에게 빼앗긴 언약궤가 돌아온 표징과 관련 없는 것은?',options:['독종 재앙','금 독종·금 쥐','젖나는 소가 끄는 새 수레','요단강 도하'],answer:3,explain:'요단 도하는 여호수아서 사건. 언약궤는 재앙 후 새 수레로 되돌려졌습니다(삼상 5–6).',difficulty:'어려움'},
+      {question:'사울이 길갈에서 범한 죄는?',options:['우상숭배','사무엘 기다리지 않고 번제 드림','제사장 살해','거짓 맹세'],answer:1,explain:'사무엘을 기다리지 않고 스스로 번제를 드렸습니다(삼상 13).',difficulty:'보통'},
+      {question:'사무엘이 기름을 부어 차기 왕으로 세운 이는?',options:['다윗','요나단','아브넬','이스보셋'],answer:0,explain:'하나님은 마음을 보시고 다윗을 택하셨습니다(삼상 16).',difficulty:'쉬움'},
+      {question:'나발의 사건에서 다윗을 지혜롭게 막은 사람은?',options:['미갈','아비가일','리브가','라마'],answer:1,explain:'아비가일의 중재로 피흘림을 피했습니다(삼상 25).',difficulty:'보통'},
+      {question:'사울이 신접한 여인을 찾아간 곳은?',options:['엔돌','길갈','미스바','실로'],answer:0,explain:'사울은 엔돌의 신접한 여인을 찾았습니다(삼상 28).',difficulty:'보통'},
+      {question:'다윗이 사울을 죽이지 않은 이유로 적절한 것은?',options:['두려워서','증거 부족','여호와의 기름부음 받은 자이기 때문','요나단의 부탁'],answer:2,explain:'하나님의 기름부음 받은 자를 해치지 않으려 했습니다(삼상 24,26).',difficulty:'보통'},
+      {question:'사울이 최후를 맞은 산은?',options:['길보아 산','갈멜 산','시온 산','에발 산'],answer:0,explain:'블레셋과의 전투에서 길보아 산에서 최후를 맞습니다(삼상 31).',difficulty:'쉬움'},
+      {question:'사무엘상 전체의 주제를 가장 잘 요약하는 것은?',options:['왕권의 확립과 순종의 중요성','성전 건축','율법 해석','바벨론 포로'],answer:0,explain:'왕정의 시작과 순종/불순종의 열매가 핵심입니다.',difficulty:'보통'},
+      {question:'사무엘이 백성의 왕 요구에 대해 취한 첫 반응은?',options:['기뻐함','슬퍼하며 기도함','즉시 허락','거부 후 사임'],answer:1,explain:'사무엘은 기도로 하나님의 뜻을 구했습니다(삼상 8).',difficulty:'쉬움'}
     ]
   },
 
   '2sam': {
-    title: '2 Samuel',
-    questions: [
-      {question:"Who is the central figure of 2 Samuel?", options:["Saul","David","Solomon","Samuel"], answer:1, explain:"2 Samuel narrates David’s reign.", difficulty:"Easy"},
-      {question:"Which city did David make his capital?", options:["Hebron","Jerusalem","Jericho","Samaria"], answer:1, explain:"David captured Jerusalem and established his throne there (2 Sam 5).", difficulty:"Easy"},
-      {question:"Which sacred object was brought to Jerusalem with rejoicing?", options:["Altar of incense","Ark of the Covenant","Bronze serpent","Ephod"], answer:1, explain:"David brought up the Ark with celebration (2 Sam 6).", difficulty:"Easy"},
-      {question:"The Davidic covenant (promise of a lasting house) appears in:", options:["2 Sam 3","2 Sam 5","2 Sam 7","2 Sam 9"], answer:2, explain:"God promises David an enduring dynasty (2 Sam 7).", difficulty:"Medium"},
-      {question:"Who confronted David over his sin with Bathsheba?", options:["Elisha","Samuel","Nathan","Gad"], answer:2, explain:"The prophet Nathan reproved David (2 Sam 12).", difficulty:"Easy"},
-      {question:"Bathsheba’s husband was:", options:["Uriah","Joab","Abner","Hiram"], answer:0, explain:"Uriah the Hittite (2 Sam 11).", difficulty:"Easy"},
-      {question:"David’s census resulted in a:", options:["Earthquake","Plague","Famine","Exile"], answer:1, explain:"A plague came as judgment (2 Sam 24).", difficulty:"Medium"},
-      {question:"What happened to Uzzah when he touched the Ark?", options:["He was healed","He died","He was blessed","He was captured"], answer:1, explain:"Uzzah died for touching the Ark irreverently (2 Sam 6:6–7).", difficulty:"Medium"},
-      {question:"Mephibosheth was:", options:["Saul’s son and David’s rival","Jonathan’s son shown David’s kindness","Zadok’s brother","Absalom’s son"], answer:1, explain:"Mephibosheth received covenant kindness (2 Sam 9).", difficulty:"Medium"},
-      {question:"During Absalom’s revolt David:", options:["Fought immediately","Withdrew from Jerusalem","Fled to Babylon","Appealed to Saul"], answer:1, explain:"He evacuated Jerusalem to regroup (2 Sam 15).", difficulty:"Medium"},
-      {question:"Absalom’s death:", options:["Exile","Assassination in bed","Died in battle","Pardoned and returned"], answer:2, explain:"His head caught in a tree; Joab had him killed (2 Sam 18).", difficulty:"Easy"},
-      {question:"Joab is best described as:", options:["Gentle mediator","Capable yet hard and calculating","Cowardly soldier","Prophet"], answer:1, explain:"Joab was effective but often ruthless.", difficulty:"Medium"},
-      {question:"Which topic is least central to 2 Samuel?", options:["Establishment of kingship","Sin and repentance","Family conflicts","Temple completion"], answer:3, explain:"Temple construction comes later (Kings/Chronicles).", difficulty:"Hard"},
-      {question:"Abigail’s story is found in:", options:["1 Samuel","2 Samuel"], answer:0, explain:"The Abigail–Nabal account is in 1 Sam 25.", difficulty:"Medium"},
-      {question:"Which of the following was NOT David’s military leader?", options:["Joab","Abishai","Zadok","Benaiah"], answer:2, explain:"Zadok was a priest; the others were commanders.", difficulty:"Medium"},
-      {question:"David’s dancing before the Ark showed:", options:["Concern for image","Humble worship before the LORD","Political theater","Sorrow"], answer:1, explain:"David humbled himself in worship (2 Sam 6).", difficulty:"Easy"},
-      {question:"After Amnon’s violation of Tamar, Absalom:", options:["Forgave him","Killed Amnon","Went into exile then returned","Became a priest"], answer:1, explain:"Absalom murdered Amnon, later fled (2 Sam 13).", difficulty:"Medium"},
-      {question:"Ahithophel sided with:", options:["David","Absalom","Joab","Zadok"], answer:1, explain:"He supported Absalom and later killed himself (2 Sam 16–17).", difficulty:"Hard"},
-      {question:"Why did David buy Araunah’s threshing floor?", options:["Palace site","To build an altar and offer sacrifice","Armory","Royal tombs"], answer:1, explain:"He purchased it to build an altar during the plague (2 Sam 24).", difficulty:"Medium"},
-      {question:"A concluding lesson of 2 Samuel:", options:["We need a flawless human king","Restoration comes through repentance","War is pointless","Tax reform is key"], answer:1, explain:"Repentance and grace lead to restoration.", difficulty:"Medium"}
+    title:'사무엘하',
+    questions:[
+      {question:'사무엘하의 중심 인물은?',options:['사울','다윗','솔로몬','사무엘'],answer:1,explain:'사무엘하는 다윗의 통치와 삶을 다룹니다.',difficulty:'쉬움'},
+      {question:'다윗이 수도로 삼은 도시는?',options:['헤브론','예루살렘','여리고','사마리아'],answer:1,explain:'다윗은 예루살렘을 정복하고 수도로 삼습니다(삼하 5).',difficulty:'쉬움'},
+      {question:'예루살렘으로 옮겨온 중요한 성물은?',options:['분향단','언약궤','노뱀','에봇'],answer:1,explain:'언약궤를 기쁨으로 모셔왔습니다(삼하 6).',difficulty:'쉬움'},
+      {question:'다윗 언약(후손과 왕위의 약속)이 언급되는 장은?',options:['삼하 3','삼하 5','삼하 7','삼하 9'],answer:2,explain:'하나님의 은혜 언약이 삼하 7장에 나옵니다.',difficulty:'보통'},
+      {question:'다윗이 밧세바와 범죄했을 때 책망한 선지자는?',options:['엘리사','사무엘','나단','가드'],answer:2,explain:'선지자 나단이 비유로 책망했고, 다윗은 회개했습니다(삼하 12).',difficulty:'쉬움'},
+      {question:'밧세바의 남편은?',options:['우리야','요압','아브넬','히렘'],answer:0,explain:'헷 사람 우리야입니다(삼하 11).',difficulty:'쉬움'},
+      {question:'다윗의 인구조사 결과로 임한 재앙은?',options:['지진','전염병','가뭄','포로'],answer:1,explain:'다윗의 죄로 전염병이 임했습니다(삼하 24).',difficulty:'보통'},
+      {question:'다윗이 언약궤를 옮길 때 우사에게 일어난 일은?',options:['치유','죽음','축복','포로'],answer:1,explain:'우사가 궤를 붙잡자 징벌을 받아 죽었습니다(삼하 6:6-7).',difficulty:'보통'},
+      {question:'므비보셋은 누구와 어떤 관계?',options:['사울의 아들이자 다윗의 적','요나단의 아들이자 다윗의 자비 대상','사독의 형제','압살롬의 아들'],answer:1,explain:'요나단의 아들이며 다윗이 은총을 베풀었습니다(삼하 9).',difficulty:'보통'},
+      {question:'압살롬이 반역할 때 다윗은 어떻게 했는가?',options:['즉시 전투','예루살렘 철수','바벨론 망명','사울에게 지원 요청'],answer:1,explain:'다윗은 피난하며 상황을 수습했습니다(삼하 15).',difficulty:'보통'},
+      {question:'압살롬의 최후는?',options:['유배','암살','전투 중 사망','회개 후 귀환'],answer:2,explain:'전투 중 나무에 걸려 요압에게 죽임을 당합니다(삼하 18).',difficulty:'쉬움'},
+      {question:'요압의 성격을 가장 잘 설명하는 것은?',options:['온유한 중재자','유능하나 강경하고 계산적','겁많은 병사','예언자'],answer:1,explain:'요압은 왕국을 지켰으나 때로 과격했습니다.',difficulty:'보통'},
+      {question:'사무엘하의 주제와 거리가 먼 것은?',options:['왕권의 확립','죄와 회개','가정의 갈등','성전 완공'],answer:3,explain:'성전 건축은 사무엘하가 아니라 후대(열왕기/역대기)와 연관됩니다.',difficulty:'어려움'},
+      {question:'아비가일과 관련된 사건은 사무엘상/하 중 어디?',options:['사무엘상','사무엘하'],answer:0,explain:'아비가일은 사무엘상 25장의 사건입니다.',difficulty:'보통'},
+      {question:'다윗의 장군으로 잘못된 인물은?',options:['요압','아비새','사독','브나야'],answer:2,explain:'사독은 제사장, 나머지는 군 지휘자들입니다.',difficulty:'보통'},
+      {question:'다윗이 언약궤 앞에서 춤춘 이유와 관련 깊은 태도는?',options:['체면 중시','하나님 앞 겸손한 경배','정치 과시','슬픔'],answer:1,explain:'다윗은 여호와 앞에서 겸손히 기뻐했습니다(삼하 6).',difficulty:'쉬움'},
+      {question:'암논과 다말 사건 이후 압살롬이 한 일은?',options:['용서','암논 살해','도망 후 귀환','제사장 임명'],answer:1,explain:'압살롬은 암논을 죽이고 도망했다가 후에 돌아옵니다(삼하 13).',difficulty:'보통'},
+      {question:'아히도벨은 누구 편에 섰는가?',options:['다윗','압살롬','요압','사독'],answer:1,explain:'압살롬 편에서 계략을 내었고 후에 자결합니다(삼하 16–17).',difficulty:'어려움'},
+      {question:'다윗의 말년, 아라우나의 타작마당을 산 이유는?',options:['궁전 건축','제단 쌓아 제사하려고','군수 창고','왕의 묘지'],answer:1,explain:'전염병 중 제단을 쌓아 여호와께 제사하기 위해 구매했습니다(삼하 24).',difficulty:'보통'},
+      {question:'사무엘하의 결론적 교훈은?',options:['완전한 인간 왕의 필요','회개를 통한 회복의 소망','전쟁의 무용성','세금 개혁'],answer:1,explain:'죄에도 불구하고 회개와 은혜의 회복이 강조됩니다.',difficulty:'보통'}
     ]
   },
 
   'eph': {
-    title: 'Ephesians',
-    questions: [
-      {question:"Who is the author of Ephesians?", options:["Peter","John","Paul","James"], answer:2, explain:"Traditionally Paul, likely during Roman custody.", difficulty:"Easy"},
-      {question:"The church is described as Christ’s:", options:["Army","Body","Palace","City"], answer:1, explain:"Ephesians emphasizes the body metaphor (1:22–23).", difficulty:"Easy"},
-      {question:"Salvation is received:", options:["By works","By law","By grace through faith","By birthright"], answer:2, explain:"By grace through faith (Eph 2:8–9).", difficulty:"Easy"},
-      {question:"“One Lord, one faith, one baptism” appears in chapter:", options:["2","3","4","5"], answer:2, explain:"Unity theme in chapter 4.", difficulty:"Easy"},
-      {question:"The ‘armor of God’ is in chapter:", options:["3","4","5","6"], answer:3, explain:"Spiritual warfare and armor in Eph 6.", difficulty:"Easy"},
-      {question:"The sealing of the Holy Spirit signifies:", options:["A spiritual gift of tongues","Guarantee/pledge of salvation","Ordination to office","Re-baptism"], answer:1, explain:"The Spirit’s seal is the pledge of our inheritance (1:13–14).", difficulty:"Medium"},
-      {question:"Husband–wife ethics are modeled on:", options:["King–subject","Christ and the church","Teacher–disciple","Older–younger"], answer:1, explain:"Eph 5 compares marriage to Christ and the church.", difficulty:"Easy"},
-      {question:"Offices/gifts are given to the church to:", options:["Confer status","Build up and mature the body","Amass wealth","Control politics"], answer:1, explain:"For equipping the saints and unity (4:11–13).", difficulty:"Medium"},
-      {question:"Ephesians 2 highlights reconciliation between:", options:["Jews and Samaritans","Jews and Gentiles","Romans and Jews","Pharisees and Sadducees"], answer:1, explain:"In Christ, Jew and Gentile are one new humanity.", difficulty:"Medium"},
-      {question:"Best description of Ephesians’ structure:", options:["Doctrine → Exhortation","History → Psalms","Prophecy → Law","Biography → Proverbs"], answer:0, explain:"Chs. 1–3 doctrine; 4–6 application.", difficulty:"Medium"},
-      {question:"Our struggle is against:", options:["Flesh and blood","The rulers/powers of darkness","Nature","Government"], answer:1, explain:"Against spiritual forces of evil (6:12).", difficulty:"Medium"},
-      {question:"Spirit-filled living includes:", options:["Drunkenness","Psalms, hymns, spiritual songs","Outbursts of anger","Grumbling"], answer:1, explain:"Sing and give thanks; mutual submission (5:18–21).", difficulty:"Medium"},
-      {question:"Putting on the new self involves virtues such as:", options:["Greed","Truthfulness, gentleness, love","Jealousy","Falsehood"], answer:1, explain:"Put off the old; put on the new (Eph 4).", difficulty:"Medium"},
-      {question:"Which posture toward prayer is NOT urged?", options:["Be alert","Pray for all the saints","With thanksgiving","Hypocrisy/ostentation"], answer:3, explain:"Prayer should be sincere and vigilant (6:18).", difficulty:"Easy"},
-      {question:"Primary audience of Ephesians:", options:["Jews only","Gentiles only","Mixed Jewish–Gentile believers","Roman soldiers"], answer:2, explain:"Written to a diverse church community.", difficulty:"Medium"},
-      {question:"Spiritual blessings are located:", options:["On earth","In the heavenly places","In the temple","On mountains"], answer:1, explain:"Every spiritual blessing in the heavenly places (1:3).", difficulty:"Medium"},
-      {question:"“Do not let the sun go down on your anger” teaches:", options:["Never be angry","Don’t harbor anger; deal with it quickly","Seek revenge","Be silent"], answer:1, explain:"Don’t give the devil a foothold (4:26–27).", difficulty:"Medium"},
-      {question:"The ‘mystery’ highlights:", options:["Baptismal procedure","Communion liturgy","Gentile inclusion as co-heirs","Temple blueprint"], answer:2, explain:"Gentiles are fellow heirs in Christ (Eph 3).", difficulty:"Hard"},
-      {question:"Members as Christ’s body should:", options:["Deceive one another","Bear with one another in love","Compete","Ignore each other"], answer:1, explain:"Maintain the unity of the Spirit in peace (4:2–3).", difficulty:"Easy"},
-      {question:"The ‘shield of faith’ quenches:", options:["Swords and spears","The evil one’s flaming arrows","Disease","Poverty"], answer:1, explain:"Faith deflects temptations and doubts (6:16).", difficulty:"Easy"}
+    title:'에베소서',
+    questions:[
+      {question:'에베소서의 저자는?',options:['베드로','요한','바울','야고보'],answer:2,explain:'바울이 로마 구금 중 기록한 것으로 전승됩니다.',difficulty:'쉬움'},
+      {question:'교회는 그리스도의 무엇으로 묘사되는가?',options:['군대','몸','궁전','도성'],answer:1,explain:'에베소서는 교회를 그리스도의 몸으로 강조합니다(엡 1:22–23).',difficulty:'쉬움'},
+      {question:'구원은 무엇으로 받는가?',options:['행위','율법','은혜로 믿음으로','혈통'],answer:2,explain:'엡 2:8–9 “너희가 그 은혜에 의하여 믿음으로 말미암아 구원을 받았나니…”.',difficulty:'쉬움'},
+      {question:'“한 주, 한 믿음, 한 세례”가 나오는 장은?',options:['2장','3장','4장','5장'],answer:2,explain:'연합과 은사를 다루는 4장에 나옵니다.',difficulty:'쉬움'},
+      {question:'하나님의 전신갑주가 나오는 장은?',options:['3장','4장','5장','6장'],answer:3,explain:'영적 전쟁과 전신갑주는 6장.',difficulty:'쉬움'},
+      {question:'성령의 인침은 무엇을 의미하는가?',options:['구원의 보증','방언의 증표','직분 임명','세례 재시행'],answer:0,explain:'성령의 인침은 약속의 보증(엡 1:13–14).',difficulty:'보통'},
+      {question:'남편과 아내의 관계 비유는?',options:['왕과 신하','그리스도와 교회','스승과 제자','형과 아우'],answer:1,explain:'엡 5장에서 그리스도와 교회의 관계로 설명합니다.',difficulty:'쉬움'},
+      {question:'교회의 일치와 성숙을 위해 주어진 것은?',options:['권력','은사와 직분','재산','혈통'],answer:1,explain:'사도·선지자·복음전하는 자·목사와 교사(엡 4:11–13).',difficulty:'보통'},
+      {question:'에베소서 2장이 말하는 화해의 대상은?',options:['유대인과 사마리아인','유대인과 이방인','로마와 유대','바리새와 사두개'],answer:1,explain:'그리스도 안에서 유대인과 이방인이 하나가 됩니다.',difficulty:'보통'},
+      {question:'에베소서의 구조로 적절한 것은?',options:['교리→권면','역사→시편','예언→율법','전기→잠언'],answer:0,explain:'1–3장 교리(신학), 4–6장 권면(윤리).',difficulty:'보통'},
+      {question:'영적 전쟁의 상대를 어떻게 묘사하는가?',options:['혈과 육','어둠의 권세들','자연 세력','정부'],answer:1,explain:'하늘에 있는 악의 영들을 상대합니다(엡 6:12).',difficulty:'보통'},
+      {question:'성령 충만의 실천 중 옳은 것은?',options:['술 취함','시와 찬미와 신령한 노래','분노 표출','불평'],answer:1,explain:'엡 5:18–20에서 찬양과 감사, 복종을 권면합니다.',difficulty:'보통'},
+      {question:'새 사람을 입는 것과 관련 깊은 덕목은?',options:['탐욕','정직·온유·사랑','시기','거짓'],answer:1,explain:'옛 사람을 벗고 새 사람을 입으라(엡 4).',difficulty:'보통'},
+      {question:'기도에 대한 권면으로 옳지 않은 것은?',options:['항상 깨어','모든 성도를 위해','감사함으로','외식적으로'],answer:3,explain:'기도는 성령 안에서 깨어 감사함으로 드립니다(엡 6:18).',difficulty:'쉬움'},
+      {question:'에베소서의 수신자는?',options:['유대인만','이방인만','유대·이방 신자 모두','로마 군인'],answer:2,explain:'다양한 배경의 신자 공동체를 향한 서신입니다.',difficulty:'보통'},
+      {question:'그리스도 안의 “신령한 복”은 어디에?',options:['땅','하늘에','성전','산'],answer:1,explain:'하늘에 속한 모든 신령한 복(엡 1:3).',difficulty:'보통'},
+      {question:'분을 내어도 죄를 짓지 말라는 권면의 취지는?',options:['분노 금지','분노를 오래 품지 말라','복수 권장','침묵'],answer:1,explain:'해가 지도록 분을 품지 말라(엡 4:26).',difficulty:'보통'},
+      {question:'에베소서가 “비밀”이라 부르는 핵심은?',options:['세례식 절차','성찬 규례','이방인의 동참','성전 건축'],answer:2,explain:'복음으로 이방인이 상속자 됨(엡 3).',difficulty:'어려움'},
+      {question:'그리스도의 몸으로서 지체의 태도는?',options:['서로 속임','서로 용납·사랑','경쟁','무시'],answer:1,explain:'평안의 매는 줄로 성령이 하나 되게 하신 것을 힘써 지키라(엡 4:3).',difficulty:'쉬움'},
+      {question:'전신갑주 중 “믿음의 방패”는 무엇을 막는가?',options:['칼과 창','악한 자의 불화살','질병','가난'],answer:1,explain:'시험과 의심의 불화살을 막는 믿음(엡 6:16).',difficulty:'쉬움'}
     ]
   },
 
   'phil': {
-    title: 'Philippians',
-    questions: [
-      {question:"Main theme of Philippians:", options:["Despair","Joy","Law","Punishment"], answer:1, explain:"Joy and gospel partnership permeate the letter.", difficulty:"Easy"},
-      {question:"From where did Paul likely write Philippians?", options:["Ephesus","Rome (custody)","Jerusalem","Antioch"], answer:1, explain:"Many date it to Roman imprisonment (AD 60–62).", difficulty:"Medium"},
-      {question:"The Christ-hymn of humility is in chapter:", options:["1","2","3","4"], answer:1, explain:"Christ’s self-emptying and exaltation (Phil 2).", difficulty:"Easy"},
-      {question:"“I can do all things …” is Philippians:", options:["1:6","2:10","4:13","3:8"], answer:2, explain:"Phil 4:13.", difficulty:"Easy"},
-      {question:"Paul’s counsel for anxiety:", options:["Endure it","Get angry","Prayer and supplication with thanksgiving","Escape"], answer:2, explain:"Prayer with thanksgiving brings God’s peace (4:6–7).", difficulty:"Easy"},
-      {question:"In which chapter does Paul say he learned contentment?", options:["1","2","3","4"], answer:3, explain:"He learned to be content in any circumstance (4:11–13).", difficulty:"Easy"},
-      {question:"Who is Epaphroditus?", options:["A priest","Messenger who served Paul","A general","A tax collector"], answer:1, explain:"He risked his life to care for Paul (2:25–30).", difficulty:"Medium"},
-      {question:"Which attitude is NOT commended in Philippians?", options:["Humility","Gospel cooperation","Jealousy","Self-giving love"], answer:2, explain:"Selfish ambition and rivalry are warned against (2:3).", difficulty:"Easy"},
-      {question:"Paul’s life goal:", options:["Self-glory","To gain Christ and know Him","Wealth accumulation","Political power"], answer:1, explain:"Surpassing worth of knowing Christ (3:8–10).", difficulty:"Medium"},
-      {question:"Paul’s feelings toward the Philippian church:", options:["Disappointment","Joy and gratitude","Fear","Indifference"], answer:1, explain:"He thanks them for partnership and support.", difficulty:"Easy"},
-      {question:"Effect of Paul’s chains (Phil 1):", options:["Gospel hindered","Gospel advanced","Church collapse","Division"], answer:1, explain:"His imprisonment actually advanced the gospel (1:12).", difficulty:"Medium"},
-      {question:"Christ’s example to imitate:", options:["Asserting rights","Humility and obedience","Self-defense","Boasting in wisdom"], answer:1, explain:"He emptied Himself, became obedient to death (2:5–8).", difficulty:"Easy"},
-      {question:"“Press on toward the goal” is in:", options:["1","2","3","4"], answer:2, explain:"For the prize of the upward call (3:13–14).", difficulty:"Medium"},
-      {question:"Practices tied to the promise of God’s peace:", options:["Quarreling","Worrying","Prayer, thanksgiving, right thinking","Isolation"], answer:2, explain:"4:6–9 connects prayerful gratitude and thinking on what is excellent.", difficulty:"Medium"},
-      {question:"Euodia and Syntyche are urged to:", options:["Compete","Be of the same mind","Separate","Be silent"], answer:1, explain:"“Agree in the Lord” (4:2).", difficulty:"Medium"},
-      {question:"Where does Paul explicitly command rejoicing again?", options:["1","2","3","4"], answer:3, explain:'“Rejoice in the Lord always … again I will say, rejoice” (4:4).', difficulty:"Easy"},
-      {question:"Paul’s stance toward money:", options:["Greed","Contentment","Wastefulness","Apathy"], answer:1, explain:"He learned contentment regardless of plenty or want (4:11–12).", difficulty:"Easy"},
-      {question:"Coworker Paul plans to send:", options:["Timothy","Peter","Apollos","Titus"], answer:0, explain:"He hopes to send Timothy soon (2:19).", difficulty:"Medium"},
-      {question:"Overall tone of Philippians:", options:["Cold and dogmatic","Warm and encouraging","Angry and condemning","Legalistic"], answer:1, explain:"Filled with thanks, joy, and encouragement.", difficulty:"Easy"},
-      {question:"A core application of Philippians:", options:["Worldly success","Humility, joy, and gospel partnership","Power politics","Detailed law-keeping"], answer:1, explain:"Live humbly and joyfully in gospel partnership.", difficulty:"Medium"}
+    title:'빌립보서',
+    questions:[
+      {question:'빌립보서의 중심 주제는?',options:['절망','기쁨','율법','형벌'],answer:1,explain:'옥중에서도 기쁨과 감사, 복음의 진보를 강조합니다.',difficulty:'쉬움'},
+      {question:'바울이 빌립보서를 기록한 장소(전승)는?',options:['에베소','로마 구금','예루살렘','안디옥'],answer:1,explain:'대다수 견해가 로마 구금기(AD 60–62)로 봅니다.',difficulty:'보통'},
+      {question:'그리스도의 겸손 찬가가 있는 장은?',options:['1장','2장','3장','4장'],answer:1,explain:'빌 2장: 낮아지심과 높아지심.',difficulty:'쉬움'},
+      {question:'“내게 능력 주시는 자 안에서…” 구절은?',options:['1:6','2:10','4:13','3:8'],answer:2,explain:'빌 4:13.',difficulty:'쉬움'},
+      {question:'바울이 권하는 염려 대처법은?',options:['참기','분노','기도와 간구로 감사함','도피'],answer:2,explain:'아무 것도 염려하지 말고 기도와 간구로 감사함(빌 4:6).',difficulty:'쉬움'},
+      {question:'자족을 배웠다고 고백한 장은?',options:['1장','2장','3장','4장'],answer:3,explain:'바울은 어느 형편에든 자족하기를 배웠다고 합니다(빌 4).',difficulty:'쉬움'},
+      {question:'에바브로디도는 누구인가?',options:['제사장','바울을 섬긴 사자','장군','세리'],answer:1,explain:'빌립보 교회가 보낸 사자이며 병까지 들 정도로 수고했습니다(빌 2).',difficulty:'보통'},
+      {question:'바울이 칭찬하는 태도로 옳지 않은 것은?',options:['겸손','복음 협력','시기','희생적 사랑'],answer:2,explain:'시기와 다툼은 경계의 대상입니다(빌 2).',difficulty:'쉬움'},
+      {question:'바울의 삶의 목표를 잘 요약한 것은?',options:['자기 영광','그리스도를 얻고 알아감','재산 축적','정치적 힘'],answer:1,explain:'그리스도를 아는 지식의 탁월함(빌 3:8).',difficulty:'보통'},
+      {question:'빌립보 교회에 대한 바울의 마음은?',options:['실망','기쁨과 감사','두려움','무관심'],answer:1,explain:'그들의 동역과 후원에 감사하며 기뻐합니다.',difficulty:'쉬움'},
+      {question:'빌 1장에 따르면 바울의 결박이 가져온 결과는?',options:['복음 위축','복음 진보','교회 침체','분열'],answer:1,explain:'결박으로도 오히려 복음이 진전되었습니다(빌 1:12).',difficulty:'보통'},
+      {question:'빌 2장에서 본받으라 한 그리스도의 자세는?',options:['권리 주장','겸손과 순종','자기 방어','지혜 자랑'],answer:1,explain:'자기를 비워 종의 형체(빌 2:5–8).',difficulty:'쉬움'},
+      {question:'바울이 “표 때를 향하여 달려간다”는 장은?',options:['1장','2장','3장','4장'],answer:2,explain:'상 주시는 부르심의 상을 향해(빌 3:14).',difficulty:'보통'},
+      {question:'평강의 하나님이 주신다는 약속과 연결된 실천은?',options:['논쟁','염려','기도·간구·감사·바른 생각', '은둔'],answer:2,explain:'기도와 바른 생각의 실천(빌 4:6–9).',difficulty:'보통'},
+      {question:'두 여인(유오디아·순두게)에게 권한 것은?',options:['경쟁','동일한 마음','분리','침묵'],answer:1,explain:'주 안에서 같은 마음을 품으라(빌 4:2).',difficulty:'보통'},
+      {question:'바울이 기쁨을 명령형으로 권하는 장은?',options:['1장','2장','3장','4장'],answer:3,explain:'“주 안에서 기뻐하라… 다시 말하노니 기뻐하라”(빌 4:4).',difficulty:'쉬움'},
+      {question:'바울의 재정에 대한 태도는?',options:['탐욕','자족','낭비','무시'],answer:1,explain:'있든 없든 자족을 배웠다고 고백합니다.',difficulty:'쉬움'},
+      {question:'바울과 함께 보내려는 동역자로 언급된 이는?',options:['디모데','베드로','아볼로','디도'],answer:0,explain:'디모데를 보내려 합니다(빌 2:19).',difficulty:'보통'},
+      {question:'빌립보서의 톤으로 가장 알맞은 것은?',options:['차갑고 교조적','따뜻하고 격려적','분노와 비난','법적 명령'],answer:1,explain:'감사와 격려, 기쁨의 어조가 지배합니다.',difficulty:'쉬움'},
+      {question:'빌립보서의 핵심 적용은?',options:['세속적 성공','겸손·기쁨·복음 협력','권력 강화','율법 조항'],answer:1,explain:'공동체 안에서 겸손과 기쁨으로 복음을 협력.',difficulty:'보통'}
     ]
   },
 
   'col': {
-    title: 'Colossians',
-    questions: [
-      {question:"Who wrote Colossians?", options:["Peter","James","Paul","John"], answer:2, explain:"Paul wrote to the church at Colossae.", difficulty:"Easy"},
-      {question:"Colossians chiefly emphasizes:", options:["Wealth and prosperity","Christ’s supremacy and fullness","Mosaic regulations","Angel worship"], answer:1, explain:"Christ’s preeminence over all (1:15–20).", difficulty:"Medium"},
-      {question:"Who labored for the Colossians?", options:["Timothy","Epaphras","Luke","Apollos"], answer:1, explain:"Epaphras is named as their servant/founder (1:7).", difficulty:"Easy"},
-      {question:"Paul warns against:", options:["Prayer","Thanksgiving","Human tradition and hollow philosophy","Praise"], answer:2, explain:"Beware deceptive philosophy and legalism (2:8).", difficulty:"Medium"},
-      {question:"“Set your minds on things above” is in:", options:["1","2","3","4"], answer:2, explain:"Seek the things above (3:1–2).", difficulty:"Easy"},
-      {question:"‘Put off the old self; put on the new’ means:", options:["Political reform","Moral/spiritual renewal of identity","Language polish","Cultural adoption"], answer:1, explain:"New identity in Christ (3:9–10).", difficulty:"Medium"},
-      {question:"Husbands are commanded to:", options:["Domineer","Love their wives","Ignore issues","Punish"], answer:1, explain:"Husbands, love your wives; do not be harsh (3:19).", difficulty:"Easy"},
-      {question:"Instruction about prayer:", options:["Keep only the form","Be steadfast, watchful, thankful","Remain silent","Rely on others"], answer:1, explain:"Continue steadfastly in prayer with thanksgiving (4:2).", difficulty:"Easy"},
-      {question:"Which is NOT a fruit of Christ’s fullness?", options:["Humility and gentleness","Love as the bond of perfection","Greed","Bearing with one another"], answer:2, explain:"Greed is idolatry to put to death (3:5).", difficulty:"Medium"},
-      {question:"Christ’s relation to the church is:", options:["A leader among leaders","The Head","A member","A guest"], answer:1, explain:"He is the Head of the body (1:18).", difficulty:"Easy"},
-      {question:"Proper stance toward angel worship:", options:["Allow","Encourage","Reject","Ignore"], answer:2, explain:"Angel worship is condemned (2:18).", difficulty:"Hard"},
-      {question:"Let the word dwell richly by:", options:["Jealousy","Psalms, hymns, spiritual songs","Grumbling","Chasing trends"], answer:1, explain:"Sing with thankfulness (3:16).", difficulty:"Easy"},
-      {question:"Conduct toward outsiders:", options:["Be indifferent","Argue constantly","Walk in wisdom; make the best use of time","Hide"], answer:2, explain:"Walk wisely; season speech with salt (4:5).", difficulty:"Medium"},
-      {question:"Speech should be:", options:["Harsh","Seasoned with salt; gracious","Slanderous","Empty"], answer:1, explain:"So you may know how to answer each person (4:6).", difficulty:"Medium"},
-      {question:"Which belongs to the ‘old self’ list?", options:["Compassion","Kindness","Patience","Anger/wrath/evil speech"], answer:3, explain:"Put away anger, wrath, malice, slander (3:8).", difficulty:"Easy"},
-      {question:"Right view of Christ:", options:["Chief creature","Image of the invisible God","One angel among many","A mere sage"], answer:1, explain:"Creator and reconciler (1:15–20).", difficulty:"Hard"},
-      {question:"Which name is NOT a coworker in Colossians 4?", options:["Tychicus","Luke","Demas","Ahijah"], answer:3, explain:"Ahijah is unrelated; the others are mentioned (Col 4).", difficulty:"Hard"},
-      {question:"‘Let the peace of Christ rule your hearts’ pairs with:", options:["Quarreling","Thankfulness","Doubt","Pride"], answer:1, explain:"Be thankful; let peace rule (3:15).", difficulty:"Easy"},
-      {question:"Which is NOT a target of Paul’s warnings?", options:["Hollow philosophy","Ritualism","Legalism","Prayer"], answer:3, explain:"Prayer is encouraged.", difficulty:"Easy"},
-      {question:"Core application of Colossians:", options:["Christ-centered living with practiced virtues","Pursuit of wealth","Power expansion","Withdrawal from society"], answer:0, explain:"Live all of life under Christ’s lordship.", difficulty:"Medium"}
+    title:'골로세서',
+    questions:[
+      {question:'골로세서의 저자는?',options:['베드로','야고보','바울','요한'],answer:2,explain:'바울이 골로새 교회에 보낸 서신입니다.',difficulty:'쉬움'},
+      {question:'골로세서의 중심 강조는?',options:['부와 번영','그리스도의 우월성과 충만','율법의 조항','천사 숭배'],answer:1,explain:'그리스도의 주권과 충분함을 선포합니다(골 1:15–20).',difficulty:'보통'},
+      {question:'골로새 교회를 세우거나 섬긴 이는?',options:['디모데','에바브라','누가','아볼로'],answer:1,explain:'에바브라는 골로새를 위해 수고한 동역자입니다(골 1:7).',difficulty:'쉬움'},
+      {question:'경계해야 할 것으로 바울이 경고한 것은?',options:['기도','감사','사람의 전통과 헛된 철학','찬양'],answer:2,explain:'그리스도를 빼는 철학·의식주의를 경계(골 2:8).',difficulty:'보통'},
+      {question:'“위의 것을 생각하고”가 나오는 장은?',options:['1장','2장','3장','4장'],answer:2,explain:'위의 것을 생각하라(골 3:1–2).',difficulty:'쉬움'},
+      {question:'“옛 사람 벗고 새 사람 입음”의 의미는?',options:['정치 개혁','도덕·정체성의 갱신','언어 교정','문화 수용'],answer:1,explain:'그리스도 안에서 새 정체성을 입는 변화(골 3:9–10).',difficulty:'보통'},
+      {question:'가정 규범 중 남편에게 요구된 태도는?',options:['권위 남용','사랑','무관심','엄벌'],answer:1,explain:'남편들아 아내를 사랑하며 괴롭게 하지 말라(골 3:19).',difficulty:'쉬움'},
+      {question:'기도에 대한 권면은?',options:['형식만 지킴','항상 깨어 감사함으로','침묵','타인 의존'],answer:1,explain:'기도에 항상 힘쓰며 감사함으로 깨어 있으라(골 4:2).',difficulty:'쉬움'},
+      {question:'그리스도의 충만의 열매로 알맞지 않은 것은?',options:['겸손과 온유','사랑의 띠','탐욕','서로 용납'],answer:2,explain:'탐욕은 우상숭배로 버려야 할 것(골 3:5).',difficulty:'보통'},
+      {question:'그리스도는 교회에 대해 어떤 위치인가?',options:['한 지도자','머리','회원','손님'],answer:1,explain:'그리스도는 교회의 머리이십니다(골 1:18).',difficulty:'쉬움'},
+      {question:'천사 숭배에 대한 태도는?',options:['허용','권장','배격','무시'],answer:2,explain:'천사 숭배는 그리스도 중심에서 벗어나는 오류(골 2:18).',difficulty:'어려움'},
+      {question:'말씀을 풍성히 거하게 하는 실천은?',options:['시기','시와 찬송과 신령한 노래','원망','세속 유행'],answer:1,explain:'감사함으로 마음에 거하게 하라(골 3:16).',difficulty:'쉬움'},
+      {question:'밖에 있는 사람을 향한 행실은?',options:['지혜롭게 행하고 기회를 아끼라','무관심','논쟁만 하라','숨으라'],answer:0,explain:'지혜롭게 행하여 기회를 사라(골 4:5).',difficulty:'보통'},
+      {question:'말을 할 때의 권면은?',options:['소금으로 맛을 냄과 같이 은혜로운 말','거친 말','중상','헛소리'],answer:0,explain:'각 사람에게 마땅히 대답할 말을 알게 하려 함(골 4:6).',difficulty:'보통'},
+      {question:'옛 사람의 행위가 아닌 것은?',options:['분함/노여움','악의/비방','거짓말','사랑'],answer:3,explain:'사랑은 새 사람의 덕목입니다.',difficulty:'쉬움'},
+      {question:'그리스도에 대한 바른 인식은?',options:['피조물 중 으뜸','보이지 아니하는 하나님의 형상','천사 중 하나','지혜자'],answer:1,explain:'창조와 화해의 주(골 1:15–20).',difficulty:'어려움'},
+      {question:'골로세서에서 바울이 동역자로 언급하는 이와 거리가 먼 사람은?',options:['두기고','누가','데마','아히야'],answer:3,explain:'아히야는 본문과 무관. 두기고·누가·데마는 언급됩니다(골 4).',difficulty:'어려움'},
+      {question:'“평강이 너희 마음을 주장하게 하라”와 연결된 태도는?',options:['분쟁','감사','의심','교만'],answer:1,explain:'감사로 충만하라(골 3:15).',difficulty:'쉬움'},
+      {question:'골로세서의 경고 대상이 아닌 것은?',options:['헛된 철학','의식주의','율법주의','기도'],answer:3,explain:'기도는 권장 사항입니다.',difficulty:'쉬움'},
+      {question:'골로세서의 핵심 적용은?',options:['그리스도 중심의 삶과 덕목 실천','부의 추구','권력 확대','은둔'],answer:0,explain:'모든 영역에서 그리스도 중심으로 살라.',difficulty:'보통'}
     ]
   },
 
   'phm': {
-    title: 'Philemon',
-    questions: [
-      {question:"Who is the recipient of Philemon?", options:["Onesimus","Philemon","Luke","Demas"], answer:1, explain:"Philemon is a respected believer and host of a house-church.", difficulty:"Easy"},
-      {question:"Onesimus was originally:", options:["A priest","A runaway slave","A general","A tax collector"], answer:1, explain:"He fled from Philemon but later became useful in Christ.", difficulty:"Easy"},
-      {question:"Paul’s core appeal regarding Onesimus:", options:["Punish him","Receive him as a beloved brother","Sell him","Expel him"], answer:1, explain:"No longer merely a slave, but a brother (Phm 16).", difficulty:"Easy"},
-      {question:"Paul says about Onesimus’s debt:", options:["Ignore it","Charge it to me; I will repay","Reduce it","Take to court"], answer:1, explain:"Paul offers to cover what he owes (Phm 18–19).", difficulty:"Medium"},
-      {question:"The tone of Philemon is mainly:", options:["Commanding and coercive","Loving personal appeal","Icy and distant","Legalistic"], answer:1, explain:"Paul persuades in love rather than command.", difficulty:"Easy"},
-      {question:"Name meaning of ‘Onesimus’ and its message trajectory:", options:["Useless","Useful","Brave","Loyal"], answer:1, explain:"He moves from ‘useless’ to truly useful by grace.", difficulty:"Medium"},
-      {question:"How does Paul describe himself in Philemon?", options:["A young man","An old man and a prisoner","A king","A priest"], answer:1, explain:"He calls himself ‘an old man’ and ‘a prisoner of Christ Jesus’.", difficulty:"Medium"},
-      {question:"Length/type of Philemon:", options:["A long treatise","A Gospel-length narrative","A prophetic book","A single short personal letter"], answer:3, explain:"Among the shortest NT letters (one chapter).", difficulty:"Easy"},
-      {question:"What power of the gospel does Philemon showcase?", options:["Legal savvy","Relational reconciliation and restoration","Financial growth","Political leverage"], answer:1, explain:"The gospel reshapes broken relationships.", difficulty:"Medium"},
-      {question:"Right application of Philemon:", options:["Retaliation","Forgiveness and welcome","Exclusion","Discrimination"], answer:1, explain:"Receive one another as family in Christ.", difficulty:"Easy"},
-      {question:"Why does Paul appeal rather than command?", options:["To intimidate","To honor voluntary love and obedience","He lacks authority","To avoid paperwork"], answer:1, explain:"He seeks willing, love-shaped obedience.", difficulty:"Medium"},
-      {question:"Why send Onesimus back?", options:["Need for labor","Legal process","For the church’s good and reconciliation","To punish"], answer:2, explain:"Restored fellowship benefits the community.", difficulty:"Medium"},
-      {question:"Paul’s leadership style here is:", options:["Heavy-handed","Mediating love and persuasion","Avoidant","Autocratic"], answer:1, explain:"He models persuasive, relational leadership.", difficulty:"Medium"},
-      {question:"Which topic is LEAST central to Philemon?", options:["Forgiveness","Brotherly love","Reconciliation","Minute law-code details"], answer:3, explain:"Legal minutiae aren’t the focus.", difficulty:"Easy"},
-      {question:"Calling Onesimus ‘my child’ means:", options:["Biological son","Spiritual son born in chains","A servant again","Nepotism"], answer:1, explain:"Paul led him to Christ (Phm 10).", difficulty:"Medium"},
-      {question:"Why is Paul confident Philemon will obey?", options:["Coercion","Civil law","His proven love and faith","Fear"], answer:2, explain:"Paul trusts Philemon’s character (Phm 5, 21).", difficulty:"Medium"},
-      {question:"Which is NOT named among coworkers in Philemon 24?", options:["Mark","Aristarchus","Demas","Joab"], answer:3, explain:"Joab is an OT figure; the others are listed.", difficulty:"Hard"},
-      {question:"Paul’s request to prepare a guest room implies:", options:["Vacation","Extended residency","Hope to visit after release","Migration"], answer:2, explain:"He hopes to be granted to them (Phm 22).", difficulty:"Medium"},
-      {question:"Key modern takeaway of Philemon:", options:["Legal victory","Gospel-shaped reconciling relationships","Power expansion","Retreat from society"], answer:1, explain:"The gospel reframes power and welcomes the other.", difficulty:"Medium"},
-      {question:"Stylistic hallmark of Philemon:", options:["Official decree","Warm, personal, persuasive letter","Poetic psalm","Homily"], answer:1, explain:"It is intimate and persuasive in tone.", difficulty:"Easy"}
+    title:'빌레몬서',
+    questions:[
+      {question:'빌레몬서의 수신자는?',options:['오네시모','빌레몬','누가','데마'],answer:1,explain:'빌레몬은 신실한 성도이자 가정 교회의 주인입니다.',difficulty:'쉬움'},
+      {question:'오네시모의 원래 신분은?',options:['제사장','도망한 종','장군','세리'],answer:1,explain:'도망 종이었으나 회심 후 유익한 동역자가 됩니다.',difficulty:'쉬움'},
+      {question:'바울이 빌레몬에게 간청한 핵심은?',options:['오네시모 처벌','오네시모를 형제로 받으라','오네시모 매각','오네시모 추방'],answer:1,explain:'종이 아닌 사랑받는 형제로 받으라(몬 1:16).',difficulty:'쉬움'},
+      {question:'바울이 오네시모의 빚에 대해 한 말은?',options:['무시','내가 갚겠다','줄여 달라','법정 가자'],answer:1,explain:'바울이 대신 갚겠다고 합니다(몬 1:18–19).',difficulty:'보통'},
+      {question:'서신의 톤으로 가장 가까운 것은?',options:['명령적·강압적','사랑의 간청·설득','차가움','법률문'],answer:1,explain:'권위보다는 사랑으로 호소합니다.',difficulty:'쉬움'},
+      {question:'오네시모라는 이름의 의미와 서신의 메시지의 연결은?',options:['무익','유익','용감','충실'],answer:1,explain:'무익하던 자가 유익한 자로 변화됨을 상징합니다.',difficulty:'보통'},
+      {question:'바울이 자신을 소개한 표현은?',options:['젊은 자','나이 많은 자이자 갇힌 자','왕','제사장'],answer:1,explain:'바울은 나이 많은 자, 갇힌 자로 자신을 낮춥니다.',difficulty:'보통'},
+      {question:'빌레몬서의 길이는?',options:['긴 편지','복음서 분량','예언서 분량','한 장의 짧은 개인 서신'],answer:3,explain:'신약에서 매우 짧은 개인 서신입니다.',difficulty:'쉬움'},
+      {question:'빌레몬서가 보여주는 복음의 능력은?',options:['법적 지식','관계의 화해와 회복','부의 증대','정치력'],answer:1,explain:'복음은 인간관계를 새롭게 합니다.',difficulty:'보통'},
+      {question:'빌레몬서의 적용으로 옳은 것은?',options:['보복 권장','용서와 환대','배제','차별'],answer:1,explain:'형제로 환대하는 사랑이 핵심입니다.',difficulty:'쉬움'},
+      {question:'바울이 공적 권위로 명령하기보다 택한 방식은?',options:['협박','은근한 개인적 권면','침묵','재판'],answer:1,explain:'자발성과 사랑을 존중합니다.',difficulty:'보통'},
+      {question:'오네시모를 돌려보낸 이유와 맞는 것은?',options:['노동력 필요','법적 처리','공동체 유익과 화해','처벌'],answer:2,explain:'공동체의 유익과 복음적 화해를 위해.',difficulty:'보통'},
+      {question:'바울의 리더십 스타일로 맞는 것은?',options:['강압적','중재적 사랑과 설득','회피','독선'],answer:1,explain:'사랑으로 설득하고 중재합니다.',difficulty:'보통'},
+      {question:'빌레몬서와 거리가 먼 주제는?',options:['용서','형제애','화해','율법 조항 세부'],answer:3,explain:'율법 세부 논쟁은 중심 주제가 아닙니다.',difficulty:'쉬움'},
+      {question:'오네시모를 “나의 아들”이라 부른 의미는?',options:['육신적 아들','영적 탄생과 관계', '종의 복귀','연줄'],answer:1,explain:'복음으로 낳은 영적 아들입니다(몬 1:10).',difficulty:'보통'},
+      {question:'바울이 빌레몬의 순종을 확신한 근거는?',options:['강제력','법','그의 사랑과 신앙','두려움'],answer:2,explain:'빌레몬의 신앙과 사랑을 신뢰합니다.',difficulty:'보통'},
+      {question:'동역자들 중 빌레몬서에 언급되는 인물이 아닌 것은?',options:['마가','아리스다고','데마','요압'],answer:3,explain:'요압은 구약 인물. 나머지는 언급됩니다(몬 1:24).',difficulty:'어려움'},
+      {question:'바울이 머물 곳을 마련하라 한 요청은 무엇을 뜻하나?',options:['휴가','장기 체류','석방 후 방문 의사','이주'],answer:2,explain:'기도로 석방되어 방문할 소망을 표현(몬 1:22).',difficulty:'보통'},
+      {question:'빌레몬서가 현대 그리스도인에게 주는 핵심 교훈은?',options:['법적 승리','관계의 복음적 재구성','권력 확대','은둔'],answer:1,explain:'복음은 억압적 관계를 형제애로 전환시킵니다.',difficulty:'보통'},
+      {question:'빌레몬서의 문체적 특징은?',options:['공식적 칙령','개인적·따뜻한 간청의 편지','시가','설교문'],answer:1,explain:'개인적·설득적 문체가 돋보입니다.',difficulty:'쉬움'}
     ]
   }
 };
 
 /*****************
- * Storage utils
+ * 저장 유틸
  *****************/
 const LS_KEYS = {
-  WRONG_NOTEBOOK: 'bq_wrong_notebook_en',
-  SESSION: 'bq_session_en'
+  WRONG_NOTEBOOK: 'bq_wrong_notebook_ko',
+  SESSION: 'bq_session_ko'
 };
 function setStateCookie(state){
   const data = encodeURIComponent(JSON.stringify({book: state.book, idx: state.idx, diff: state.diff, mode: state.mode}));
-  document.cookie = `bq_state_en=${data}; max-age=${60*60*24*14}; path=/`;
+  document.cookie = `bq_state_ko=${data}; max-age=${60*60*24*14}; path=/`;
 }
 function getStateCookie(){
-  const m = document.cookie.match(/(?:^|; )bq_state_en=([^;]+)/);
+  const m = document.cookie.match(/(?:^|; )bq_state_ko=([^;]+)/);
   if(!m) return null; try { return JSON.parse(decodeURIComponent(m[1])); } catch { return null; }
 }
 function saveSession(obj){ localStorage.setItem(LS_KEYS.SESSION, JSON.stringify(obj)); }
@@ -396,7 +396,7 @@ function clearWrong(bookKey){
 }
 
 /*****************
- * UI elements
+ * UI 요소
  *****************/
 const bookSelect = document.getElementById('bookSelect');
 const diffSelect = document.getElementById('diffSelect');
@@ -432,7 +432,7 @@ const retryWrongBtn = document.getElementById('retryWrongBtn');
 const clearWrongBtn = document.getElementById('clearWrongBtn');
 
 /*****************
- * Runtime state
+ * 상태
  *****************/
 let state = {
   bookKey:null, questions:[], idx:0, score:0,
@@ -441,18 +441,18 @@ let state = {
 };
 
 /*****************
- * Intro rendering
+ * 서론 표시
  *****************/
 bookSelect.addEventListener('change', renderIntro);
 function renderIntro(){
   const k = bookSelect.value; if(!k){ introSec.classList.add('hidden'); return; }
   const intro = bookIntros[k]; if(!intro){ introSec.classList.add('hidden'); return; }
-  introTitle.textContent = intro.title + ' — Intro';
+  introTitle.textContent = intro.title + ' — 서론';
   introMeta.textContent = intro.meta;
   introBody.innerHTML = `
-    <div class="mb-2"><span class="font-semibold">Background:</span> ${escapeHtml(intro.background)}</div>
-    <div class="mb-2"><span class="font-semibold">Summary:</span> ${escapeHtml(intro.summary)}</div>
-    <div class="mb-1 font-semibold">Key Characters:</div>
+    <div class="mb-2"><span class="font-semibold">배경:</span> ${escapeHtml(intro.background)}</div>
+    <div class="mb-2"><span class="font-semibold">줄거리:</span> ${escapeHtml(intro.summary)}</div>
+    <div class="mb-1 font-semibold">중요 인물:</div>
     <ul class="list-disc pl-5 text-sm text-gray-700">
       ${intro.characters.map(c=>`<li><span class="font-medium">${escapeHtml(c.name)}</span>: ${escapeHtml(c.note)}</li>`).join('')}
     </ul>`;
@@ -460,18 +460,18 @@ function renderIntro(){
 }
 
 /*****************
- * Start/Resume
+ * 시작/이어하기
  *****************/
 startBtn.addEventListener('click', ()=>{
-  const key = bookSelect.value; if(!key) return alert('Choose a book first.');
+  const key = bookSelect.value; if(!key) return alert('먼저 책을 선택하세요.');
   const diff = diffSelect.value; const mode = modeSelect.value;
   startQuiz({key,diff,mode});
 });
 resumeBtn.addEventListener('click', ()=>{
   const ck = getStateCookie(); const ss = loadSession();
-  if(!ck || !ss) return alert('No saved session.');
+  if(!ck || !ss) return alert('저장된 진행이 없습니다.');
   state = ss;
-  if(!booksData[state.bookKey]) return alert('Book data missing.');
+  if(!booksData[state.bookKey]) return alert('책 데이터가 없습니다.');
   bookTitleEl.textContent = booksData[state.bookKey].title;
   diffPill.textContent = labelForDiff(state.diff);
   document.getElementById('selector').scrollIntoView({behavior:'smooth'});
@@ -483,21 +483,22 @@ function startQuiz({key,diff,mode}){
   const allQ = booksData[key].questions.slice();
   if(mode==='wrongonly'){
     const wrongMap = getWrongMap(); const arr=(wrongMap[key]||[]).map(r=>({...r.original}));
-    if(arr.length===0){ alert('Wrong-answer notebook is empty for this book.'); return; }
+    if(arr.length===0){ alert('해당 책의 오답 노트가 비어 있습니다.'); return; }
     state.questions = arr;
   }else{
-    const filtered = (diff==='all')? allQ : allQ.filter(q=> (q.difficulty||'Easy').toLowerCase()===diff.toLowerCase());
+    const filtered = (diff==='all')? allQ : allQ.filter(q=> (q.difficulty||'쉬움')===koDiff(diff));
     state.questions = shuffle(filtered);
   }
-  if(state.questions.length===0){ alert('No questions match your selection.'); return; }
+  if(state.questions.length===0){ alert('해당 선택에서 문제를 찾지 못했습니다.'); return; }
   bookTitleEl.textContent = booksData[key].title;
   diffPill.textContent = labelForDiff(diff);
   quizArea.classList.remove('hidden'); resultArea.classList.add('hidden'); reviewArea.classList.add('hidden');
   renderQuestion();
 }
+function koDiff(d){ return d==='easy'?'쉬움': d==='medium'?'보통': d==='hard'?'어려움': d; }
 
 /*****************
- * Render / Grade
+ * 렌더/채점
  *****************/
 function renderQuestion(){
   const q = state.questions[state.idx];
@@ -506,7 +507,7 @@ function renderQuestion(){
   qCard.innerHTML = `
     <div class="flex items-center justify-between mb-2">
       <div class="text-base font-semibold">${state.idx+1}. ${escapeHtml(q.question)}</div>
-      <span class="chip ${diffClass(q.difficulty)}">${escapeHtml(q.difficulty||'Easy')}</span>
+      <span class="chip ${diffClass(q.difficulty)}">${escapeHtml(q.difficulty||'쉬움')}</span>
     </div>
     <div class="space-y-2">
       ${q.options.map((opt,i)=>`
@@ -523,14 +524,14 @@ function onSelect(e){
   const btn=e.currentTarget; const sel=parseInt(btn.getAttribute('data-i'));
   const q=state.questions[state.idx]; const correct=(sel===q.answer);
   if(correct) state.score++;
-  state.answersRecord.push({q:q.question, options:q.options.slice(), answer:q.answer, user:sel, correct, explain:q.explain, difficulty:q.difficulty||'Easy'});
+  state.answersRecord.push({q:q.question, options:q.options.slice(), answer:q.answer, user:sel, correct, explain:q.explain, difficulty:q.difficulty||'쉬움'});
   Array.from(qCard.querySelectorAll('.opt')).forEach(b=>{
     b.disabled=true; b.classList.add('opacity-80');
     const i=parseInt(b.getAttribute('data-i'));
     if(i===q.answer){ b.classList.add('border-2','border-green-300','bg-green-50'); }
     if(i===sel && i!==q.answer){ b.classList.add('border-2','border-red-300','bg-red-50'); }
   });
-  explainBox.innerHTML = `<div class="font-medium mb-1">${correct?'Correct 🎉':'Not quite ✖️'}</div><div class="text-sm">${escapeHtml(q.explain||'')}</div>`;
+  explainBox.innerHTML = `<div class="font-medium mb-1">${correct?'정답입니다 🎉':'아쉽습니다 ✖️'}</div><div class="text-sm">${escapeHtml(q.explain||'')}</div>`;
   explainBox.classList.remove('hidden');
   nextBtn.disabled=false;
   if(!correct){ saveWrong(state.bookKey, {original:q, picked:sel, at:Date.now()}); }
@@ -540,16 +541,16 @@ nextBtn.addEventListener('click', ()=>{
   if(state.idx<state.questions.length-1){ state.idx++; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'}); }
   else{ showResult(); }
 });
-quitBtn.addEventListener('click', ()=>{ if(confirm('Quit and return to start?')) location.reload(); });
+quitBtn.addEventListener('click', ()=>{ if(confirm('퀴즈를 종료하고 처음으로 돌아갈까요?')) location.reload(); });
 
 /*****************
- * Results / Review
+ * 결과/리뷰
  *****************/
 function showResult(){
   quizArea.classList.add('hidden'); resultArea.classList.remove('hidden');
   const total=state.questions.length; const pct=Math.round(state.score/total*100);
-  finalScore.textContent = `Score: ${state.score} / ${total} (${pct}%)`;
-  finalMsg.textContent = pct===100?'Perfect!': pct>=80?'Great job!': pct>=50?'Good effort — review and try again.':'Keep practicing — check explanations and retry wrong answers.';
+  finalScore.textContent = `점수: ${state.score} / ${total} (${pct}%)`;
+  finalMsg.textContent = pct===100?'완벽합니다!': pct>=80?'아주 좋아요!': pct>=50?'좋아요. 해설을 읽고 한 번 더!':'해설을 보며 오답을 다시 풀어보세요.';
   saveSession(state);
 }
 reviewBtn.addEventListener('click', ()=>{ resultArea.classList.add('hidden'); reviewArea.classList.remove('hidden'); renderReview(); });
@@ -558,7 +559,7 @@ closeReviewBtn.addEventListener('click', ()=>{ reviewArea.classList.add('hidden'
 function renderReview(){
   reviewList.innerHTML='';
   state.answersRecord.forEach((r,idx)=>{
-    const userOpt = r.user!=null ? String.fromCharCode(65+r.user) : '(no answer)';
+    const userOpt = r.user!=null ? String.fromCharCode(65+r.user) : '(무응답)';
     const correctOpt = String.fromCharCode(65+r.answer);
     const div=document.createElement('div'); div.className='p-3 border border-gray-100 rounded-lg';
     div.innerHTML = `
@@ -567,8 +568,8 @@ function renderReview(){
         <span class="chip ${diffClass(r.difficulty)}">${escapeHtml(r.difficulty)}</span>
       </div>
       <div class="text-sm text-gray-700 mb-2">
-        Yours: <span class="${r.correct?'text-green-600 font-semibold':'text-red-600 font-semibold'}">${escapeHtml(userOpt)}</span>
-        &nbsp; Correct: <span class="font-semibold">${escapeHtml(correctOpt)}</span>
+        내 답: <span class="${r.correct?'text-green-600 font-semibold':'text-red-600 font-semibold'}">${escapeHtml(userOpt)}</span>
+        &nbsp; 정답: <span class="font-semibold">${escapeHtml(correctOpt)}</span>
       </div>
       <div class="text-sm text-gray-700">${escapeHtml(r.explain||'')}</div>`;
     reviewList.appendChild(div);
@@ -576,11 +577,11 @@ function renderReview(){
 }
 retryWrongBtn.addEventListener('click', ()=>{
   const k=state.bookKey; const map=getWrongMap(); const wrongArr=(map[k]||[]).map(r=>({...r.original}));
-  if(wrongArr.length===0){ alert('Wrong-answer notebook is empty.'); return; }
+  if(wrongArr.length===0){ alert('오답 노트가 비어 있습니다.'); return; }
   state.mode='wrongonly'; state.idx=0; state.score=0; state.answersRecord=[]; state.questions=shuffle(wrongArr);
   reviewArea.classList.add('hidden'); quizArea.classList.remove('hidden'); renderQuestion();
 });
-clearWrongBtn.addEventListener('click', ()=>{ if(confirm('Clear the wrong-answer notebook for this book?')){ clearWrong(state.bookKey); alert('Wrong-answer notebook cleared.'); } });
+clearWrongBtn.addEventListener('click', ()=>{ if(confirm('이 책의 오답 노트를 비울까요?')){ clearWrong(state.bookKey); alert('오답 노트를 삭제했습니다.'); } });
 exportWrongBtn.addEventListener('click', ()=>{
   const k=state.bookKey; const map=getWrongMap();
   const rows=(map[k]||[]).map(x=>({question:x.original.question, options:x.original.options, answer:x.original.answer, picked:x.picked}));
@@ -588,11 +589,11 @@ exportWrongBtn.addEventListener('click', ()=>{
 });
 
 /*****************
- * Helpers
+ * 헬퍼
  *****************/
 function shuffle(a){ const arr=a.slice(); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
-function labelForDiff(d){ return d==='all'?'All': d==='easy'?'Easy': d==='medium'?'Medium': d==='hard'?'Hard':'All'; }
-function diffClass(d){ switch((d||'').toLowerCase()){ case 'easy': return 'bg-green-50 border-green-200 text-green-700'; case 'medium': return 'bg-amber-50 border-amber-200 text-amber-700'; case 'hard': return 'bg-red-50 border-red-200 text-red-700'; default: return 'bg-slate-50 border-slate-200 text-slate-700'; } }
+function labelForDiff(d){ return d==='all'?'전체': d==='easy'?'쉬움': d==='medium'?'보통': d==='hard'?'어려움':'전체'; }
+function diffClass(d){ switch(d){ case '쉬움': return 'bg-green-50 border-green-200 text-green-700'; case '보통': return 'bg-amber-50 border-amber-200 text-amber-700'; case '어려움': return 'bg-red-50 border-red-200 text-red-700'; default: return 'bg-slate-50 border-slate-200 text-slate-700'; } }
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 </script>
 </body>
