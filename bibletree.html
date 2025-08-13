@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Bible Family Tree — Mobile</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body { height: 100%; }
-    body { background: #0b1220; }
+    body { background: #0b1220; touch-action: manipulation; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -19,7 +19,7 @@
     .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
     /* Touch ripple (tap feedback) */
-    .ripple { position: relative; overflow: hidden; }
+    .ripple { position: relative; overflow: hidden; touch-action: manipulation; }
     .ripple:after { content:""; position:absolute; width:0; height:0; left:var(--x,50%); top:var(--y,50%);
       background:rgba(255,255,255,.25); border-radius:9999px; transform:translate(-50%,-50%);
       transition:width .35s ease, height .35s ease, opacity .5s ease; pointer-events:none; }
@@ -28,6 +28,12 @@
     /* Gradients for cards */
     .cardM { background: linear-gradient(135deg, #1c2a4a, #0f172a); }
     .cardF { background: linear-gradient(135deg, #2a1c4a, #0f172a); }
+
+    /* Tab underline */
+    .tab-active { box-shadow: inset 0 -2px 0 0 rgba(99,102,241,1); color: #c7d2fe; }
+
+    /* Prevent iOS focus zoom on inputs */
+    input, textarea, select { font-size: 16px; }
   </style>
 </head>
 <body class="text-slate-100 selection:bg-indigo-300 selection:text-slate-900">
@@ -42,31 +48,32 @@
         </div>
         <div class="flex-1">
           <h1 class="text-lg font-semibold leading-tight">Bible Family Tree</h1>
-          <p class="text-xs text-slate-300">Swipe between siblings • Go up/down generations • Tap for details</p>
+          <p class="text-xs text-slate-300">Swipe siblings • Go up/down • Tap for details • View list by book</p>
         </div>
         <button id="infoBtn" class="ripple text-xs px-3 py-2 rounded-lg bg-slate-700/60">About</button>
       </div>
 
-      <div class="mt-3">
-        <label class="sr-only" for="search">Search characters</label>
-        <div class="flex items-center gap-2">
-          <div class="flex-1 relative">
-            <input id="search" type="text" inputmode="search" placeholder="Search: Adam, Noah, Abraham, David, Jesus..."
-                   class="w-full rounded-xl bg-slate-800/80 px-4 py-3 pr-10 outline-none ring-1 ring-slate-700 focus:ring-indigo-400 text-sm" />
-            <svg class="absolute right-3 top-1/2 -translate-y-1/2 size-5 opacity-70" viewBox="0 0 24 24" fill="none">
-              <path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-          </div>
-          <button id="homeBtn" class="ripple px-3 py-2 rounded-lg bg-slate-800 ring-1 ring-slate-700 text-xs">Home</button>
+      <!-- Tabs -->
+      <div class="mt-3 flex gap-2 text-sm">
+        <button id="tabTree" class="ripple px-3 py-2 rounded-lg bg-slate-800 ring-1 ring-slate-700 tab-active">Tree</button>
+        <button id="tabList" class="ripple px-3 py-2 rounded-lg bg-slate-800 ring-1 ring-slate-700">List</button>
+        <div class="flex-1"></div>
+        <div class="relative w-1/2 max-w-sm">
+          <input id="search" type="text" inputmode="search" placeholder="Search: Adam, Noah, David, Jesus..."
+                 class="w-full rounded-xl bg-slate-800/80 px-4 py-3 pr-10 outline-none ring-1 ring-slate-700 focus:ring-indigo-400 text-sm" />
+          <svg class="absolute right-3 top-1/2 -translate-y-1/2 size-5 opacity-70" viewBox="0 0 24 24" fill="none">
+            <path d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
         </div>
+        <button id="homeBtn" class="ripple px-3 py-2 rounded-lg bg-slate-800 ring-1 ring-slate-700 text-xs">Home</button>
       </div>
     </header>
 
     <!-- Breadcrumb path -->
     <div id="crumbs" class="shrink-0 px-4 py-2 flex items-center gap-2 overflow-x-auto hide-scrollbar"></div>
 
-    <!-- Main carousel (one generation at a time) -->
-    <main class="grow relative">
+    <!-- Main area: Tree view -->
+    <main id="viewTree" class="grow relative">
       <div class="absolute inset-0 flex flex-col">
         <!-- Sibling carousel -->
         <div id="lane" class="grow px-4 pt-2 pb-24 overflow-x-auto hide-scrollbar snap-x-mandatory flex items-center gap-4"></div>
@@ -75,7 +82,7 @@
         <div class="shrink-0 fixed inset-x-0 bottom-0 p-3">
           <div class="mx-auto max-w-md">
             <div class="rounded-2xl bg-slate-900/95 border border-slate-700 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-3 gap-2 items-stretch">
                 <button id="upBtn" class="ripple rounded-xl bg-slate-800 py-3 text-sm font-medium">↑ Parents</button>
                 <button id="focusBtn" class="ripple rounded-xl bg-indigo-600 py-3 text-sm font-semibold">Details</button>
                 <button id="downBtn" class="ripple rounded-xl bg-slate-800 py-3 text-sm font-medium">↓ Children</button>
@@ -86,6 +93,11 @@
         </div>
       </div>
     </main>
+
+    <!-- List view -->
+    <section id="viewList" class="hidden grow overflow-y-auto px-4 pb-24">
+      <div id="listContainer" class="max-w-md mx-auto py-4 space-y-4"></div>
+    </section>
 
     <!-- Details Sheet -->
     <section id="sheet" class="pointer-events-none fixed inset-x-0 bottom-0 z-10 translate-y-full transition-transform duration-300">
@@ -108,65 +120,57 @@
   </section>
 
   <script>
-    // ------- Data (same people, simplified lineage for mobile) -------
+    // ------- Data -------
     const NODES = [
-      { id:"adam", name:"Adam", gender:"m", blurb:"According to Genesis, the first man. Father of Cain, Abel, and Seth.", children:["cain","abel","seth"], parents:[] },
-      { id:"eve", name:"Eve", gender:"f", blurb:"The first woman; mother of all living. Partner of Adam.", children:["cain","abel","seth"], parents:[] },
-      { id:"cain", name:"Cain", gender:"m", blurb:"Eldest son of Adam and Eve. Known for killing his brother Abel.", parents:["adam","eve"], children:[] },
-      { id:"abel", name:"Abel", gender:"m", blurb:"Second son of Adam and Eve; a shepherd whose offering pleased the LORD.", parents:["adam","eve"], children:[] },
-      { id:"seth", name:"Seth", gender:"m", blurb:"Son of Adam and Eve given after Abel; from his line comes Noah.", parents:["adam","eve"], children:["enos"] },
-      { id:"enos", name:"Enosh", gender:"m", blurb:"Grandson of Adam through Seth. In his days people began to call on the LORD.", parents:["seth"], children:["noah_ancestor"] },
-      { id:"noah_ancestor", name:"(Generations)", gender:"m", blurb:"Generations between Enosh and Noah summarized for compact view.", parents:["enos"], children:["noah"] },
-      { id:"noah", name:"Noah", gender:"m", blurb:"Builder of the ark; preserved through the flood. Father of Shem, Ham, and Japheth.", parents:["noah_ancestor"], children:["shem","ham","japheth"] },
-      { id:"shem", name:"Shem", gender:"m", blurb:"Son of Noah; ancestral line leading to Abraham.", parents:["noah"], children:["abraham_ancestor"] },
-      { id:"ham", name:"Ham", gender:"m", blurb:"Son of Noah; ancestor of various nations.", parents:["noah"], children:[] },
-      { id:"japheth", name:"Japheth", gender:"m", blurb:"Son of Noah; ancestor of many coastland peoples.", parents:["noah"], children:[] },
-      { id:"abraham_ancestor", name:"(Generations)", gender:"m", blurb:"Generations between Shem and Abram summarized for clarity.", parents:["shem"], children:["abraham"] },
-      { id:"abraham", name:"Abraham", gender:"m", blurb:"Called by God; covenant bearer. Father of Ishmael and Isaac.", parents:["abraham_ancestor"], children:["ishmael","isaac"] },
-      { id:"sarah", name:"Sarah", gender:"f", blurb:"Wife of Abraham; mother of Isaac.", parents:[], children:["isaac"] },
-      { id:"hagar", name:"Hagar", gender:"f", blurb:"Egyptian servant of Sarah; mother of Ishmael.", parents:[], children:["ishmael"] },
-      { id:"ishmael", name:"Ishmael", gender:"m", blurb:"Son of Abraham; ancestor of many nations.", parents:["abraham","hagar"], children:[] },
-      { id:"isaac", name:"Isaac", gender:"m", blurb:"Son of Abraham and Sarah; father of Esau and Jacob.", parents:["abraham","sarah"], children:["esau","jacob"] },
-      { id:"rebekah", name:"Rebekah", gender:"f", blurb:"Wife of Isaac; mother of Esau and Jacob.", parents:[], children:["esau","jacob"] },
-      { id:"esau", name:"Esau", gender:"m", blurb:"Elder twin of Jacob; ancestor of Edom.", parents:["isaac","rebekah"], children:[] },
-      { id:"jacob", name:"Jacob (Israel)", gender:"m", blurb:"Son of Isaac; renamed Israel. Father of the twelve tribes.", parents:["isaac","rebekah"], children:["judah","joseph","levi","reuben","simeon","issachar","zebulun","dan","naphtali","gad","asher","benjamin"] },
-      { id:"judah", name:"Judah", gender:"m", blurb:"Fourth son of Jacob; royal line leading to David.", parents:["jacob"], children:["david_ancestor"] },
-      { id:"joseph", name:"Joseph", gender:"m", blurb:"Son of Jacob; rose to power in Egypt and preserved his family.", parents:["jacob"], children:[] },
-      { id:"levi", name:"Levi", gender:"m", blurb:"Tribe of priests descends from him.", parents:["jacob"], children:[] },
-      { id:"reuben", name:"Reuben", gender:"m", blurb:"Firstborn of Jacob.", parents:["jacob"], children:[] },
-      { id:"simeon", name:"Simeon", gender:"m", blurb:"Second son of Jacob.", parents:["jacob"], children:[] },
-      { id:"issachar", name:"Issachar", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[] },
-      { id:"zebulun", name:"Zebulun", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[] },
-      { id:"dan", name:"Dan", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[] },
-      { id:"naphtali", name:"Naphtali", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[] },
-      { id:"gad", name:"Gad", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[] },
-      { id:"asher", name:"Asher", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[] },
-      { id:"benjamin", name:"Benjamin", gender:"m", blurb:"Youngest son of Jacob.", parents:["jacob"], children:[] },
-      { id:"david_ancestor", name:"(Generations)", gender:"m", blurb:"Generations from Judah to David summarized.", parents:["judah"], children:["david"] },
-      { id:"david", name:"David", gender:"m", blurb:"King of Israel; the shepherd poet from Bethlehem.", parents:["david_ancestor"], children:["jesus_ancestor"] },
-      { id:"jesus_ancestor", name:"(Generations)", gender:"m", blurb:"Generations from David to Jesus summarized.", parents:["david"], children:["mary","joseph_nz"] },
-      { id:"mary", name:"Mary", gender:"f", blurb:"Mother of Jesus.", parents:["jesus_ancestor"], children:["jesus"] },
-      { id:"joseph_nz", name:"Joseph (of Nazareth)", gender:"m", blurb:"Legal father of Jesus; descendant of David.", parents:["jesus_ancestor"], children:["jesus"] },
-      { id:"jesus", name:"Jesus", gender:"m", blurb:"Central figure of the New Testament; believed by Christians to be the Messiah.", parents:["mary","joseph_nz"], children:[] }
+      { id:"adam", name:"Adam", gender:"m", blurb:"According to Genesis, the first man. Father of Cain, Abel, and Seth.", children:["cain","abel","seth"], parents:[], book:"Genesis" },
+      { id:"eve", name:"Eve", gender:"f", blurb:"The first woman; mother of all living. Partner of Adam.", children:["cain","abel","seth"], parents:[], book:"Genesis" },
+      { id:"cain", name:"Cain", gender:"m", blurb:"Eldest son of Adam and Eve. Known for killing his brother Abel.", parents:["adam","eve"], children:[], book:"Genesis" },
+      { id:"abel", name:"Abel", gender:"m", blurb:"Second son of Adam and Eve; a shepherd whose offering pleased the LORD.", parents:["adam","eve"], children:[], book:"Genesis" },
+      { id:"seth", name:"Seth", gender:"m", blurb:"Son of Adam and Eve given after Abel; from his line comes Noah.", parents:["adam","eve"], children:["enos"], book:"Genesis" },
+      { id:"enos", name:"Enosh", gender:"m", blurb:"Grandson of Adam through Seth. In his days people began to call on the LORD.", parents:["seth"], children:["noah_ancestor"], book:"Genesis" },
+      { id:"noah_ancestor", name:"(Generations)", gender:"m", blurb:"Generations between Enosh and Noah summarized for compact view.", parents:["enos"], children:["noah"], book:"Genesis" },
+      { id:"noah", name:"Noah", gender:"m", blurb:"Builder of the ark; preserved through the flood. Father of Shem, Ham, and Japheth.", parents:["noah_ancestor"], children:["shem","ham","japheth"], book:"Genesis" },
+      { id:"shem", name:"Shem", gender:"m", blurb:"Son of Noah; ancestral line leading to Abraham.", parents:["noah"], children:["abraham_ancestor"], book:"Genesis" },
+      { id:"ham", name:"Ham", gender:"m", blurb:"Son of Noah; ancestor of various nations.", parents:["noah"], children:[], book:"Genesis" },
+      { id:"japheth", name:"Japheth", gender:"m", blurb:"Son of Noah; ancestor of many coastland peoples.", parents:["noah"], children:[], book:"Genesis" },
+      { id:"abraham_ancestor", name:"(Generations)", gender:"m", blurb:"Generations between Shem and Abram summarized for clarity.", parents:["shem"], children:["abraham"], book:"Genesis" },
+      { id:"abraham", name:"Abraham", gender:"m", blurb:"Called by God; covenant bearer. Father of Ishmael and Isaac.", parents:["abraham_ancestor"], children:["ishmael","isaac"], book:"Genesis" },
+      { id:"sarah", name:"Sarah", gender:"f", blurb:"Wife of Abraham; mother of Isaac.", parents:[], children:["isaac"], book:"Genesis" },
+      { id:"hagar", name:"Hagar", gender:"f", blurb:"Egyptian servant of Sarah; mother of Ishmael.", parents:[], children:["ishmael"], book:"Genesis" },
+      { id:"ishmael", name:"Ishmael", gender:"m", blurb:"Son of Abraham; ancestor of many nations.", parents:["abraham","hagar"], children:[], book:"Genesis" },
+      { id:"isaac", name:"Isaac", gender:"m", blurb:"Son of Abraham and Sarah; father of Esau and Jacob.", parents:["abraham","sarah"], children:["esau","jacob"], book:"Genesis" },
+      { id:"rebekah", name:"Rebekah", gender:"f", blurb:"Wife of Isaac; mother of Esau and Jacob.", parents:[], children:["esau","jacob"], book:"Genesis" },
+      { id:"esau", name:"Esau", gender:"m", blurb:"Elder twin of Jacob; ancestor of Edom.", parents:["isaac","rebekah"], children:[], book:"Genesis" },
+      { id:"jacob", name:"Jacob (Israel)", gender:"m", blurb:"Son of Isaac; renamed Israel. Father of the twelve tribes.", parents:["isaac","rebekah"], children:["judah","joseph","levi","reuben","simeon","issachar","zebulun","dan","naphtali","gad","asher","benjamin"], book:"Genesis" },
+      { id:"judah", name:"Judah", gender:"m", blurb:"Fourth son of Jacob; royal line leading to David.", parents:["jacob"], children:["david_ancestor"], book:"Genesis" },
+      { id:"joseph", name:"Joseph", gender:"m", blurb:"Son of Jacob; rose to power in Egypt and preserved his family.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"levi", name:"Levi", gender:"m", blurb:"Tribe of priests descends from him.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"reuben", name:"Reuben", gender:"m", blurb:"Firstborn of Jacob.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"simeon", name:"Simeon", gender:"m", blurb:"Second son of Jacob.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"issachar", name:"Issachar", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"zebulun", name:"Zebulun", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"dan", name:"Dan", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"naphtali", name:"Naphtali", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"gad", name:"Gad", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"asher", name:"Asher", gender:"m", blurb:"One of Jacob’s sons.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"benjamin", name:"Benjamin", gender:"m", blurb:"Youngest son of Jacob.", parents:["jacob"], children:[], book:"Genesis" },
+      { id:"david_ancestor", name:"(Generations)", gender:"m", blurb:"Generations from Judah to David summarized.", parents:["judah"], children:["david"], book:"Ruth/1 Chr" },
+      { id:"david", name:"David", gender:"m", blurb:"King of Israel; the shepherd poet from Bethlehem.", parents:["david_ancestor"], children:["jesus_ancestor"], book:"1 Samuel" },
+      { id:"jesus_ancestor", name:"(Generations)", gender:"m", blurb:"Generations from David to Jesus summarized.", parents:["david"], children:["mary","joseph_nz"], book:"Matthew/Luke" },
+      { id:"mary", name:"Mary", gender:"f", blurb:"Mother of Jesus.", parents:["jesus_ancestor"], children:["jesus"], book:"Matthew/Luke" },
+      { id:"joseph_nz", name:"Joseph (of Nazareth)", gender:"m", blurb:"Legal father of Jesus; descendant of David.", parents:["jesus_ancestor"], children:["jesus"], book:"Matthew/Luke" },
+      { id:"jesus", name:"Jesus", gender:"m", blurb:"Central figure of the New Testament; believed by Christians to be the Messiah.", parents:["mary","joseph_nz"], children:[], book:"Gospels" }
     ];
 
     const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
-
-    // ------- Helpers for relationships -------
     const childrenOf = (id) => (byId[id]?.children || []).map(c => byId[c]).filter(Boolean);
     const parentsOf = (id) => (byId[id]?.parents || []).map(p => byId[p]).filter(Boolean);
-
-    // Given parents array (possibly 1 or 2), get all siblings (their children union)
-    function siblingsOfParents(parents) {
-      const set = new Map();
-      parents.forEach(p => childrenOf(p.id).forEach(c => set.set(c.id, c)));
-      return [...set.values()];
-    }
+    function siblingsOfParents(parents) { const set = new Map(); parents.forEach(p => childrenOf(p.id).forEach(c => set.set(c.id, c))); return [...set.values()]; }
 
     // ------- State -------
-    let focusId = 'adam'; // start zoomed to Adam
-    let lane = [];        // current lane (siblings to swipe)
-    let path = ['adam'];  // breadcrumb lineage from Adam to focus
+    let focusId = 'adam';
+    let lane = [];        // current siblings lane
+    let path = ['adam'];
 
     // ------- DOM -------
     const laneEl = document.getElementById('lane');
@@ -176,7 +180,17 @@
     const focusBtn = document.getElementById('focusBtn');
     const metaEl = document.getElementById('meta');
 
-    // ------- Rendering -------
+    const viewTree = document.getElementById('viewTree');
+    const viewList = document.getElementById('viewList');
+    const tabTree = document.getElementById('tabTree');
+    const tabList = document.getElementById('tabList');
+
+    // ------- Prevent double-tap / pinch zoom -------
+    document.addEventListener('dblclick', (e)=>{ e.preventDefault(); }, { passive:false });
+    document.addEventListener('gesturestart', (e)=>{ e.preventDefault(); }, { passive:false });
+    let lastTouchTime = 0; document.addEventListener('touchend', (e)=>{ const now = Date.now(); if (now - lastTouchTime < 350) e.preventDefault(); lastTouchTime = now; }, { passive:false });
+
+    // ------- Rendering (Tree) -------
     function renderCrumbs() {
       crumbsEl.innerHTML = '';
       path.forEach((id, idx) => {
@@ -187,15 +201,13 @@
         b.addEventListener('click', () => jumpToPathIndex(idx));
         crumbsEl.appendChild(b);
         if (idx < path.length-1) {
-          const dot = document.createElement('span');
-          dot.className = 'px-1 text-slate-500';
-          dot.textContent = '›';
-          crumbsEl.appendChild(dot);
+          const dot = document.createElement('span'); dot.className = 'px-1 text-slate-500'; dot.textContent = '›'; crumbsEl.appendChild(dot);
         }
       });
     }
 
     function makeCard(n) {
+      const hasKids = childrenOf(n.id).length;
       const card = document.createElement('div');
       card.className = `snap-center shrink-0 w-[82vw] max-w-sm rounded-2xl p-4 ring-1 ring-slate-700 shadow-lg ${n.gender==='f'?'cardF':'cardM'}`;
       card.innerHTML = `
@@ -204,11 +216,11 @@
           <div class="flex-1">
             <h3 class="text-lg font-semibold leading-snug">${n.name}</h3>
             <p class="mt-1 text-[13px] text-slate-200 clamp-2">${n.blurb}</p>
+            <div class="mt-2 flex items-center gap-2 text-[11px]">
+              ${parentsOf(n.id).length ? `<span class='px-2 py-1 rounded-full bg-slate-800/70'>Parents: ${parentsOf(n.id).map(p=>p.name).join(', ')}</span>`: ''}
+              ${hasKids ? `<span class='px-2 py-1 rounded-full bg-emerald-700/50 ring-1 ring-emerald-600/60'>Has children: ${hasKids}</span>` : `<span class='px-2 py-1 rounded-full bg-slate-700/60'>No children</span>`}
+            </div>
           </div>
-        </div>
-        <div class="mt-3 flex gap-2">
-          ${(parentsOf(n.id).length?'<span class="text-[11px] px-2 py-1 rounded-full bg-slate-800/70">Parents: '+parentsOf(n.id).map(p=>p.name).join(', ')+'</span>':'')}
-          ${(childrenOf(n.id).length?'<span class="text-[11px] px-2 py-1 rounded-full bg-slate-800/70">Children: '+childrenOf(n.id).length+'</span>':'')}
         </div>`;
 
       card.addEventListener('click', () => setFocus(n.id, {fromTap:true}));
@@ -219,12 +231,15 @@
     function renderLane() {
       laneEl.innerHTML = '';
       lane.forEach(n => laneEl.appendChild(makeCard(n)));
-      // Center the focused card
-      queueMicrotask(() => {
-        const el = document.getElementById(`card-${focusId}`);
-        if (el) el.scrollIntoView({behavior:'instant', inline:'center', block:'nearest'});
-      });
-      metaEl.textContent = `${lane.findIndex(x=>x.id===focusId)+1} / ${lane.length} in this generation`;
+      queueMicrotask(() => { const el = document.getElementById(`card-${focusId}`); if (el) el.scrollIntoView({behavior:'instant', inline:'center', block:'nearest'}); });
+      const kids = childrenOf(focusId).length; const parents = parentsOf(focusId).length;
+      // Update buttons with counts and disabled state
+      upBtn.disabled = parents === 0; downBtn.disabled = kids === 0;
+      upBtn.classList.toggle('opacity-40', parents===0); downBtn.classList.toggle('opacity-40', kids===0);
+      downBtn.textContent = kids ? `↓ Children (${kids})` : '↓ No children';
+      upBtn.textContent = parents ? '↑ Parents' : '↑ No parents';
+      // Meta hint
+      metaEl.textContent = parents? `Parents: ${parentsOf(focusId).map(p=>p.name).join(', ')}` : 'Root generation';
     }
 
     // ------- Navigation logic -------
@@ -233,11 +248,8 @@
       const p = parentsOf(id);
       if (p.length) {
         lane = siblingsOfParents(p);
-        // update path: trim to last common ancestor then add id
-        const newTrail = buildTrailFromRoot(id);
-        path = newTrail;
+        const newTrail = buildTrailFromRoot(id); path = newTrail;
       } else {
-        // root level (Adam/Eve)
         lane = ['adam','eve'].map(x=>byId[x]).filter(Boolean);
         path = buildTrailFromRoot(id);
       }
@@ -246,43 +258,20 @@
       if (opts.fromTap) openSheet(byId[id]);
     }
 
-    function buildTrailFromRoot(id) {
-      // Greedy climb to Adam by first parent if multiple
-      const trail = [];
-      let cur = byId[id];
-      while (cur) {
-        trail.unshift(cur.id);
-        const ps = parentsOf(cur.id);
-        if (!ps.length) break;
-        cur = ps[0];
-      }
-      return trail;
-    }
+    function buildTrailFromRoot(id) { const trail = []; let cur = byId[id]; while (cur) { trail.unshift(cur.id); const ps = parentsOf(cur.id); if (!ps.length) break; cur = ps[0]; } return trail; }
 
-    function goUp() {
-      const ps = parentsOf(focusId);
-      if (!ps.length) return; // already at root
-      // choose first parent path; show their sibling lane
-      setFocus(ps[0].id);
-    }
+    function goUp() { const ps = parentsOf(focusId); if (!ps.length) return; setFocus(ps[0].id); }
 
     function goDown() {
       const kids = childrenOf(focusId);
-      if (!kids.length) return;
-      // descend to first child; siblings lane becomes all children of focus
-      focusId = kids[0].id;
-      lane = kids;
-      path.push(focusId);
-      renderCrumbs();
-      renderLane();
+      if (!kids.length) { // subtle haptic/visual feedback: flash meta
+        metaEl.textContent = 'No children for this person';
+        return;
+      }
+      focusId = kids[0].id; lane = kids; path.push(focusId); renderCrumbs(); renderLane();
     }
 
-    function jumpToPathIndex(idx) {
-      const targetId = path[idx];
-      setFocus(targetId);
-      path = path.slice(0, idx+1);
-      renderCrumbs();
-    }
+    function jumpToPathIndex(idx) { const targetId = path[idx]; setFocus(targetId); path = path.slice(0, idx+1); renderCrumbs(); }
 
     // ------- Details sheet -------
     const sheet = document.getElementById('sheet');
@@ -292,32 +281,74 @@
     const sheetAvatar = document.getElementById('sheetAvatar');
     document.getElementById('closeSheet').addEventListener('click', ()=> sheet.style.transform = 'translateY(100%)');
 
-    function openSheet(node) {
-      sheetTitle.textContent = node.name;
-      const ps = parentsOf(node.id);
-      sheetSub.textContent = ps.length ? 'Parents: ' + ps.map(p=>p.name).join(', ') : '—';
-      sheetBody.textContent = node.blurb;
-      sheetAvatar.querySelector('span').textContent = node.name.slice(0,1);
-      sheet.style.transform = 'translateY(0%)';
-    }
+    function openSheet(node) { sheetTitle.textContent = node.name; const ps = parentsOf(node.id); sheetSub.textContent = ps.length ? 'Parents: ' + ps.map(p=>p.name).join(', ') : '—'; sheetBody.textContent = node.blurb; sheetAvatar.querySelector('span').textContent = node.name.slice(0,1); sheet.style.transform = 'translateY(0%)'; }
 
     // ------- Search -------
     const search = document.getElementById('search');
-    search.addEventListener('input', ()=>{
-      const q = search.value.trim().toLowerCase();
-      if (!q) return;
-      const hit = NODES.find(n => n.name.toLowerCase().includes(q));
-      if (hit) setFocus(hit.id, {fromTap:false});
-    });
+    search.addEventListener('input', ()=>{ const q = search.value.trim().toLowerCase(); if (!q) return; const hit = NODES.find(n => n.name.toLowerCase().includes(q)); if (hit) { if (viewList.classList.contains('hidden')) setFocus(hit.id, {fromTap:false}); centerInList(hit.id); } });
 
     // ------- Buttons -------
     upBtn.addEventListener('click', goUp);
     downBtn.addEventListener('click', goDown);
     focusBtn.addEventListener('click', ()=> openSheet(byId[focusId]));
     document.getElementById('homeBtn').addEventListener('click', ()=> setFocus('adam'));
-    document.getElementById('infoBtn').addEventListener('click', ()=> openSheet({name:'About', blurb:'Mobile-first redesign: no pinch/zoom, no free panning. Navigate by swiping siblings (scroll-snap), and use ↑ Parents / ↓ Children to move generations. Tap a card for details. Descriptions are line-clamped on cards to avoid overflow; full text appears in the sheet.', parents:[]}));
+    document.getElementById('infoBtn').addEventListener('click', ()=> openSheet({name:'About', blurb:'Mobile-first: no pinch/zoom or double-tap zoom. Navigate by swiping siblings (scroll-snap) and using ↑ Parents / ↓ Children. Buttons show counts and disable when unavailable. A List view groups important figures by Bible books.', parents:[]}));
+
+    // ------- Tabs (Tree/List) -------
+    tabTree.addEventListener('click', ()=>{ tabTree.classList.add('tab-active'); tabList.classList.remove('tab-active'); viewTree.classList.remove('hidden'); viewList.classList.add('hidden'); });
+    tabList.addEventListener('click', ()=>{ tabList.classList.add('tab-active'); tabTree.classList.remove('tab-active'); viewList.classList.remove('hidden'); viewTree.classList.add('hidden'); });
+
+    // ------- List View (group by book) -------
+    const listContainer = document.getElementById('listContainer');
+    function buildList() {
+      const byBook = {};
+      for (const n of NODES) { if (!n.book) continue; (byBook[n.book] ||= []).push(n); }
+      const order = ['Genesis','Exodus','Ruth/1 Chr','1 Samuel','Matthew/Luke','Gospels'];
+      listContainer.innerHTML = '';
+      for (const book of order) {
+        const arr = (byBook[book]||[]).sort((a,b)=> a.name.localeCompare(b.name));
+        if (!arr.length) continue;
+        const sec = document.createElement('section');
+        sec.innerHTML = `
+          <h2 class="text-sm uppercase tracking-wide text-slate-400 mt-2 mb-1">${book}</h2>
+          <div class="space-y-2"></div>`;
+        const box = sec.querySelector('div');
+        arr.forEach(n => {
+          const row = document.createElement('button');
+          row.className = 'ripple w-full text-left rounded-xl px-3 py-3 bg-slate-800/70 ring-1 ring-slate-700 hover:ring-indigo-400 flex items-center gap-3';
+          row.innerHTML = `
+            <div class="size-8 rounded-lg bg-indigo-500/80 grid place-items-center"><span class="text-xs font-bold">${n.name.slice(0,1)}</span></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">${n.name}</div>
+              <div class="text-[11px] text-slate-300 clamp-2">${n.blurb}</div>
+            </div>
+            <div class="text-[11px] text-slate-400">${childrenOf(n.id).length? childrenOf(n.id).length+' children':''}</div>`;
+          row.addEventListener('click', ()=>{ setFocus(n.id); tabTree.click(); setTimeout(()=> document.getElementById(`card-${n.id}`)?.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'}), 0); });
+          box.appendChild(row);
+        });
+        listContainer.appendChild(sec);
+      }
+    }
+
+    function centerInList(id) {
+      const el = document.querySelector(`#listContainer button:has(.font-medium:contains('${byId[id].name}'))`);
+      if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    // Polyfill :contains for querySelector (minimal for our usage)
+    (function(){
+      const qs = Document.prototype.querySelector;
+      Document.prototype.querySelector = function(sel){
+        if (!sel.includes(':contains')) return qs.call(this, sel);
+        const m = sel.match(/:contains\('([^']+)'\)/); if (!m) return null;
+        const text = m[1]; const base = sel.split(':contains')[0];
+        const list = this.querySelectorAll(base); for (const el of list){ if (el.textContent.includes(text)) return el; }
+        return null;
+      };
+    })();
 
     // ------- Init -------
+    buildList();
     setFocus('adam');
   </script>
 </body>
