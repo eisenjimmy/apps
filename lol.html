@@ -329,6 +329,13 @@
       Light:    { Dark:2.0, Arcane:1.2 },
       Physical: {}
     };
+    const DDRAGON_VERSIONS = 'https://ddragon.leagueoflegends.com/api/versions.json';
+    const ddragonData = (v, path) => `https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/${path}`;
+    const ddragonImgChampion = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/champion/${file}`;
+    const ddragonSpell = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/spell/${file}`;
+    const ddragonSplash = (id, skinIndex=0) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_${skinIndex}.jpg`;
+    async function getJSON(url){ const res = await fetch(url,{cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); }
+
     function effMultiplier(attElem, defElem){
       return (EFF[attElem] && EFF[attElem][defElem]) || 1.0;
     }
@@ -355,7 +362,7 @@
       const f = FIELDS.find(x=>x.name===state.field.name) || FIELDS[0];
       const up = f.boost[elem] || 1.0;
       const dn = f.nerf[elem] || 1.0;
-      return up * dn; // dn is <=1 if present
+      return up * dn;
     }
     function updateFieldBanner(){
       $('#fieldName').textContent = state.field.name;
@@ -411,13 +418,6 @@
       return fallbackElem || 'Physical';
     }
 
-    // ---------- Data Dragon ----------
-    const DDRAGON_VERSIONS = 'https://ddragon.leagueoflegends.com/api/versions.json';
-    const ddragonData = (v, path) => `https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/${path}`;
-    const ddragonImgChampion = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/champion/${file}`;
-    const ddragonSpell = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/spell/${file}`;
-    async function getJSON(url){ const res = await fetch(url,{cache:'no-store'}); if(!res.ok) throw new Error('HTTP '+res.status); return res.json(); }
-
     // ---------- Utils ----------
     const clamp = (n,min,max)=> Math.max(min, Math.min(max, n));
     const abilityBase = (idx)=> BALANCE.BASE_DMG[idx] || 80;
@@ -425,18 +425,17 @@
       const conf = BALANCE.RES[resType||'None'];
       let c = 0;
       if(Array.isArray(sp.cost) && sp.cost.length) c = Number(sp.cost[0])||0;
-      if(!c && typeof sp.costBurn==='string'){ const m=sp.costBurn.match(/\d+/); if(m) c=Number(m[0])||0; }
+      if(!c && typeof sp.costBurn==='string'){ const m=sp.costBurn.match(/\d+/g); if(m) c=Number(m[0])||0; }
       if(!c) c = conf.costs[idx] || 0;
       return c;
     }
 
     // ---------- Champ State ----------
-    // ChampState = { data,tags,elem,hp,max,cds:[4],resType,res,resMax,statuses{shield,shieldFactor,weaken,burn,slow,firstHit,roleMods} }
     function buildChampState(full){
       const base = BALANCE.BASE_HP + (full.tags||[]).reduce((a,t)=> a + (BALANCE.ROLE_HP_BONUS[t]||0), 0);
       const resType = detectResourceType(full);
       const conf = BALANCE.RES[resType];
-      const s = {
+      return {
         data: full, tags: full.tags||[], elem: champElement(full),
         hp: base, max: base,
         cds: [0,0,0,0],
@@ -448,7 +447,6 @@
           roleMods: { magic: (full.tags||[]).includes('Mage') ? 1.05 : 1.0, physical: (full.tags||[]).some(x=>['Marksman','Fighter','Assassin'].includes(x)) ? 1.05 : 1.0, penA: (full.tags||[]).includes('Assassin') ? 0.05 : 0 }
         }
       };
-      return s;
     }
     function detectResourceType(full){
       const p=(full.partype||'').toLowerCase();
@@ -480,17 +478,16 @@
       diffLabel: $('#diffLabel'),
       shareBtn: $('#shareBtn'), randomFightBtn: $('#randomFightBtn'),
       resetBtn: $('#resetBtn'), swapBtn: $('#swapBtn'),
-      // Items UI
       itemPotion: $('#itemPotion'), itemEther: $('#itemEther'),
       potionLeftL: $('#potionLeftL'), etherLeftL: $('#etherLeftL'),
       potionLeftR: $('#potionLeftR'), etherLeftR: $('#etherLeftR'),
       p2ModeBadge: $('#p2ModeBadge'), oppItemsInfo: $('#oppItemsInfo'),
-      // Inspect
       inspectOverlay: $('#inspectOverlay'),
       insName: $('#insName'), insChamp: $('#insChamp'), insDesc: $('#insDesc'),
       insElem: $('#insElem'), insDmgType: $('#insDmgType'), insCost: $('#insCost'),
       insCD: $('#insCD'), insHints: $('#insHints'),
       insClose: $('#insClose'),
+      log: $('#log'),
     };
 
     // ---------- Rendering ----------
@@ -589,8 +586,8 @@
       const row=document.createElement('div');
       row.className='rounded-lg border border-white/10 bg-white/5 px-3 py-2';
       row.textContent = msg;
-      $('#log').prepend(row);
-      while($('#log').children.length>150) $('#log').removeChild($('#log').lastChild);
+      els.log.prepend(row);
+      while(els.log.children.length>150) els.log.removeChild(els.log.lastChild);
       live(msg);
     }
 
@@ -608,8 +605,8 @@
 
     // ---------- Turn helpers ----------
     function winner(){
-      const Ldead = state.leftTeam.every(s => s && s.hp<=0);
-      const Rdead = state.rightTeam.every(s => s && s.hp<=0);
+      const Ldead = state.leftTeam.filter(Boolean).length>0 && state.leftTeam.filter(Boolean).every(s => s.hp<=0);
+      const Rdead = state.rightTeam.filter(Boolean).length>0 && state.rightTeam.filter(Boolean).every(s => s.hp<=0);
       if (Ldead) return 'right';
       if (Rdead) return 'left';
       return null;
@@ -643,7 +640,7 @@
       const next = state.turn==='left' ? 'right' : 'left';
       state.turnCount++;
 
-      // Field countdown (every turn)
+      // Field countdown
       state.field.turns -= 1;
       if(state.field.turns<=0) setRandomField();
 
@@ -877,31 +874,31 @@
     function attachHoldToInspect(btn, spell, champState){
       let timer=null, open=false;
       const start = ()=>{ timer=setTimeout(()=>{ open=true; openInspect(spell, champState); }, 420); };
-      const clear = ()=>{ if(timer){ clearTimeout(timer); timer=null; } };
+      const clearT = ()=>{ if(timer){ clearTimeout(timer); timer=null; } };
       btn.addEventListener('mousedown', start);
       btn.addEventListener('touchstart', start, {passive:true});
-      ['mouseleave','mouseup','touchend','touchcancel'].forEach(ev=> btn.addEventListener(ev, ()=>{ if(!open) clear(); }, {passive:true}));
+      ['mouseleave','mouseup','touchend','touchcancel'].forEach(ev=> btn.addEventListener(ev, ()=>{ if(!open) clearT(); }, {passive:true}));
     }
     function openInspect(sp, ch){
-      $('#insName').textContent = sp.name;
-      $('#insChamp').textContent = ch.data.name;
-      $('#insDesc').innerHTML = (sp.tooltip||'').replaceAll(/<\/?br\s*\/?>/gi,'<br>');
+      els.insName.textContent = sp.name;
+      els.insChamp.textContent = ch.data.name;
+      // Use .replace with /g for compatibility
+      els.insDesc.innerHTML = (sp.tooltip||'').replace(/<\/?br\s*\/?>/gi,'<br>');
       const elem = spellElement(sp, ch.elem);
       const type = detectDamageType(sp, ch.data);
-      $('#insElem').textContent = elem;
-      $('#insDmgType').textContent = type;
-      $('#insCost').textContent = (sp.costBurn || spellCost(sp,0,ch.resType) || 0) + (ch.resType!=='None' ? ' '+ch.resType : '');
-      const cd = Array.isArray(sp.cooldown) && sp.cooldown.length? sp.cooldown[0]: ([2,3,3,4][0]);
-      $('#insCD').textContent = cd;
+      els.insElem.textContent = elem;
+      els.insDmgType.textContent = type;
+      els.insCost.textContent = (sp.costBurn || spellCost(sp,0,ch.resType) || 0) + (ch.resType!=='None' ? ' '+ch.resType : '');
+      const cd = Array.isArray(sp.cooldown) && sp.cooldown.length? sp.cooldown[0]: 2;
+      els.insCD.textContent = cd;
       const foe = active(enemySide(state.turn));
-      $('#insHints').textContent = foe ? `Effectiveness vs ${foe.data.name}: x${(effMultiplier(elem, foe.elem)*fieldMultiplier(elem)).toFixed(2)} (field: ${state.field.name})` : '';
-      $('#inspectOverlay').classList.remove('hidden');
+      els.insHints.textContent = foe ? `Effectiveness vs ${foe.data.name}: x${(effMultiplier(elem, foe.elem)*fieldMultiplier(elem)).toFixed(2)} (field: ${state.field.name})` : '';
+      els.inspectOverlay.classList.remove('hidden');
     }
-    $('#insClose').addEventListener('click', ()=> $('#inspectOverlay').classList.add('hidden'));
-    $('#inspectOverlay').addEventListener('click', (e)=>{ if(e.target.id==='inspectOverlay') $('#inspectOverlay').classList.add('hidden'); });
+    els.insClose.addEventListener('click', ()=> els.inspectOverlay.classList.add('hidden'));
+    els.inspectOverlay.addEventListener('click', (e)=>{ if(e.target===els.inspectOverlay) els.inspectOverlay.classList.add('hidden'); });
 
     // ---------- Data setup ----------
-    const ddragonSplash = (id, skinIndex=0) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_${skinIndex}.jpg`;
     async function loadChampionFull(id){ const raw=await getJSON(`https://ddragon.leagueoflegends.com/cdn/${state.version}/data/en_US/champion/${id}.json`); return raw.data[id]; }
     function findChampionIdByName(name){ const f=state.champArray.find(c=>c.name.toLowerCase()===String(name||'').toLowerCase()); return f?.id||null; }
 
@@ -914,18 +911,15 @@
         renderAll();
       }catch(e){ console.error(e); logLine(`Failed to load ${champId}.`); }
     }
-    const ddragonImgChampion = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/champion/${file}`;
-    const ddragonSpell = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/spell/${file}`;
-
     function renderMiniCard(side, slot, full){
-      const tgt = (side==='left'? $('#leftCard'+slot): $('#rightCard'+slot));
+      const tgt = (side==='left'? els.leftCard: els.rightCard)[slot];
       tgt.innerHTML = `<div class="rounded-lg border border-white/10 bg-white/5 p-2 flex items-center gap-2"><img class="size-8 rounded-md ring-1 ring-white/10" src="${ddragonImgChampion(state.version, full.image.full)}" alt=""><div class="min-w-0"><div class="text-xs font-medium truncate">${full.name}</div><div class="text-[10px] text-slate-400">${(full.tags||[]).join(' • ')}</div></div></div>`;
     }
 
     function randomTeam(side){
       for(let i=0;i<3;i++){
         const r=state.champArray[Math.floor(Math.random()*state.champArray.length)];
-        (side==='left'? $('#leftSearch'+i): $('#rightSearch'+i)).value = r.name;
+        (side==='left'? els.leftSearch: els.rightSearch)[i].value = r.name;
         setChampionForSlot(side, i, r.id);
       }
       if(side==='left') state.leftIdx=0; else state.rightIdx=0;
@@ -934,15 +928,11 @@
     function hardReset(rebuild=true){
       if(rebuild){
         ['left','right'].forEach(side=>{
-          for(let i=0;i<3;i++){
-            const val = (side==='left'? $('#leftSearch'+i): $('#rightSearch'+i)).value;
-            const id=findChampionIdByName(val);
-            if(id) setChampionForSlot(side, i, id);
-          }
+          const inputs = side==='left'? els.leftSearch: els.rightSearch;
+          for(let i=0;i<3;i++){ const id=findChampionIdByName(inputs[i].value); if(id) setChampionForSlot(side, i, id); }
           if(side==='left') state.leftIdx=0; else state.rightIdx=0;
         });
       }
-      // reset items & field
       state.items.left = {potion:2, ether:2};
       state.items.right= {potion:2, ether:2};
       state.field = {name:'Calm', turns:5};
@@ -984,7 +974,7 @@
         const short = await getJSON(ddragonData(state.version, 'champion.json'));
         state.champions = short.data;
         state.champArray = Object.values(state.champions).sort((a,b)=>a.name.localeCompare(b.name));
-        $('#championsList').innerHTML = state.champArray.map(c=>`<option value="${c.name}" data-id="${c.id}"></option>`).join('');
+        els.listNode.innerHTML = state.champArray.map(c=>`<option value="${c.name}" data-id="${c.id}"></option>`).join('');
 
         // Deep link
         const q = decodeQuery();
@@ -997,8 +987,8 @@
           const picks=[];
           for(let i=0;i<3;i++){
             const id=q[keys[i]];
-            if(id && state.champions[id]){ (side==='left'? $('#leftSearch'+i): $('#rightSearch'+i)).value=state.champions[id].name; picks.push(setChampionForSlot(side,i,id)); }
-            else { const r=state.champArray[Math.floor(Math.random()*state.champArray.length)]; (side==='left'? $('#leftSearch'+i): $('#rightSearch'+i)).value=r.name; picks.push(setChampionForSlot(side,i,r.id)); }
+            if(id && state.champions[id]){ (side==='left'? els.leftSearch: els.rightSearch)[i].value=state.champions[id].name; picks.push(setChampionForSlot(side,i,id)); }
+            else { const r=state.champArray[Math.floor(Math.random()*state.champArray.length)]; (side==='left'? els.leftSearch: els.rightSearch)[i].value=r.name; picks.push(setChampionForSlot(side,i,r.id)); }
           }
           await Promise.all(picks);
         };
@@ -1016,19 +1006,19 @@
     $('#leftPickRandom').addEventListener('click', ()=>{ randomTeam('left'); renderAll(); });
     $('#rightPickRandom').addEventListener('click', ()=>{ randomTeam('right'); renderAll(); });
 
-    [0,1,2].forEach(i=> $('#leftSearch'+i).addEventListener('change', ()=>{ const id=findChampionIdByName($('#leftSearch'+i).value); if(id) setChampionForSlot('left', i, id); }));
-    [0,1,2].forEach(i=> $('#rightSearch'+i).addEventListener('change', ()=>{ const id=findChampionIdByName($('#rightSearch'+i).value); if(id) setChampionForSlot('right', i, id); }));
+    els.leftSearch.forEach((inp,i)=> inp.addEventListener('change', ()=>{ const id=findChampionIdByName(inp.value); if(id) setChampionForSlot('left', i, id); }));
+    els.rightSearch.forEach((inp,i)=> inp.addEventListener('change', ()=>{ const id=findChampionIdByName(inp.value); if(id) setChampionForSlot('right', i, id); }));
 
-    $('#resetBtn').addEventListener('click', ()=> hardReset(true));
-    $('#swapBtn').addEventListener('click', swapSides);
-    $('#randomFightBtn').addEventListener('click', ()=>{ randomTeam('left'); randomTeam('right'); hardReset(false); });
-    $('#shareBtn').addEventListener('click', shareMatch);
+    els.resetBtn.addEventListener('click', ()=> hardReset(true));
+    els.swapBtn.addEventListener('click', swapSides);
+    els.randomFightBtn.addEventListener('click', ()=>{ randomTeam('left'); randomTeam('right'); hardReset(false); });
+    els.shareBtn.addEventListener('click', shareMatch);
     if(els.p2Mode) els.p2Mode.addEventListener('change', e=> setP2Mode(e.target.value));
     if(els.diffRange) els.diffRange.addEventListener('input', e=> setDifficultyByIndex(+e.target.value));
 
     // Items buttons (P1)
-    $('#itemPotion').addEventListener('click', ()=>{ if(winner()) return; if(state.turn!=='left') return; usePotion('left'); });
-    $('#itemEther').addEventListener('click',  ()=>{ if(winner()) return; if(state.turn!=='left') return; useEther('left'); });
+    els.itemPotion.addEventListener('click', ()=>{ if(winner()) return; if(state.turn!=='left') return; usePotion('left'); });
+    els.itemEther.addEventListener('click',  ()=>{ if(winner()) return; if(state.turn!=='left') return; useEther('left'); });
 
     // Init
     bootstrap();
@@ -1036,7 +1026,7 @@
     // Service Worker
     if('serviceWorker' in navigator){
       const swCode = `
-        self.addEventListener('install', e => { e.waitUntil(caches.open('jld-v5').then(c => c.addAll(['./']))); self.skipWaiting(); });
+        self.addEventListener('install', e => { e.waitUntil(caches.open('jld-v5-fix').then(c => c.addAll(['./']))); self.skipWaiting(); });
         self.addEventListener('activate', e => self.clients.claim());
         self.addEventListener('fetch', e => { const u=new URL(e.request.url); if(u.origin===location.origin){ e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request))); } });
       `;
