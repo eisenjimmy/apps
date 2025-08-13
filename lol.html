@@ -3,9 +3,52 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LoL Stadium — Mobile Duel Arena</title>
+  <title>Jimmy’s LoL Duel</title>
 
-  <!-- Tailwind CDN (one file site; no build step) -->
+  <!-- Favicon (inline SVG) -->
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%235a7cff" offset="0"/><stop stop-color="%23a855f7" offset="1"/></linearGradient></defs><rect width="128" height="128" rx="24" fill="%230b1220"/><g fill="url(%23g)"><path d="M25 92l20-56h12l-20 56zM71 92l20-56h12l-20 56z"/><circle cx="64" cy="34" r="6"/></g></svg>' />
+
+  <!-- Theme / PWA polish -->
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="color-scheme" content="dark light" />
+
+  <!-- SEO -->
+  <meta name="description" content="Jimmy’s LoL Duel — a slick, mobile-first League of Legends duel sandbox. Pick two champions, tap abilities (Q/W/E/R), watch animations, and battle a smarter CPU." />
+  <meta name="keywords" content="League of Legends, LoL, champions, abilities, duel, QWER, arena, Tailwind, Data Dragon, Jimmy" />
+  <meta name="robots" content="index,follow" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Jimmy’s LoL Duel" />
+  <meta property="og:description" content="Pick two champions and duel with Q/W/E/R. Smart CPU, tiny role passives, flashy effects — all in one static page." />
+  <!-- Tip: replace with an absolute URL in your repo after deploy -->
+  <meta property="og:image" content="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Jimmy’s LoL Duel" />
+  <meta name="twitter:description" content="LoL duel sandbox with smart CPU and role passives. Mobile-first and snappy." />
+  <meta name="twitter:image" content="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg" />
+
+  <!-- Canonical -->
+  <link id="canonical" rel="canonical" href="">
+  <script>document.addEventListener('DOMContentLoaded',()=>{const l=document.getElementById('canonical'); if(l) l.href=location.href.split('#')[0];});</script>
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Jimmy’s LoL Duel",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "description": "A mobile-first League of Legends duel sandbox with smart CPU, animations, and tiny role passives.",
+    "author": {"@type":"Person","name":"Jimmy"},
+    "inLanguage": "en-US"
+  }
+  </script>
+
+  <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -14,15 +57,18 @@
           fontFamily: {
             ui: ['ui-sans-serif','system-ui','-apple-system','Segoe UI','Roboto','Ubuntu','Cantarell','Noto Sans','Helvetica Neue','Arial','"Apple Color Emoji"','"Segoe UI Emoji"'],
           },
-          boxShadow: {
-            glow: '0 0 0 3px rgb(59 130 246 / 0.25), 0 10px 25px rgb(0 0 0 / 0.25)',
-          },
           keyframes: {
             hit: { '0%': { transform:'translateX(0)' }, '20%': { transform:'translateX(-6px)' }, '40%': { transform:'translateX(6px)' }, '60%': { transform:'translateX(-3px)' }, '80%': { transform:'translateX(3px)' }, '100%': { transform:'translateX(0)' } },
-            pulsebar: { '0%': { width:'100%' }, '100%': { width:'0%' } }
+            burst: { '0%': { transform:'scale(.85)', opacity:.9 }, '100%': { transform:'scale(1.6)', opacity:0 } },
+            float: { '0%': { transform:'translateY(0)', opacity:1 }, '100%': { transform:'translateY(-24px)', opacity:0 } },
+            pulsebar: { '0%': { width:'100%' }, '100%': { width:'0%' } },
+            press: { '0%': { transform:'scale(1)' }, '50%': { transform:'scale(.96)' }, '100%': { transform:'scale(1)' } },
           },
           animation: {
             hit: 'hit 300ms ease-in-out',
+            burst: 'burst 500ms ease-out forwards',
+            float: 'float 700ms ease-out forwards',
+            press: 'press 220ms ease-in-out',
           }
         }
       }
@@ -30,31 +76,67 @@
   </script>
 
   <style>
-    /* Minimal custom helpers (kept inside the single file) */
     .line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .tap-highlight-none{-webkit-tap-highlight-color:transparent}
+    .abs-full{position:absolute;inset:0}
+    @media (prefers-reduced-motion: reduce) {
+      .animate-hit, .animate-burst, .animate-float, .animate-press { animation: none !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-ui antialiased">
   <!-- Header -->
   <header class="sticky top-0 z-50 backdrop-blur bg-slate-950/70 border-b border-white/10">
-    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
-      <div class="size-8 rounded-md bg-indigo-500/20 grid place-items-center">
+    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-2">
+      <div class="size-8 rounded-md bg-indigo-500/20 grid place-items-center shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 6 .9-4.5 4.3L17.8 20 12 16.9 6.2 20l1.3-6.8L3 8.9 9 8z"/></svg>
       </div>
-      <div class="flex-1">
-        <h1 class="text-lg font-semibold leading-tight">LoL Stadium</h1>
-        <p class="text-xs text-slate-400">Pick two champions • Tap abilities (Q/W/E/R) • Simple cooldowns • First to zero loses</p>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-semibold truncate">Jimmy’s LoL Duel</h1>
+        <p class="text-xs text-slate-400 truncate">P1 (Left) vs CPU (Right) by default • Tap Q/W/E/R</p>
       </div>
-      <button id="randomFightBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 active:scale-[.98] transition focus:outline-none focus:ring-2 focus:ring-indigo-400">Random Duel</button>
+
+      <!-- P2 toggle -->
+      <label class="hidden sm:flex items-center gap-2 text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+        <span class="whitespace-nowrap">Player&nbsp;2:</span>
+        <select id="p2Mode" class="bg-transparent outline-none">
+          <option value="cpu" selected>CPU</option>
+          <option value="human">Human</option>
+        </select>
+      </label>
+
+      <!-- Difficulty slider -->
+      <div class="hidden sm:flex items-center gap-2 text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+        <span>Difficulty</span>
+        <input id="diffRange" type="range" min="0" max="2" step="1" value="1" class="w-24 accent-indigo-500">
+        <span id="diffLabel" class="font-medium">Standard</span>
+      </div>
+
+      <button id="shareBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-xs sm:text-sm bg-white/10 hover:bg-white/15">Share</button>
+      <button id="randomFightBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-xs sm:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 active:scale-[.98] transition focus:outline-none focus:ring-2 focus:ring-indigo-400">Random Duel</button>
+    </div>
+
+    <!-- Mobile controls row -->
+    <div class="sm:hidden mx-auto max-w-6xl px-4 pb-3 flex items-center gap-2">
+      <label class="flex items-center gap-2 text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+        <span>P2:</span>
+        <select id="p2Mode_mobile" class="bg-transparent outline-none">
+          <option value="cpu" selected>CPU</option>
+          <option value="human">Human</option>
+        </select>
+      </label>
+      <div class="flex items-center gap-2 text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+        <span>Diff</span>
+        <input id="diffRange_mobile" type="range" min="0" max="2" step="1" value="1" class="w-24 accent-indigo-500">
+        <span id="diffLabel_mobile" class="font-medium">Standard</span>
+      </div>
     </div>
   </header>
 
   <!-- App -->
   <main class="mx-auto max-w-6xl px-4 py-4 md:py-8">
-    <!-- Controls -->
+    <!-- Pickers -->
     <section class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-      <!-- Left picker -->
       <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
         <div class="flex items-center gap-2">
           <div class="grow">
@@ -67,12 +149,11 @@
         <div id="leftCard" class="mt-3"></div>
       </div>
 
-      <!-- Right picker -->
       <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
         <div class="flex items-center gap-2">
           <div class="grow">
             <label for="rightSearch" class="sr-only">Right champion</label>
-            <input id="rightSearch" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500" placeholder="Search right champion…" list="championsList" autocomplete="off">
+            <input id="rightSearch" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm placeholder:text-slate-500 focus:outline:none focus:ring-2 focus:ring-rose-500" placeholder="Search right champion…" list="championsList" autocomplete="off">
           </div>
           <button id="rightPickRandom" class="tap-highlight-none rounded-md px-3 py-2 text-xs bg-white/10 hover:bg-white/15">Random</button>
         </div>
@@ -84,15 +165,19 @@
     <section class="mt-4 md:mt-8 rounded-2xl border border-white/10 overflow-hidden">
       <div id="arenaBackdrop" class="relative bg-slate-900">
         <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(20,20,30,0.6),_rgba(2,6,23,0.95))] backdrop-blur-sm"></div>
+        <div id="fxLayer" class="abs-full pointer-events-none"></div>
+
         <div class="relative grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-8 p-3 md:p-6">
-          <!-- Left fighter panel -->
-          <div id="leftFighter" class="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+          <!-- Left -->
+          <div id="leftFighter" class="relative rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+            <div class="abs-full pointer-events-none" id="leftFX"></div>
             <div class="p-3 flex items-center gap-3">
               <img id="leftIcon" alt="" class="size-12 rounded-lg ring-1 ring-white/10 object-cover" />
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
+              <div class="min-w-0 w-full">
+                <div class="flex items-center gap-2 flex-wrap">
                   <h3 id="leftName" class="font-semibold truncate">—</h3>
                   <span id="leftTags" class="text-[10px] px-1.5 py-0.5 rounded bg-white/10"></span>
+                  <span id="leftBadges" class="text-[10px] flex gap-1"></span>
                 </div>
                 <div class="mt-1 h-2 w-full bg-slate-800 rounded overflow-hidden">
                   <div id="leftHpBar" class="h-full bg-green-500 transition-all"></div>
@@ -103,14 +188,16 @@
             <div class="px-2 pb-3 grid grid-cols-4 gap-2" id="leftAbilities"></div>
           </div>
 
-          <!-- Right fighter panel -->
-          <div id="rightFighter" class="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+          <!-- Right -->
+          <div id="rightFighter" class="relative rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+            <div class="abs-full pointer-events-none" id="rightFX"></div>
             <div class="p-3 flex items-center gap-3">
               <img id="rightIcon" alt="" class="size-12 rounded-lg ring-1 ring-white/10 object-cover" />
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
+              <div class="min-w-0 w-full">
+                <div class="flex items-center gap-2 flex-wrap">
                   <h3 id="rightName" class="font-semibold truncate">—</h3>
                   <span id="rightTags" class="text-[10px] px-1.5 py-0.5 rounded bg-white/10"></span>
+                  <span id="rightBadges" class="text-[10px] flex gap-1"></span>
                 </div>
                 <div class="mt-1 h-2 w-full bg-slate-800 rounded overflow-hidden">
                   <div id="rightHpBar" class="h-full bg-green-500 transition-all"></div>
@@ -129,20 +216,15 @@
           <div class="flex items-center gap-2">
             <button id="resetBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-sm bg-white/10 hover:bg-white/15">Reset</button>
             <button id="swapBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-sm bg-white/10 hover:bg-white/15">Swap Sides</button>
-            <label class="ml-1 inline-flex items-center gap-2 text-sm">
-              <input id="autoPlayToggle" type="checkbox" class="size-4 accent-indigo-500">
-              Auto‑play
-            </label>
           </div>
           <div id="turnBadge" class="text-xs px-2 py-1 rounded bg-indigo-600">Turn: —</div>
         </div>
-        <div id="log" class="px-3 md:px-4 pb-4 space-y-2 max-h-56 overflow-auto text-sm"></div>
+        <div id="log" aria-live="polite" class="px-3 md:px-4 pb-4 space-y-2 max-h-56 overflow-auto text-sm"></div>
       </div>
     </section>
 
-    <!-- Footer / Attribution -->
     <footer class="mt-6 text-xs text-slate-400">
-      <p>Champions, names, images, and ability info are pulled live from Riot’s Data Dragon. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. This is a fan‑made demo for educational purposes.</p>
+      <p>Uses Riot’s Data Dragon for champions/abilities and art. League of Legends and Riot Games are trademarks of Riot Games, Inc. Fan‑made demo.</p>
     </footer>
   </main>
 
@@ -151,86 +233,138 @@
     const $ = (sel, el=document) => el.querySelector(sel);
     const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
 
-    // --- Globals / State ---
+    // --- State ---
     const state = {
       version: null,
-      champions: {},       // keyed by champion id (e.g., "Ahri")
-      champArray: [],      // [{id, name, ...}]
-      left: null,          // full champion details
+      champions: {},
+      champArray: [],
+      left: null,
       right: null,
-      leftHP: 0,
-      rightHP: 0,
-      leftHPMax: 0,
-      rightHPMax: 0,
-      leftCD: [0,0,0,0],
-      rightCD: [0,0,0,0],
-      turn: null,          // "left" | "right"
-      autoPlay: false,
-      autoplayTimer: null,
+      leftHP: 0, rightHP: 0,
+      leftHPMax: 0, rightHPMax: 0,
+      leftCD: [0,0,0,0], rightCD: [0,0,0,0],
+      // statuses
+      leftShield: 0, rightShield: 0,
+      leftWeaken: 0, rightWeaken: 0,
+      leftShieldFactor: .30, rightShieldFactor: .30, // Support bumps to .35
+      // passives
+      leftFirstHitBonus: true, rightFirstHitBonus: true, // Assassin first-hit +10%
+      leftRoleMods: {magic:1, physical:1, penA:0}, rightRoleMods: {magic:1, physical:1, penA:0},
+      // flow
+      turn: 'left',             // P1 starts
+      p2Mode: 'cpu',            // 'cpu' | 'human'  (right side)
+      difficulty: 'standard',   // 'casual' | 'standard' | 'tryhard'
+      aiTimer: null,
     };
 
+    // Difficulty config
+    const DIFF = {
+      casual:   { lowHP: 0.20, overkillPenalty: 0.4, preferR: 0.40, randomMistake: 0.20 },
+      standard: { lowHP: 0.30, overkillPenalty: 0.7, preferR: 0.20, randomMistake: 0.05 },
+      tryhard:  { lowHP: 0.40, overkillPenalty: 0.9, preferR: 0.05, randomMistake: 0.00 },
+    };
+
+    // --- Elements ---
     const els = {
       list: $('#championsList'),
-      leftSearch: $('#leftSearch'),
-      rightSearch: $('#rightSearch'),
-      leftCard: $('#leftCard'),
-      rightCard: $('#rightCard'),
-      leftIcon: $('#leftIcon'),
-      rightIcon: $('#rightIcon'),
-      leftName: $('#leftName'),
-      rightName: $('#rightName'),
-      leftTags: $('#leftTags'),
-      rightTags: $('#rightTags'),
-      leftHpBar: $('#leftHpBar'),
-      rightHpBar: $('#rightHpBar'),
-      leftHpText: $('#leftHpText'),
-      rightHpText: $('#rightHpText'),
-      leftAbilities: $('#leftAbilities'),
-      rightAbilities: $('#rightAbilities'),
-      turnBadge: $('#turnBadge'),
-      log: $('#log'),
+      leftSearch: $('#leftSearch'), rightSearch: $('#rightSearch'),
+      leftCard: $('#leftCard'), rightCard: $('#rightCard'),
+      leftIcon: $('#leftIcon'), rightIcon: $('#rightIcon'),
+      leftName: $('#leftName'), rightName: $('#rightName'),
+      leftTags: $('#leftTags'), rightTags: $('#rightTags'),
+      leftBadges: $('#leftBadges'), rightBadges: $('#rightBadges'),
+      leftHpBar: $('#leftHpBar'), rightHpBar: $('#rightHpBar'),
+      leftHpText: $('#leftHpText'), rightHpText: $('#rightHpText'),
+      leftAbilities: $('#leftAbilities'), rightAbilities: $('#rightAbilities'),
+      turnBadge: $('#turnBadge'), log: $('#log'),
       arenaBackdrop: $('#arenaBackdrop'),
+      leftFighter: $('#leftFighter'), rightFighter: $('#rightFighter'),
+      leftFX: $('#leftFX'), rightFX: $('#rightFX'),
+      fxLayer: $('#fxLayer'),
       randomFightBtn: $('#randomFightBtn'),
       leftPickRandom: $('#leftPickRandom'),
       rightPickRandom: $('#rightPickRandom'),
       resetBtn: $('#resetBtn'),
       swapBtn: $('#swapBtn'),
-      autoPlayToggle: $('#autoPlayToggle'),
+      p2Mode: $('#p2Mode'),
+      p2ModeMobile: $('#p2Mode_mobile'),
+      diffRange: $('#diffRange'),
+      diffLabel: $('#diffLabel'),
+      diffRangeMobile: $('#diffRange_mobile'),
+      diffLabelMobile: $('#diffLabel_mobile'),
+      shareBtn: $('#shareBtn'),
+      listNode: $('#championsList')
     };
 
     // --- Data Dragon helpers ---
-    const DDRAGON_VERSIONS = 'https://ddragon.leagueoflegends.com/api/versions.json'; // latest is [0]
+    const DDRAGON_VERSIONS = 'https://ddragon.leagueoflegends.com/api/versions.json';
     const ddragonData = (version, path) => `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/${path}`;
     const ddragonImgChampion = (version, file) => `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${file}`;
     const ddragonSplash = (champId, skinIndex=0) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champId}_${skinIndex}.jpg`;
 
     async function getJSON(url){
       const res = await fetch(url, { cache: 'no-store' });
-      if(!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      if(!res.ok) throw new Error(\`HTTP \${res.status} for \${url}\`);
       return res.json();
     }
 
-    async function bootstrap(){
+    // --- Deep link helpers ---
+    function encodeQuery(obj){ return new URLSearchParams(obj).toString(); }
+    function decodeQuery(){ return Object.fromEntries(new URLSearchParams(location.search)); }
+    async function shareMatch(){
+      const left = state.left?.id, right = state.right?.id, mode = state.p2Mode, diff = state.difficulty;
+      const url = new URL(location.href);
+      url.search = encodeQuery({ l:left||'', r:right||'', mode, diff });
       try {
-        // 1) Latest version
+        await navigator.clipboard.writeText(url.toString());
+        logLine('🔗 Link copied to clipboard!');
+      } catch {
+        logLine('Could not copy; tap and copy: ' + url.toString());
+      }
+    }
+
+    async function bootstrap(){
+      try{
         const versions = await getJSON(DDRAGON_VERSIONS);
-        state.version = versions[0]; // latest
-        // 2) Short champions list
+        state.version = versions[0];
         const champShort = await getJSON(ddragonData(state.version, 'champion.json'));
         state.champions = champShort.data;
         state.champArray = Object.values(state.champions).sort((a,b) => a.name.localeCompare(b.name));
+        els.listNode.innerHTML = state.champArray.map(c => \`<option value="\${c.name}" data-id="\${c.id}"></option>\`).join('');
 
-        // Fill datalist
-        els.list.innerHTML = state.champArray.map(c => `<option value="${c.name}" data-id="${c.id}"></option>`).join('');
+        // Parse deep link
+        const q = decodeQuery();
+        if(q.mode){ state.p2Mode = (q.mode==='human'?'human':'cpu'); }
+        if(q.diff){ state.difficulty = ['casual','standard','tryhard'].includes(q.diff) ? q.diff : 'standard'; }
+        syncControlsFromState();
 
-        // Prefill two random champs
-        pickRandom('left'); pickRandom('right');
+        // Set champs either from query or random
+        const leftPromise  = q.l && state.champions[q.l] ? setChampionForSide('left', q.l)   : (pickRandom('left'), Promise.resolve());
+        const rightPromise = q.r && state.champions[q.r] ? setChampionForSide('right', q.r)  : (pickRandom('right'), Promise.resolve());
+        await Promise.all([leftPromise, rightPromise]);
 
-        logLine(`Loaded Data Dragon ${state.version}.`);
-      } catch (err) {
-        console.error(err);
-        logLine('Failed to load Data Dragon. Check your network or try again later.');
+        state.turn = 'left'; // P1 starts
+        renderAll();
+        logLine(\`Loaded Data Dragon \${state.version}. Player 1 begins.\`);
+        maybeScheduleAI();
+      }catch(e){
+        console.error(e);
+        logLine('Failed to load Data Dragon.');
       }
+    }
+
+    function syncControlsFromState(){
+      // p2 mode
+      if(els.p2Mode) els.p2Mode.value = state.p2Mode;
+      if(els.p2ModeMobile) els.p2ModeMobile.value = state.p2Mode;
+      // difficulty slider
+      const map = {casual:0, standard:1, tryhard:2};
+      const labels = ['Casual','Standard','Tryhard'];
+      const idx = map[state.difficulty] ?? 1;
+      if(els.diffRange) els.diffRange.value = idx;
+      if(els.diffRangeMobile) els.diffRangeMobile.value = idx;
+      if(els.diffLabel) els.diffLabel.textContent = labels[idx];
+      if(els.diffLabelMobile) els.diffLabelMobile.textContent = labels[idx];
     }
 
     function findChampionIdByName(name){
@@ -239,72 +373,106 @@
     }
 
     async function loadChampionFull(id){
-      const url = ddragonData(state.version, `champion/${id}.json`);
-      const raw = await getJSON(url);
-      // structure: { data: { [id]: { ... champion } } }
+      const raw = await getJSON(ddragonData(state.version, \`champion/\${id}.json\`));
       return raw.data[id];
     }
 
-    // --- UI Renderers ---
+    // --- Damage model helpers ---
+    function level10(valueBase, perLevel){ return (valueBase||0) + (perLevel||0) * 9; }
+    function mitigate(dmg, resist){
+      if (resist >= 0) return dmg * (100/(100+resist));
+      return dmg * (2 - (100/(100 - resist)));
+    }
+    const RE_DEFENSE = /(shield|heal|barrier|untargetable|stasis|invulnerable|damage\s*reduction)/i;
+    const RE_CC = /(stun|silence|root|slow|taunt|knock|blind|fear|charm|suppres|disarm|cripple)/i;
+    const RE_MAGIC = /(magic damage|magical|ap)/i;
+    const RE_PHYS  = /(physical damage|ad|attack damage)/i;
+
+    function detectDamageType(spell, champ){
+      const t = ((spell.tooltip||'') + ' ' + (spell.description||'')).toLowerCase();
+      if (RE_MAGIC.test(t)) return 'magic';
+      if (RE_PHYS.test(t)) return 'physical';
+      const tags = champ.tags||[];
+      if (tags.includes('Mage')) return 'magic';
+      if (tags.includes('Marksman') || tags.includes('Fighter') || tags.includes('Assassin')) return 'physical';
+      return 'magic';
+    }
+    function isDefensiveSpell(spell){
+      const t = (spell.tooltip||'') + ' ' + (spell.description||'');
+      return RE_DEFENSE.test(t);
+    }
+    function isCCSpell(spell){
+      const t = (spell.tooltip||'') + ' ' + (spell.description||'');
+      return RE_CC.test(t);
+    }
+
+    // --- Rendering ---
     function renderChampionSide(side){
       const champ = state[side];
       if(!champ) return;
-      const prefix = side === 'left' ? 'left' : 'right';
 
-      // Icon + name + tags
-      const iconUrl = ddragonImgChampion(state.version, champ.image.full);
-      const tags = (champ.tags || []).join(' / ') || '—';
+      const isLeft = side==='left';
+      const icon = isLeft ? els.leftIcon : els.rightIcon;
+      const name = isLeft ? els.leftName : els.rightName;
+      const tags = isLeft ? els.leftTags : els.rightTags;
+      const badges = isLeft ? els.leftBadges : els.rightBadges;
+      const hpBar = isLeft ? els.leftHpBar : els.rightHpBar;
+      const hpText = isLeft ? els.leftHpText : els.rightHpText;
+      const abilities = isLeft ? els.leftAbilities : els.rightAbilities;
 
-      (side==='left' ? els.leftIcon : els.rightIcon).src = iconUrl;
-      (side==='left' ? els.leftName : els.rightName).textContent = champ.name;
-      (side==='left' ? els.leftTags : els.rightTags).textContent = tags;
+      icon.src = ddragonImgChampion(state.version, champ.image.full);
+      name.textContent = champ.name;
+      tags.textContent = (champ.tags||[]).join(' / ') || '—';
 
-      // HP
-      const hp = side==='left' ? state.leftHP : state.rightHP;
-      const hpMax = side==='left' ? state.leftHPMax : state.rightHPMax;
-      const hpPct = hpMax ? Math.max(0, Math.min(100, (hp / hpMax) * 100)) : 0;
+      // badges (statuses)
+      const shield = isLeft ? state.leftShield : state.rightShield;
+      const weaken = isLeft ? state.leftWeaken : state.rightWeaken;
+      const shFactor = isLeft ? state.leftShieldFactor : state.rightShieldFactor;
+      badges.innerHTML = `
+        ${shield>0 ? `<span class="px-1.5 py-0.5 rounded bg-cyan-600/50 ring-1 ring-cyan-400/40">Shield ${Math.round(shFactor*100)}% · ${shield}</span>` : ''}
+        ${weaken>0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-600/50 ring-1 ring-amber-400/40">Weaken · ${weaken}</span>` : ''}
+      `;
 
-      const bar = side==='left' ? els.leftHpBar : els.rightHpBar;
-      bar.style.width = hpPct + '%';
-      bar.className = 'h-full transition-all ' + (hpPct>50 ? 'bg-green-500' : hpPct>20 ? 'bg-yellow-400' : 'bg-rose-500');
-      (side==='left' ? els.leftHpText : els.rightHpText).textContent = `HP ${Math.max(0, Math.round(hp))} / ${Math.round(hpMax)}`;
+      const hp = isLeft ? state.leftHP : state.rightHP;
+      const max = isLeft ? state.leftHPMax : state.rightHPMax;
+      const pct = max ? Math.max(0, Math.min(100, (hp/max)*100)) : 0;
+      hpBar.style.width = pct + '%';
+      hpBar.className = 'h-full transition-all ' + (pct>50?'bg-green-500':pct>20?'bg-yellow-400':'bg-rose-500');
+      hpText.textContent = `HP ${Math.max(0, Math.round(hp))} / ${Math.round(max)}`;
 
-      // Abilities
-      const container = side==='left' ? els.leftAbilities : els.rightAbilities;
-      container.innerHTML = '';
-
-      (champ.spells || []).slice(0,4).forEach((sp, idx) => {
-        const cdLeft = (side==='left' ? state.leftCD[idx] : state.rightCD[idx]) || 0;
-        const disabled = cdLeft > 0 || winner();
+      // abilities buttons
+      abilities.innerHTML = '';
+      (champ.spells||[]).slice(0,4).forEach((sp, idx) => {
+        const cdLeft = (isLeft ? state.leftCD[idx] : state.rightCD[idx]) || 0;
+        const disabled = cdLeft>0 || winner() || (state.turn !== side) || (side==='right' && state.p2Mode==='cpu');
         const label = ['Q','W','E','R'][idx] || '?';
-        const cdText = cdLeft > 0 ? `<div class="absolute inset-0 bg-black/60 grid place-items-center text-sm font-semibold">${cdLeft}</div>` : '';
+        const cdText = cdLeft>0 ? `<div class="absolute inset-0 bg-black/60 grid place-items-center text-sm font-semibold">${cdLeft}</div>` : '';
         const tip = [
           `${label}: ${sp.name}`,
           (sp.cooldownBurn ? `CD: ${sp.cooldownBurn}` : null),
-          (sp.costBurn && sp.resource ? `Cost: ${sp.costBurn} ${champ.partype}` : null),
+          (sp.costBurn && champ.partype ? `Cost: ${sp.costBurn} ${champ.partype}` : null),
         ].filter(Boolean).join(' • ');
 
         const btn = document.createElement('button');
-        btn.className = `relative group rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 focus:outline-none focus:ring-2 ${side==='left' ? 'focus:ring-indigo-500' : 'focus:ring-rose-500'} overflow-hidden`;
+        btn.className = `relative group rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 focus:outline-none focus:ring-2 ${isLeft ? 'focus:ring-indigo-500' : 'focus:ring-rose-500'} overflow-hidden`;
         btn.title = tip;
         btn.disabled = disabled;
         btn.dataset.side = side;
         btn.dataset.idx = idx;
-
         btn.innerHTML = `
           <div class="aspect-square grid place-items-center">
             <img alt="${sp.name}" class="size-14 md:size-16 object-cover" src="https://ddragon.leagueoflegends.com/cdn/${state.version}/img/spell/${sp.image.full}">
           </div>
-          <div class="absolute top-1 left-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${side==='left' ? 'bg-indigo-600' : 'bg-rose-600'}">${label}</div>
-          <div class="absolute bottom-0 inset-x-0 h-1 bg-white/10"><div class="h-full ${cdLeft>0 ? 'animate-[pulsebar_1s_linear_infinite]' : ''} ${side==='left' ? 'bg-indigo-500' : 'bg-rose-500'}"></div></div>
+          <div class="absolute top-1 left-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${isLeft ? 'bg-indigo-600' : 'bg-rose-600'}">${label}</div>
+          <div class="absolute bottom-0 inset-x-0 h-1 bg-white/10"><div class="h-full ${cdLeft>0 ? 'animate-[pulsebar_1s_linear_infinite]' : ''} ${isLeft ? 'bg-indigo-500' : 'bg-rose-500'}"></div></div>
           ${cdText}
         `;
         btn.addEventListener('click', onAbilityClick);
-        container.appendChild(btn);
+        abilities.appendChild(btn);
       });
 
-      // Backdrop (first skin splash)
-      els.arenaBackdrop.style.backgroundImage = champ ? `url('${ddragonSplash((state.left?.id||'') || champ.id, 0)}')` : '';
+      // backdrop flair: left champ splash
+      els.arenaBackdrop.style.backgroundImage = state.left ? `url('${ddragonSplash(state.left.id, 0)}')` : '';
       els.arenaBackdrop.style.backgroundSize = 'cover';
       els.arenaBackdrop.style.backgroundPosition = 'center';
     }
@@ -316,9 +484,9 @@
     }
 
     function updateTurnBadge(){
-      const t = state.turn ? (state.turn==='left' ? 'Left' : 'Right') : '—';
+      const t = state.turn === 'left' ? 'P1' : (state.p2Mode==='cpu' ? 'CPU' : 'P2');
       els.turnBadge.textContent = `Turn: ${t}`;
-      els.turnBadge.className = `text-xs px-2 py-1 rounded ${state.turn==='left' ? 'bg-indigo-600' : state.turn==='right' ? 'bg-rose-600' : 'bg-slate-700'}`;
+      els.turnBadge.className = `text-xs px-2 py-1 rounded ${state.turn==='left' ? 'bg-indigo-600' : 'bg-rose-600'}`;
     }
 
     function logLine(text){
@@ -326,56 +494,86 @@
       row.className = 'rounded-lg border border-white/10 bg-white/5 px-3 py-2';
       row.textContent = text;
       els.log.prepend(row);
-      // keep last ~100
       while(els.log.children.length > 100) els.log.removeChild(els.log.lastChild);
     }
 
-    // --- Simple “combat” math (fun, not accurate to LoL) ---
-    function baseHP(champ){
-      // Approx "level 10" feeling: base + 9 * perLevel
-      return (champ.stats.hp || 600) + (champ.stats.hpperlevel || 90) * 9;
-    }
-
+    // --- Numbers (ability power heuristics & cooldowns) ---
+    function median(arr){ const a=[...arr].sort((x,y)=>x-y); const m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2; }
     function estimateAbilityPower(spell, champ, idx){
-      // Try effectBurn numbers first (e.g., "80/110/140/170/200"), fallback to numbers in tooltip
-      let candidates = [];
-      if (Array.isArray(spell.effectBurn)){
-        spell.effectBurn.forEach(s => {
-          if (!s) return;
-          String(s).split('/').forEach(x => {
-            const v = parseFloat(x);
-            if (!isNaN(v)) candidates.push(v);
-          });
-        });
+      let candidates=[];
+      if(Array.isArray(spell.effectBurn)){
+        spell.effectBurn.forEach(s => { if(!s) return; String(s).split('/').forEach(x => { const v=parseFloat(x); if(!isNaN(v)) candidates.push(v); }); });
       }
-      if (candidates.length === 0 && typeof spell.tooltip === 'string'){
+      if(candidates.length===0 && typeof spell.tooltip==='string'){
         const nums = spell.tooltip.match(/\d+(\.\d+)?/g) || [];
         candidates = nums.map(Number);
       }
-      // Heuristics
       let base = candidates.length ? median(candidates) : 50;
-      if (idx === 3) base *= 1.35; // R hits harder
-      // Light scaling by champ offense
+      if(idx===3) base *= 1.35; // R hits harder
       const ad = champ.stats.attackdamage || 60;
       const apish = (champ.tags||[]).includes('Mage') ? 40 : 10;
-      base += (ad * 0.15) + apish;
-      // Clamp
+      base += (ad*0.15) + apish;
       return Math.max(30, Math.min(260, Math.round(base)));
     }
-
-    function median(arr){
-      const a = [...arr].sort((x,y)=>x-y);
-      const mid = Math.floor(a.length/2);
-      return a.length % 2 ? a[mid] : (a[mid-1] + a[mid]) / 2;
-    }
-
     function abilityCooldown(spell){
-      // use first rank cooldown or fallback 3
-      if (Array.isArray(spell.cooldown) && spell.cooldown.length) {
+      if(Array.isArray(spell.cooldown) && spell.cooldown.length){
         const v = Math.round(spell.cooldown[0]);
         return isNaN(v) ? 3 : Math.max(1, Math.min(8, v));
       }
       return 3;
+    }
+
+    // --- FX helpers ---
+    function burstFX(side){
+      const host = side==='left' ? els.leftFX : els.rightFX;
+      const ring = document.createElement('div');
+      ring.className = "absolute inset-0 grid place-items-center";
+      ring.innerHTML = `<div class="size-40 rounded-full bg-gradient-to-br from-white/60 to-white/10 blur-xl opacity-80 animate-burst"></div>`;
+      host.appendChild(ring);
+      setTimeout(()=> ring.remove(), 520);
+    }
+    function floatDamage(side, dmg){
+      const host = side==='left' ? els.leftFX : els.rightFX;
+      const n = document.createElement('div');
+      n.className = "absolute left-1/2 top-3 -translate-x-1/2 text-2xl font-extrabold drop-shadow-md";
+      n.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/40">-${Math.round(dmg)}</span>`;
+      host.appendChild(n);
+      n.classList.add('animate-float');
+      setTimeout(()=> n.remove(), 750);
+    }
+    function pressBtnFX(side, idx){
+      const container = side==='left' ? els.leftAbilities : els.rightAbilities;
+      const btn = container.querySelector(`[data-idx="\${idx}"]`);
+      if(btn){
+        btn.classList.add('animate-press');
+        setTimeout(()=> btn.classList.remove('animate-press'), 240);
+      }
+    }
+    function hitShake(side){
+      const target = side==='left' ? els.leftFighter : els.rightFighter;
+      target.classList.add('animate-hit');
+      setTimeout(()=> target.classList.remove('animate-hit'), 310);
+    }
+
+    // --- Turn / statuses ---
+    function endTurn(){
+      state.leftCD = state.leftCD.map(c => Math.max(0, c-1));
+      state.rightCD = state.rightCD.map(c => Math.max(0, c-1));
+      if(state.leftShield>0) state.leftShield--;
+      if(state.rightShield>0) state.rightShield--;
+      if(state.leftWeaken>0) state.leftWeaken--;
+      if(state.rightWeaken>0) state.rightWeaken--;
+      state.turn = state.turn === 'left' ? 'right' : 'left';
+      renderAll();
+      maybeScheduleAI();
+    }
+
+    function maybeScheduleAI(){
+      clearTimeout(state.aiTimer);
+      if(winner()) return;
+      if(state.turn==='right' && state.p2Mode==='cpu'){
+        state.aiTimer = setTimeout(cpuAct, 550);
+      }
     }
 
     function winner(){
@@ -384,98 +582,254 @@
       return null;
     }
 
-    function endTurn(){
-      // decrement CDs
-      state.leftCD = state.leftCD.map(c => Math.max(0, c-1));
-      state.rightCD = state.rightCD.map(c => Math.max(0, c-1));
-      // swap turn
-      state.turn = state.turn === 'left' ? 'right' : 'left';
-      updateTurnBadge();
-      renderAll();
-      // autoplay
-      if(state.autoPlay && !winner()){
-        clearTimeout(state.autoplayTimer);
-        state.autoplayTimer = setTimeout(() => {
-          autoPickAndFire(state.turn);
-        }, 600);
+    // --- Passives by role ---
+    function applyRolePassives(side){
+      const champ = state[side];
+      const tags = champ.tags||[];
+      // reset defaults
+      state[side==='left'?'leftShieldFactor':'rightShieldFactor'] = .30;
+      state[side==='left'?'leftRoleMods':'rightRoleMods'] = {magic:1, physical:1, penA:0};
+      state[side==='left'?'leftFirstHitBonus':'rightFirstHitBonus'] = true;
+
+      if (tags.includes('Tank')){
+        if(side==='left'){ state.leftHPMax = Math.round(state.leftHPMax * 1.10); state.leftHP = state.leftHPMax; }
+        else { state.rightHPMax = Math.round(state.rightHPMax * 1.10); state.rightHP = state.rightHPMax; }
+      }
+      if (tags.includes('Mage')){
+        const mods = side==='left'? state.leftRoleMods : state.rightRoleMods;
+        mods.magic *= 1.05;
+      }
+      if (tags.includes('Marksman')){
+        const mods = side==='left'? state.leftRoleMods : state.rightRoleMods;
+        mods.physical *= 1.05;
+      }
+      if (tags.includes('Assassin')){
+        const mods = side==='left'? state.leftRoleMods : state.rightRoleMods;
+        mods.penA += 0.05; // tiny armor pen
+      }
+      if (tags.includes('Support')){
+        const key = side==='left' ? 'leftShieldFactor' : 'rightShieldFactor';
+        state[key] = .35;
       }
     }
 
+    // --- Final damage pipeline ---
+    function computeFinalDamage(attackerSide, base, type){
+      let dmg = base;
+
+      // role mods
+      const mods = attackerSide==='left' ? state.leftRoleMods : state.rightRoleMods;
+      dmg *= (type==='magic') ? mods.magic : mods.physical;
+
+      // Assassin first-hit +10%
+      const firstKey = attackerSide==='left' ? 'leftFirstHitBonus' : 'rightFirstHitBonus';
+      if ((attackerSide==='left' ? state.left : state.right).tags.includes('Assassin') && state[firstKey]){
+        dmg *= 1.10;
+        state[firstKey] = false;
+      }
+
+      // Outgoing weaken
+      if(attackerSide==='left' && state.leftWeaken>0) dmg *= 0.8;
+      if(attackerSide==='right' && state.rightWeaken>0) dmg *= 0.8;
+
+      // Target resistances at "level 10"
+      const target = attackerSide==='left' ? state.right : state.left;
+      const stats = target.stats || {};
+      const armor = level10(stats.armor, stats.armorperlevel);
+      const mr = level10(stats.spellblock, stats.spellblockperlevel);
+
+      // Apply small % armor pen for assassins on physical
+      let resist = type==='magic'
+        ? mr
+        : Math.max(armor * (1 - (mods.penA||0)), -60); // clamp to avoid silly spikes
+
+      dmg = mitigate(dmg, resist);
+
+      // Incoming shield reduction
+      const shieldTurns = attackerSide==='left' ? state.rightShield : state.leftShield;
+      if (shieldTurns > 0){
+        const fac = attackerSide==='left' ? state.rightShieldFactor : state.leftShieldFactor;
+        dmg *= (1 - fac);
+      }
+
+      return Math.max(1, Math.round(dmg));
+    }
+
+    // --- CPU logic (difficulty-aware) ---
+    function cpuAct(){
+      if (winner() || state.turn!=='right' || state.p2Mode!=='cpu') return;
+
+      const cfg = DIFF[state.difficulty] || DIFF.standard;
+      // occasional "mistake" in easier modes
+      if(Math.random() < cfg.randomMistake){
+        return cpuRandomClick();
+      }
+
+      const champ = state.right;
+      const cds = state.rightCD;
+      const ready = [0,1,2,3].filter(i => cds[i]===0);
+      if(ready.length===0){ endTurn(); return; }
+
+      const options = ready.map(i => {
+        const sp = champ.spells[i];
+        const raw = estimateAbilityPower(sp, champ, i);
+        const type = detectDamageType(sp, champ);
+        const adj = computeFinalDamage('right', raw, type);
+        const cd = abilityCooldown(sp);
+        return {
+          idx: i, spell: sp, type,
+          rawDmg: raw, adjDmg: adj, cd,
+          isR: i===3,
+          defensive: isDefensiveSpell(sp),
+          cc: isCCSpell(sp),
+        };
+      });
+
+      const targetHP = state.leftHP;
+
+      // 1) Lethal: still always try to finish — tie-break differs by difficulty
+      const lethals = options.filter(o => o.adjDmg >= targetHP);
+      if(lethals.length){
+        if(state.difficulty==='casual'){
+          // Flashy: prefer R, then bigger damage
+          lethals.sort((a,b) => (b.isR - a.isR) || (b.adjDmg - a.adjDmg) || (a.cd - b.cd));
+        } else if(state.difficulty==='tryhard'){
+          // Clinical: least overkill, shortest CD
+          lethals.sort((a,b) => {
+            const overA = a.adjDmg - targetHP, overB = b.adjDmg - targetHP;
+            if (overA !== overB) return overA - overB;
+            if (a.cd !== b.cd) return a.cd - b.cd;
+            return 0;
+          });
+        } else {
+          // Standard: least overkill, prefer R slightly
+          lethals.sort((a,b) => {
+            const overA = a.adjDmg - targetHP, overB = b.adjDmg - targetHP;
+            if (overA !== overB) return overA - overB;
+            if (a.cd !== b.cd) return a.cd - b.cd;
+            return (a.isR===b.isR)?0:(a.isR?-1:1);
+          });
+        }
+        return cpuClick(lethals[0].idx);
+      }
+
+      // 2) Low HP? consider defensive
+      const myHPpct = state.rightHP / state.rightHPMax;
+      if(myHPpct < cfg.lowHP){
+        const defensives = options.filter(o => o.defensive);
+        if(defensives.length){
+          // prefer shortest CD, and in casual prefer R if available
+          defensives.sort((a,b) => {
+            if(state.difficulty==='casual') return (b.isR - a.isR) || (a.cd - b.cd);
+            return a.cd - b.cd;
+          });
+          return cpuClick(defensives[0].idx);
+        }
+      }
+
+      // 3) Scoring by DPS with overkill penalty and "prefer R" weight
+      options.forEach(o => {
+        const dps = o.adjDmg / Math.max(1,o.cd);
+        const excess = Math.max(0, o.adjDmg - targetHP);
+        const penalty = cfg.overkillPenalty * (excess/200); // normalize
+        const rBonus = o.isR ? cfg.preferR : 0;
+        o.score = dps * (1 - penalty) + rBonus;
+      });
+
+      options.sort((a,b) => b.score - a.score || (a.cd - b.cd));
+      return cpuClick(options[0].idx);
+    }
+    function cpuRandomClick(){
+      const ready = [0,1,2,3].filter(i => state.rightCD[i]===0);
+      if(ready.length===0){ endTurn(); return; }
+      const idx = ready[Math.floor(Math.random()*ready.length)];
+      cpuClick(idx);
+    }
+    function cpuClick(idx){
+      const btn = els.rightAbilities.querySelector(`[data-idx="\${idx}"]`);
+      if(btn && !btn.disabled) btn.click(); else endTurn();
+    }
+
+    // --- Player action ---
     function onAbilityClick(e){
       const btn = e.currentTarget;
       const side = btn.dataset.side;
       const idx = +btn.dataset.idx;
 
       if (winner()) return;
-      if (state.turn !== side) return; // not your turn
+      if (state.turn !== side) return;
+      if (side==='right' && state.p2Mode==='cpu') return;
 
+      performAbility(side, idx);
+    }
+
+    function performAbility(side, idx){
       const me = state[side];
       const themSide = side === 'left' ? 'right' : 'left';
-      const them = state[themSide];
-
-      const spell = me.spells[idx];
-      const dmg = estimateAbilityPower(spell, me, idx);
+      const spell = (me.spells||[])[idx];
+      const raw = estimateAbilityPower(spell, me, idx);
+      const type = detectDamageType(spell, me);
+      const dmg = computeFinalDamage(side, raw, type);
       const cd = abilityCooldown(spell);
 
-      // apply
       if (side === 'left') {
         state.rightHP -= dmg;
         state.leftCD[idx] = cd;
-        $('#rightFighter').classList.add('animate-hit');
-        setTimeout(()=>$('#rightFighter').classList.remove('animate-hit'), 310);
+        hitShake('right'); burstFX('right'); floatDamage('right', dmg);
       } else {
         state.leftHP -= dmg;
         state.rightCD[idx] = cd;
-        $('#leftFighter').classList.add('animate-hit');
-        setTimeout(()=>$('#leftFighter').classList.remove('animate-hit'), 310);
+        hitShake('left'); burstFX('left'); floatDamage('left', dmg);
       }
+      pressBtnFX(side, idx);
 
-      logLine(`${me.name} used ${['Q','W','E','R'][idx]} — ${spell.name} for ~${dmg} dmg.`);
+      applyStatusFromSpell(side, spell);
+
+      logLine(\`\${me.name} used \${['Q','W','E','R'][idx]} — \${spell.name} for ~\${dmg} \${type} dmg.\`);
       renderAll();
 
-      // win check
       const w = winner();
       if (w){
         const champ = state[w];
-        logLine(`🏆 ${champ.name} wins!`);
+        logLine(\`🏆 \${champ.name} wins!\`);
         updateTurnBadge();
         return;
       }
       endTurn();
     }
 
-    function autoPickAndFire(side){
-      const champ = state[side];
-      const cds = side==='left' ? state.leftCD : state.rightCD;
-      const ready = [0,1,2,3].filter(i => cds[i] === 0);
-      if(ready.length === 0) { endTurn(); return; }
-      // prefer R if ready, else random ability
-      const pick = ready.includes(3) ? 3 : ready[Math.floor(Math.random() * ready.length)];
-      // simulate a click
-      const container = side==='left' ? els.leftAbilities : els.rightAbilities;
-      const btn = container.querySelector(`[data-idx="${pick}"]`);
-      if(btn && !btn.disabled) btn.click();
-      else endTurn();
+    // --- Status application ---
+    function applyStatusFromSpell(attackerSide, spell){
+      const targetSide = attackerSide==='left' ? 'right' : 'left';
+      if(isDefensiveSpell(spell)){
+        if(attackerSide==='left') state.leftShield = Math.min(3, 2);
+        else state.rightShield = Math.min(3, 2);
+        const fac = attackerSide==='left' ? state.leftShieldFactor : state.rightShieldFactor;
+        logLine(\`\${state[attackerSide].name} gains a shield (-\${Math.round(fac*100)}% dmg for 2 turns).\`);
+      }
+      if(isCCSpell(spell)){
+        if(targetSide==='left') state.leftWeaken = 1;
+        else state.rightWeaken = 1;
+        logLine(\`\${state[targetSide].name} is weakened (-20% dmg next turn).\`);
+      }
     }
 
-    // --- Actions / Picks ---
+    // --- Picks / reset / swap ---
     async function setChampionForSide(side, champId){
       if(!champId) return;
-      try {
+      try{
         const full = await loadChampionFull(champId);
         state[side] = full;
-        // (Re)calc HP and reset CDs for that side
-        const hpBase = baseHP(full);
-        if(side==='left'){ state.leftHPMax = hpBase; state.leftHP = hpBase; state.leftCD = [0,0,0,0]; }
-        else { state.rightHPMax = hpBase; state.rightHP = hpBase; state.rightCD = [0,0,0,0]; }
-        // first turn random if not set
-        if(!state.turn) state.turn = Math.random() > 0.5 ? 'left' : 'right';
-        renderAll();
-        // Fill the compact info card under the search input
+
+        const hpBase = (full.stats.hp || 600) + (full.stats.hpperlevel || 90) * 9;
+        if(side==='left'){ state.leftHPMax = hpBase; state.leftHP = hpBase; state.leftCD=[0,0,0,0]; state.leftShield=0; state.leftWeaken=0; state.leftShieldFactor=.30; state.leftRoleMods={magic:1,physical:1,penA:0}; state.leftFirstHitBonus=true; }
+        else { state.rightHPMax = hpBase; state.rightHP = hpBase; state.rightCD=[0,0,0,0]; state.rightShield=0; state.rightWeaken=0; state.rightShieldFactor=.30; state.rightRoleMods={magic:1,physical:1,penA:0}; state.rightFirstHitBonus=true; }
+
+        applyRolePassives(side);
         renderMiniCard(side, full);
-      } catch (err) {
-        console.error(err);
-        logLine(`Failed to load ${champId}. Try another champion.`);
+        renderAll();
+      }catch(err){
+        console.error(err); logLine(\`Failed to load \${champId}.\`);
       }
     }
 
@@ -497,7 +851,6 @@
     function pickRandom(side){
       const r = state.champArray[Math.floor(Math.random() * state.champArray.length)];
       if (!r) return;
-      // write the search field and set
       (side==='left' ? els.leftSearch : els.rightSearch).value = r.name;
       setChampionForSide(side, r.id);
     }
@@ -507,28 +860,39 @@
       const Lhp = state.leftHP, Rhp = state.rightHP;
       const Lmax = state.leftHPMax, Rmax = state.rightHPMax;
       const Lcd = [...state.leftCD], Rcd = [...state.rightCD];
+      const Lsh = state.leftShield, Rsh = state.rightShield;
+      const Lwk = state.leftWeaken, Rwk = state.rightWeaken;
+      const Lsf = state.leftShieldFactor, Rsf = state.rightShieldFactor;
+      const Lmods = {...state.leftRoleMods}, Rmods = {...state.rightRoleMods};
+      const Lfh = state.leftFirstHitBonus, Rfh = state.rightFirstHitBonus;
 
       state.left = R; state.right = L;
       state.leftHP = Rhp; state.rightHP = Lhp;
       state.leftHPMax = Rmax; state.rightHPMax = Lmax;
       state.leftCD = Rcd; state.rightCD = Lcd;
+      state.leftShield = Rsh; state.rightShield = Lsh;
+      state.leftWeaken = Rwk; state.rightWeaken = Lwk;
+      state.leftShieldFactor = Rsf; state.rightShieldFactor = Lsf;
+      state.leftRoleMods = Rmods; state.rightRoleMods = Lmods;
+      state.leftFirstHitBonus = Rfh; state.rightFirstHitBonus = Lfh;
 
-      // Flip turn, too
       state.turn = state.turn === 'left' ? 'right' : 'left';
       renderAll();
       renderMiniCard('left', state.left);
       renderMiniCard('right', state.right);
+      maybeScheduleAI();
     }
 
     function hardReset(){
-      if(state.left){ state.leftHP = state.leftHPMax = baseHP(state.left); state.leftCD=[0,0,0,0]; }
-      if(state.right){ state.rightHP = state.rightHPMax = baseHP(state.right); state.rightCD=[0,0,0,0]; }
-      state.turn = Math.random() > 0.5 ? 'left' : 'right';
+      if(state.left){ setChampionForSide('left', state.left.id); }
+      if(state.right){ setChampionForSide('right', state.right.id); }
+      state.turn = 'left';
       renderAll();
-      logLine('Match reset.');
+      logLine('Match reset. Player 1 starts.');
+      maybeScheduleAI();
     }
 
-    // --- Wire up events ---
+    // --- Events ---
     els.leftSearch.addEventListener('change', () => {
       const id = findChampionIdByName(els.leftSearch.value);
       if (id) setChampionForSide('left', id);
@@ -537,24 +901,55 @@
       const id = findChampionIdByName(els.rightSearch.value);
       if (id) setChampionForSide('right', id);
     });
-
-    els.randomFightBtn.addEventListener('click', () => {
-      pickRandom('left'); pickRandom('right'); hardReset();
-    });
     els.leftPickRandom.addEventListener('click', () => pickRandom('left'));
     els.rightPickRandom.addEventListener('click', () => pickRandom('right'));
     els.resetBtn.addEventListener('click', hardReset);
     els.swapBtn.addEventListener('click', swapSides);
-    els.autoPlayToggle.addEventListener('change', (e) => {
-      state.autoPlay = !!e.target.checked;
-      if (state.autoPlay && !winner()){
-        clearTimeout(state.autoplayTimer);
-        state.autoplayTimer = setTimeout(()=>autoPickAndFire(state.turn), 500);
-      }
-    });
+    els.randomFightBtn.addEventListener('click', () => { pickRandom('left'); pickRandom('right'); hardReset(); });
+    els.shareBtn.addEventListener('click', shareMatch);
+
+    // P2 mode (both desktop & mobile controls kept in sync)
+    function setP2Mode(v){ state.p2Mode = (v==='human'?'human':'cpu'); if(els.p2Mode) els.p2Mode.value=v; if(els.p2ModeMobile) els.p2ModeMobile.value=v; renderAll(); maybeScheduleAI(); logLine(\`Player 2 mode: \${state.p2Mode.toUpperCase()}\`); }
+    if(els.p2Mode) els.p2Mode.addEventListener('change', e => setP2Mode(e.target.value));
+    if(els.p2ModeMobile) els.p2ModeMobile.addEventListener('change', e => setP2Mode(e.target.value));
+
+    // Difficulty (slider: 0/1/2)
+    function labelForDiffIndex(i){ return ['Casual','Standard','Tryhard'][i] || 'Standard'; }
+    function setDifficultyByIndex(i){
+      const map = ['casual','standard','tryhard'];
+      state.difficulty = map[i] || 'standard';
+      if(els.diffLabel) els.diffLabel.textContent = labelForDiffIndex(i);
+      if(els.diffLabelMobile) els.diffLabelMobile.textContent = labelForDiffIndex(i);
+      if(els.diffRange) els.diffRange.value = i;
+      if(els.diffRangeMobile) els.diffRangeMobile.value = i;
+      logLine('Difficulty: ' + labelForDiffIndex(i));
+      // no need to re-render; AI uses this on its turn
+    }
+    if(els.diffRange) els.diffRange.addEventListener('input', e => setDifficultyByIndex(+e.target.value));
+    if(els.diffRangeMobile) els.diffRangeMobile.addEventListener('input', e => setDifficultyByIndex(+e.target.value));
 
     // --- Init ---
     bootstrap();
+
+    // --- Service Worker (tiny inline) ---
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open('jld-v1').then(c => c.addAll(['./'])));
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', e => self.clients.claim());
+        self.addEventListener('fetch', e => {
+          const u = new URL(e.request.url);
+          // Cache-first for same-origin; network-default for external (ddragon)
+          if (u.origin === location.origin) {
+            e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+          }
+        });
+      `;
+      const blob = new Blob([swCode], {type: 'text/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+    }
   })();
   </script>
 </body>
