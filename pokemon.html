@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Pocket Stadium — Kanto 3v3 (Gen‑1 Layout + Status)</title>
+  <meta name="theme-color" content="#10b981">
+  <title>Jimmy’s Pokémon Stadium</title>
+
+  <!-- Favicon (Poké Ball) -->
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"/>
 
   <!-- Tailwind Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -60,19 +64,30 @@
     @keyframes jiggle {
       0%{transform:translate(0,0)} 25%{transform:translate(0,-2px)} 50%{transform:translate(0,0)} 75%{transform:translate(0,2px)} 100%{transform:translate(0,0)}
     }
+    .camshake { animation: jiggle .25s ease; }
 
+    /* Projectile + spark */
     .proj { position:absolute; width:10px; height:10px; border-radius:999px; box-shadow: 0 0 10px rgba(0,0,0,.25); transform: translate(-50%, -50%); pointer-events:none; }
     @keyframes spark { 0% { transform: scale(.6); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
     .spark { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow: 0 0 18px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation: spark .35s ease forwards; pointer-events:none; }
-    .camshake { animation: jiggle .25s ease; }
 
-    /* ====== Gen‑1 battle layout ====== */
+    /* Faint animation (drop + fade) */
+    @keyframes faint {
+      0% { transform: translateY(0); opacity: 1; filter:none; }
+      100% { transform: translateY(34px); opacity: .2; filter: grayscale(100%); }
+    }
+    .faint { animation: faint .5s ease forwards; }
+
+    /* ====== Gen‑1 battle layout (mobile-first GB style) ====== */
     .stage { position:relative; overflow:hidden; }
-    .battle { position:relative; height: 300px;
-      background: radial-gradient(ellipse at 20% 85%, rgba(0,0,0,.06), transparent 45%),
-                  radial-gradient(ellipse at 80% 15%, rgba(0,0,0,.06), transparent 45%);
-      border-radius: .75rem; }
-    @media (min-width: 640px){ .battle { height: 360px; } }
+    .battle {
+      position:relative; height: 320px;
+      background:
+        radial-gradient(ellipse at 20% 85%, rgba(0,0,0,.06), transparent 45%),
+        radial-gradient(ellipse at 80% 15%, rgba(0,0,0,.06), transparent 45%);
+      border-radius: .75rem;
+    }
+    @media (min-width: 640px){ .battle { height: 380px; } }
 
     /* GB-style HP box */
     .hpbox { min-width: 210px; background:#fff; border:2px solid #111827; border-radius:.5rem; padding:.35rem .5rem .5rem; box-shadow: inset 0 0 0 2px #e5e7eb; }
@@ -83,20 +98,51 @@
     .st-dot { width:8px; height:8px; border-radius:999px; border:1px solid #0f172a; }
     .st-tag { font-size:.6rem; font-weight:800; padding:.05rem .3rem; border:1px solid #0f172a; border-radius:.25rem; }
 
-    /* Positions */
-    .opp-hp{ position:absolute; top:10px; left:10px; }
-    .opp-sprite{ position:absolute; top:56px; right:18px; width:140px; height:140px; }
-    .ply-sprite{ position:absolute; bottom:64px; left:18px; width:140px; height:140px; }
-    .ply-hp{ position:absolute; bottom:10px; right:10px; }
-    @media (min-width:640px){ .opp-sprite{ width:168px; height:168px; top:60px; right:26px; } .ply-sprite{ width:168px; height:168px; bottom:72px; left:26px; } .hpbox{ min-width:230px; } }
+    /* Positions — always player bottom-left, rival top-right */
+    .opp-hp     { position:absolute; top:10px; left:10px; }
+    .opp-sprite { position:absolute; top:64px; right:18px; width: 140px; height: 140px; }
+    .ply-sprite { position:absolute; bottom:72px; left:18px; width: 140px; height: 140px; }
+    .ply-hp     { position:absolute; bottom:10px; right:10px; }
+
+    @media (min-width: 640px){
+      .opp-sprite { width: 168px; height: 168px; top:70px; right:26px; }
+      .ply-sprite { width: 168px; height: 168px; bottom:82px; left:26px; }
+      .hpbox { min-width: 230px; }
+    }
+
+    /* ===== GB box (Game Boy-style frame for banner) ===== */
+    .gb-box{
+      position:relative;
+      background:#fff;
+      border:2px solid #111827;               /* dark outer stroke */
+      border-radius:.75rem;
+      box-shadow:
+        inset 0 0 0 2px #e5e7eb,              /* light inner stroke */
+        0 6px 30px rgba(0,0,0,.06);           /* soft card shadow */
+    }
+    .gb-box::before, .gb-box::after{
+      content:"";
+      position:absolute; pointer-events:none;
+      border:2px solid #111827;
+      width:14px; height:14px; opacity:.9;
+    }
+    .gb-box::before{ top:-6px; left:-6px; border-right:none; border-bottom:none; border-radius:.5rem 0 0 0; }
+    .gb-box::after { bottom:-6px; right:-6px; border-left:none; border-top:none; border-radius:0 0 .5rem 0; }
+
+    /* Blinking caret for "your turn" */
+    @keyframes caret-blink { 0%,60%{opacity:1; transform:translateY(0)} 80%{opacity:.15} 100%{opacity:1; transform:translateY(1px)} }
+    .gb-caret{
+      font-weight:900; margin-left:.5rem; display:inline-block;
+      animation: caret-blink .9s steps(1,end) infinite;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white font-ui text-slate-800">
   <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-      <img alt="Pokeball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
-      <h1 class="text-lg font-bold">Pocket Stadium — Kanto 3v3</h1>
-      <span class="ml-auto text-xs text-slate-500">Gen‑1 layout • Lv.50 • TM/HM • Animations • Status</span>
+      <img alt="Poké Ball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
+      <h1 class="text-lg font-bold">Jimmy’s Pokémon Stadium</h1>
+      <span class="ml-auto text-xs text-slate-500">Gen‑1 layout • Lv.50 • Status • TM/HM</span>
     </div>
   </header>
 
@@ -124,7 +170,7 @@
         <div class="card p-4">
           <div class="flex items-center gap-2 mb-3">
             <span class="chip">Rival</span>
-            <div class="text-sm text-slate-500">Choose 3 (you can set their moves too)</div>
+            <div class="text-sm text-slate-500">Rival team is auto‑picked (you can edit)</div>
             <div class="ml-auto"><button id="pickB" class="btn tap">Pick</button></div>
           </div>
           <div id="teamB" class="grid grid-cols-3 gap-3"></div>
@@ -146,7 +192,7 @@
           <label class="flex items-center gap-2 text-sm">
             Pace
             <select id="pace" class="border rounded-lg px-2 py-1">
-              <option value="1.2">Slow</option>
+              <option value="1.3">Slow</option>
               <option value="1.0" selected>Normal</option>
               <option value="0.8">Fast</option>
             </select>
@@ -212,22 +258,24 @@
           </div>
         </div>
 
+        <!-- Turn banner (GB border + blinking caret on your turn) -->
+        <div id="turnBanner" class="gb-box mt-4 p-3 text-sm ring-2 ring-slate-400" aria-live="polite">
+          Ready! <span id="gbCaret" class="gb-caret hidden">►</span>
+        </div>
+
         <!-- Move buttons -->
-        <div class="mt-4 grid grid-cols-2 gap-2" id="moveButtons"></div>
+        <div class="mt-3 grid grid-cols-2 gap-2" id="moveButtons"></div>
 
         <div class="mt-2 flex items-center gap-2">
           <button id="btnNext" class="btn-secondary tap disabled:opacity-50" disabled>Next</button>
         </div>
       </div>
 
-      <!-- Log -->
-      <div class="card p-3">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="chip">Battle log</span>
-          <button id="clearLog" class="ml-auto btn-ghost text-sm tap">Clear</button>
-        </div>
-        <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1"></ol>
-      </div>
+      <!-- (Log hidden by default; kept for debugging) -->
+      <details class="card p-3">
+        <summary class="text-sm cursor-pointer">Show battle log (debug)</summary>
+        <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1 mt-2"></ol>
+      </details>
     </section>
   </main>
 
@@ -310,7 +358,6 @@
       dragon:{ dragon:2 }
     };
     function effMultiplier(moveType, targetTypes){ let mult = 1; for(const t of targetTypes){ mult *= (chart[moveType]?.[t] ?? 1); } return mult; }
-    function categoryFromType(t){ return SPECIAL_TYPES.has(t) ? 'special' : 'physical'; }
 
     // Pace multiplier (bigger = slower)
     function P(ms){ const m = Number($('#pace')?.value || 1.0); return Math.round(ms * m); }
@@ -318,12 +365,11 @@
     // Status constants
     const PAR_SPEED = 0.5;      // paralysis speed modifier
     const BRN_PHYS  = 0.5;      // burn physical damage modifier
-    const THAW_CHANCE = 0.2;    // 20% to thaw each turn
     const RESIDUAL_FRACTION = 16; // 1/16 max HP
 
     const AIL_MAP = {
       paralysis:'par', burn:'brn', poison:'psn', 'bad-poison':'psn', freeze:'frz', sleep:'slp',
-      confusion:'cnf' // optional, not fully simulated
+      confusion:'cnf' // (optional)
     };
 
     /* ======= App State ======= */
@@ -346,6 +392,8 @@
     document.addEventListener('DOMContentLoaded', async () => {
       renderTeams(); wireBuilder(); wireArena();
       await loadKanto();
+      autoSeedRival();                 // Random rival on load
+      renderTeams(); updateStartButton();
     });
 
     async function loadKanto(){
@@ -361,7 +409,11 @@
     function wireBuilder(){
       $('#pickA').addEventListener('click', ()=>openPicker('A'));
       $('#pickB').addEventListener('click', ()=>openPicker('B'));
-      $('#btnClear').addEventListener('click', ()=>{ state.teamA=[]; state.teamB=[]; renderTeams(); updateStartButton(); });
+      $('#btnClear').addEventListener('click', ()=>{
+        state.teamA=[]; state.teamB=[];
+        autoSeedRival();               // Random rival on Clear
+        renderTeams(); updateStartButton();
+      });
       $('#btnRandomize').addEventListener('click', ()=>{
         const ids = Array.from({length:151},(_,i)=>i+1); shuffle(ids);
         state.teamA = ids.slice(0,3).map(id=>({id,name:nameFor(id)}));
@@ -369,6 +421,13 @@
         renderTeams(); updateStartButton();
       });
       $('#startBattle').addEventListener('click', startBattle);
+    }
+
+    function autoSeedRival(){
+      if(!state.allPokemon?.length) return;
+      const ids = Array.from({length:151},(_,i)=>i+1);
+      shuffle(ids);
+      state.teamB = ids.slice(0,3).map(id=>({ id, name: nameFor(id) }));
     }
 
     function nameFor(id){ const p=state.allPokemon.find(x=>x.id===id); return p?p.name:`#${id}`; }
@@ -522,10 +581,9 @@
       filtered.sort((a,b)=>{
         const stabA = state.mvContext.types?.includes(a.type) ? 1 : 0;
         const stabB = state.mvContext.types?.includes(b.type) ? 1 : 0;
-        // Prefer STAB ≥ power ≥ level/TM; status moves sprinkled in
         const catA = a.category==='status'? -1 : 1;
         const catB = b.category==='status'? -1 : 1;
-        return (stabB-stabA) || (catB-catA) || (b.power - (a.power||0)) || ((b.level||0) - (a.level||0)) || (a.method==='machine'?1:-1);
+        return (stabB-stabA) || (catB-catA) || ((b.power||0) - (a.power||0)) || ((b.level||0) - (a.level||0)) || (a.method==='machine'?1:-1);
       });
 
       for(const m of filtered){
@@ -611,7 +669,7 @@
         const power = mv.power ?? null;
         const accuracy = mv.accuracy ?? 100;
 
-        // read ailment
+        // Ailment
         const ailmentRaw = mv.meta?.ailment?.name || 'none';
         const ailment_chance = mv.meta?.ailment_chance ?? mv.effect_chance ?? 0;
         const ailment_code = AIL_MAP[ailmentRaw] || (ailmentRaw==='none'? null : ailmentRaw);
@@ -633,7 +691,6 @@
     function cleanMoveName(n){ return n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
     function recommendMoves(pool, attackerTypes=[]){
-      // Lightly encourage 1 utility/status move
       const scored = pool.map(m=>{
         const stab = attackerTypes.includes(m.type) ? 1.5 : 1.0;
         const base = m.category==='status' ? 40 + (m.ailment_code?20:0) : (m.power||0) * stab;
@@ -676,7 +733,8 @@
       state.rosterB = details.slice(3,6);
 
       updateRosterBadges(); setActiveDisplays(); renderMoveButtons();
-      log(`Battle Start! ${currA().name} vs ${currB().name}.`);
+      setBanner(`Your turn — choose a move for ${currA().name}.`, 'your');
+      enableMoveButtons(true);
       if(state.autoPlay) autoLoop();
     }
 
@@ -704,7 +762,7 @@
       return {
         id, name:cap(p.name), types,
         front:p.sprites.front_default || gridSpriteURL(id),
-        back:p.sprites.back_default || p.sprites.front_default || gridSpriteURL(id),
+        back: p.sprites.back_default || p.sprites.front_default || gridSpriteURL(id),
         base, stats:{...derived}, hp:derived.maxHP, moves,
         status:null // {type:'par'|'brn'|'psn'|'frz'|'slp', turns?:number}
       };
@@ -747,16 +805,15 @@
     function updateStatusUI(side, mon){
       const dot = side==='A'? $('#dotA') : $('#dotB');
       const tag = side==='A'? $('#stTextA') : $('#stTextB');
-      let color='#10b981'; // OK (green)
-      let label=null;
+      let color='#10b981', label=null;
       if(mon.status?.type){
         label = mon.status.type.toUpperCase();
         switch(mon.status.type){
-          case 'par': color='#fbbf24'; break;   // amber
-          case 'brn': color='#f97316'; break;  // orange
-          case 'psn': color='#8b5cf6'; break;  // purple-ish
-          case 'frz': color='#22d3ee'; break;  // cyan
-          case 'slp': color='#64748b'; break;  // slate
+          case 'par': color='#fbbf24'; break;
+          case 'brn': color='#f97316'; break;
+          case 'psn': color='#8b5cf6'; break;
+          case 'frz': color='#22d3ee'; break;
+          case 'slp': color='#64748b'; break;
           default: color='#10b981';
         }
       } else {
@@ -793,12 +850,16 @@
         });
         box.appendChild(btn);
       });
-      for(let i=A.moves.length;i<4;i++){
-        const d=document.createElement('div');
-        d.className='move-btn opacity-60 bg-slate-300 cursor-not-allowed';
-        d.innerHTML='<div class="text-left"><div class="font-bold">—</div><div class="text-[10px] opacity-90">No move</div></div>';
-        box.appendChild(d);
-      }
+      enableMoveButtons(state.waitingForPlayerChoice);
+    }
+
+    function enableMoveButtons(on){
+      $$('#moveButtons .move-btn').forEach(b=>{
+        b.disabled = !on;
+        b.style.opacity = on ? '1' : '.6';
+        b.style.filter = on ? 'none' : 'grayscale(40%)';
+        b.style.cursor = on ? 'pointer' : 'not-allowed';
+      });
     }
 
     async function autoLoop(){
@@ -808,7 +869,7 @@
           state.queuedMove = bestMoveAgainst(A, B);
         }
         await resolveTurn();
-        await sleep(P(650));
+        await sleep(P(700));
       }
     }
 
@@ -825,7 +886,6 @@
     }
 
     function bestMoveAgainst(attacker, defender){
-      // prefer non-incapacitating if status-only and defender already has status
       let best = attacker.moves[0];
       let bestScore = -1;
       for(const m of attacker.moves){
@@ -835,7 +895,6 @@
           score = willDoAnything ? 50 + (m.ailment_chance||0) : 10;
         } else {
           score = estimateDamage(attacker, defender, m);
-          // sprinkle bonus if it can also status
           if(m.ailment_code) score += (m.ailment_chance||0)/2;
         }
         if(score>bestScore){ bestScore=score; best=m; }
@@ -843,21 +902,35 @@
       return best;
     }
 
+    function setBanner(text, mode='info'){
+      const b = $('#turnBanner');
+      const caret = $('#gbCaret');
+      b.textContent = text + ' ';
+      b.appendChild(caret);
+      const ring = mode==='your' ? 'ring-emerald-500' : mode==='rival' ? 'ring-rose-500' : 'ring-slate-400';
+      b.className = `gb-box mt-4 p-3 text-sm ring-2 ${ring}`;
+      if(mode==='your'){ caret.classList.remove('hidden'); }
+      else { caret.classList.add('hidden'); }
+    }
+
     async function resolveTurn(){
       if(state.lock) return; state.lock=true;
-      if(state.waitingForPlayerChoice && !state.queuedMove){ toast('Choose a move.'); state.lock=false; return; }
+      if(state.waitingForPlayerChoice && !state.queuedMove){
+        toast('Choose a move.'); state.lock=false; return;
+      }
 
       const A=currA(), B=currB();
       const cpuMove = bestMoveAgainst(B, A);
 
       await sleep(P(200));
 
-      // Speed order with paralysis considered; coin flip on tie
+      // Speed order (PAR considered), tie coin flip
       const aSpd = effectiveSpeed(A), bSpd = effectiveSpeed(B);
       let order = [{ side:'A', move:state.queuedMove }, { side:'B', move:cpuMove }];
       if(bSpd > aSpd || (bSpd===aSpd && Math.random()<0.5)) order.reverse();
 
       state.waitingForPlayerChoice=false;
+      enableMoveButtons(false);
       $('#btnNext').disabled = true;
 
       for(const step of order){
@@ -870,27 +943,34 @@
 
         const m = step.move;
 
-        // Pre-move status checks (SLP/FRZ/PAR)
+        // Pre-move status checks
+        setBanner(`${atk.name} is preparing to move…`, step.side==='A'?'your':'rival');
         if(handlePreMoveStatus(atk)){
+          log(`${atk.name} is incapacitated by status.`);
           setHPBars();
-          await sleep(P(350));
-          continue; // turn lost
+          await sleep(P(450));
+          continue;
         }
 
-        // Accuracy & announce (status moves announce too)
-        await announce(`${atk.name} used ${m.display}!`);
+        // Announce + accuracy for status/damaging
+        setBanner(`${atk.name} used ${m.display}!`, step.side==='A'?'your':'rival');
 
-        // If pure status move: just attempt to apply
+        // Pure status move
         if(m.category==='status' && (!m.power || m.power===0)){
           if(Math.random()*100 > (m.accuracy ?? 100)){
             log(`${atk.name}'s ${m.display} missed!`);
-            await impactMiss(defSide); await sleep(P(250));
+            await impactMiss(defSide); await sleep(P(300));
           } else {
             await animateAttack(atkSide, defSide, m);
             const applied = tryApplyStatus(def, m.ailment_code, m.ailment_chance || 100);
-            if(applied){ log(`${def.name} is now ${applied.toUpperCase()}!`); updateStatusUI(defSide, def); }
-            else { log(`But it failed!`); }
-            await sleep(P(300));
+            if(applied){
+              log(`${def.name} is now ${applied.toUpperCase()}!`);
+              setBanner(`${def.name} is ${applied.toUpperCase()}!`, 'info');
+              updateStatusUI(defSide, def);
+            } else {
+              log(`But it failed!`);
+            }
+            await sleep(P(350));
           }
           continue;
         }
@@ -900,7 +980,8 @@
         if(Math.random()*100 > (m.accuracy ?? 100)){
           await impactMiss(defSide);
           log(`${atk.name}'s ${m.display} missed!`);
-          await sleep(P(250));
+          setBanner(`${atk.name}'s ${m.display} missed!`, 'info');
+          await sleep(P(300));
           continue;
         }
 
@@ -911,18 +992,24 @@
         def.hp = Math.max(0, def.hp - dmg);
         await impactHit(defSide, m.type);
         setHPBars();
-        log(`It dealt ${dmg} damage.`);
-        await sleep(P(300));
+        log(`${atk.name} dealt ${dmg} damage to ${def.name}.`);
+        await sleep(P(320));
 
         // Secondary status chance
         if(def.hp>0 && m.ailment_code){
           const applied = tryApplyStatus(def, m.ailment_code, m.ailment_chance || 0);
-          if(applied){ log(`${def.name} is now ${applied.toUpperCase()}!`); setHPBars(); await sleep(P(200)); }
+          if(applied){
+            log(`${def.name} is now ${applied.toUpperCase()}!`);
+            setBanner(`${def.name} is ${applied.toUpperCase()}!`, 'info');
+            setHPBars(); await sleep(P(240));
+          }
         }
 
+        // Faint handling
         if(def.hp<=0){
           log(`${def.name} fainted!`);
-          await sleep(P(450));
+          await faintSprite(defSide);
+          await sleep(P(250));
           if(step.side==='A'){
             const next = state.rosterB.findIndex((x,i)=> i>state.bIdx && x.hp>0);
             if(next!==-1) state.bIdx=next;
@@ -931,10 +1018,12 @@
             if(next!==-1) state.aIdx=next;
           }
           if(!battleAlive()) break;
-          setActiveDisplays(); await sleep(P(300));
+          setActiveDisplays();
+          setBanner(`${(step.side==='A'?currB():currA()).name} was sent out!`, 'info');
+          await sleep(P(350));
         }
 
-        await sleep(P(200));
+        await sleep(P(240));
       }
 
       // End-of-turn residuals
@@ -945,15 +1034,17 @@
       }
 
       if(!battleAlive()){
-        const winner = state.rosterA.some(m=>m.hp>0)? 'You win!':'Rival wins!';
+        const youWin = state.rosterA.some(m=>m.hp>0);
         await screenShake();
-        log(`🏆 ${winner}`);
+        setBanner(youWin? '🏆 You win!' : '🏆 Rival wins!', youWin?'your':'rival');
         state.lock=false; return;
       }
 
       state.round++; setActiveDisplays();
       state.queuedMove=null; state.waitingForPlayerChoice=true;
       $('#btnNext').disabled = false;
+      setBanner(`Your turn — choose a move for ${currA().name}.`, 'your');
+      enableMoveButtons(true);
       state.lock=false;
       if(state.autoPlay) autoLoop();
     }
@@ -966,28 +1057,25 @@
       let base = (((2*50/5 + 2) * (move.power||0) * (aEff/Math.max(1,D))) / 50) + 2;
       const stab = attacker.types.includes(move.type)? 1.5 : 1.0;
       const eff = effMultiplier(move.type, defender.types);
-      return base * stab * eff * 0.925;
-    }
-    function computeDamage(attacker, defender, move){
-      const base = estimateDamage(attacker, defender, move);
+      const dmg = base * stab * eff * 0.925;
       const roll = (Math.random()*0.15)+0.85;
-      return Math.max(1, Math.floor(base * roll));
+      return Math.max(1, Math.floor(dmg * roll));
     }
+    function computeDamage(attacker, defender, move){ return estimateDamage(attacker, defender, move); }
 
     /* ======= Status system ======= */
     function handlePreMoveStatus(mon){
       if(mon.status?.type==='slp'){
         mon.status.turns = (mon.status.turns ?? 1);
-        if(mon.status.turns>0){ mon.status.turns--; log(`${mon.name} is fast asleep…`); return true; }
-        // wake up
-        log(`${mon.name} woke up!`); mon.status = null; return false;
+        if(mon.status.turns>0){ mon.status.turns--; log(`${mon.name} is fast asleep…`); setBanner(`${mon.name} is fast asleep…`, 'info'); return true; }
+        log(`${mon.name} woke up!`); setBanner(`${mon.name} woke up!`, 'info'); mon.status = null; return false;
       }
       if(mon.status?.type==='frz'){
-        if(Math.random() < THAW_CHANCE){ log(`${mon.name} thawed out!`); mon.status=null; return false; }
-        log(`${mon.name} is frozen solid!`); return true;
+        if(Math.random() < 0.2){ log(`${mon.name} thawed out!`); setBanner(`${mon.name} thawed out!`, 'info'); mon.status=null; return false; }
+        log(`${mon.name} is frozen solid!`); setBanner(`${mon.name} is frozen solid!`, 'info'); return true;
       }
       if(mon.status?.type==='par'){
-        if(Math.random() < 0.25){ log(`${mon.name} is fully paralyzed!`); return true; }
+        if(Math.random() < 0.25){ log(`${mon.name} is fully paralyzed!`); setBanner(`${mon.name} is fully paralyzed!`, 'info'); return true; }
       }
       return false;
     }
@@ -1006,17 +1094,23 @@
       return code;
     }
 
-    function endOfTurnResidual(mon, side){
+    function endOfTurnResidual(mon){
       if(mon.hp<=0) return;
       if(mon.status?.type==='brn' || mon.status?.type==='psn'){
         const dmg = Math.max(1, Math.floor(mon.stats.maxHP / RESIDUAL_FRACTION));
         mon.hp = Math.max(0, mon.hp - dmg);
         log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`);
+        setBanner(`${mon.name} takes damage from ${mon.status.type==='brn'?'burn':'poison'}…`, 'info');
       }
     }
 
     /* ======= Animations & Effects ======= */
-    async function announce(text){ log(text); await sleep(P(250)); }
+    async function faintSprite(side){
+      const img = side==='A' ? $('#spriteA') : $('#spriteB');
+      img.classList.add('faint');
+      await sleep(P(500));
+      img.classList.remove('faint');
+    }
 
     async function animateAttack(attackerSide, defenderSide, move){
       const atkImg = attackerSide==='A' ? $('#spriteA') : $('#spriteB');
