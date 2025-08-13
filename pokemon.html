@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Pocket Stadium — Kanto 3v3 (Lv.50, Gen‑1 Moves + TM/HM)</title>
+  <title>Pocket Stadium — Kanto 3v3 (Lv.50 • Gen‑1 Moves + TM/HM • Animations)</title>
 
   <!-- Tailwind Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -33,10 +33,54 @@
     .type-badge { font-size:10px; font-weight:800; padding:.125rem .5rem; border-radius:999px; color:#fff; }
     .move-btn { width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.9rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:space-between; }
     .tag { font-size:10px; font-weight:700; padding:.125rem .5rem; border-radius:999px; background:#e5e7eb; color:#334155; }
-    .switch { appearance:none; width:36px; height:20px; background:#e5e7eb; border-radius:999px; position:relative; outline:none; cursor:pointer; }
-    .switch:checked { background:#10b981; }
-    .switch:before { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:999px; background:#fff; transition:left .2s ease; }
-    .switch:checked:before { left:18px; }
+
+    /* ====== Battle Animations ====== */
+    @keyframes lunge-right { 0%{transform:translateX(0)} 40%{transform:translateX(22px)} 100%{transform:translateX(0)} }
+    @keyframes lunge-left  { 0%{transform:translateX(0)} 40%{transform:translateX(-22px)} 100%{transform:translateX(0)} }
+    .lunge-right { animation: lunge-right .35s ease; }
+    .lunge-left  { animation: lunge-left  .35s ease; }
+
+    @keyframes shake {
+      0%,100%{ transform:translate(0,0) }
+      20%{ transform:translate(-4px,0) }
+      40%{ transform:translate(4px,0) }
+      60%{ transform:translate(-3px,0) }
+      80%{ transform:translate(3px,0) }
+    }
+    .shake { animation: shake .35s ease; }
+
+    @keyframes flash { 0%{filter:brightness(1)} 50%{ filter:brightness(2)} 100%{filter:brightness(1)} }
+    .flash { animation: flash .28s ease; }
+
+    @keyframes jiggle {
+      0%{transform:translate(0,0)} 25%{transform:translate(0,-2px)} 50%{transform:translate(0,0)} 75%{transform:translate(0,2px)} 100%{transform:translate(0,0)}
+    }
+
+    /* Projectile */
+    .proj {
+      position:absolute; width:10px; height:10px; border-radius:999px;
+      box-shadow: 0 0 10px rgba(0,0,0,.25);
+      transform: translate(-50%, -50%);
+      pointer-events:none;
+    }
+
+    /* Impact spark */
+    @keyframes spark {
+      0% { transform: scale(.6); opacity: 0.9; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .spark {
+      position:absolute; width:24px; height:24px; border-radius:50%;
+      box-shadow: 0 0 18px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9);
+      animation: spark .35s ease forwards;
+      pointer-events:none;
+    }
+
+    /* Screen shake (camera) */
+    .camshake { animation: jiggle .25s ease; }
+
+    /* Hide overflow of stage for projectiles */
+    .stage { position:relative; overflow:hidden; }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white font-ui text-slate-800">
@@ -44,7 +88,7 @@
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
       <img alt="Pokeball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
       <h1 class="text-lg font-bold">Pocket Stadium — Kanto 3v3</h1>
-      <span class="ml-auto text-xs text-slate-500">Lv.50 • Gen‑1 move sets • TM/HM</span>
+      <span class="ml-auto text-xs text-slate-500">Lv.50 • Gen‑1 move sets • TM/HM • Animations</span>
     </div>
   </header>
 
@@ -79,7 +123,7 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3 pt-2">
+      <div class="flex flex-wrap items-center gap-3 pt-2">
         <button id="startBattle" class="btn btn-warn tap disabled:opacity-50" disabled>Start Battle</button>
         <div id="buildHint" class="text-sm text-slate-500">Pick 3 for each side to begin.</div>
       </div>
@@ -92,7 +136,15 @@
         <span id="roundTag" class="chip">Round 1</span>
         <div class="ml-auto flex items-center gap-3">
           <label class="flex items-center gap-2 text-sm">
-            <input id="autoPlay" type="checkbox" class="switch"> <span>Auto play</span>
+            Pace
+            <select id="pace" class="border rounded-lg px-2 py-1">
+              <option value="1.2">Slow</option>
+              <option value="1.0" selected>Normal</option>
+              <option value="0.8">Fast</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input id="autoPlay" type="checkbox" class="accent-emerald-600"> Auto play
           </label>
           <button id="reset" class="btn-secondary tap">Back to builder</button>
         </div>
@@ -115,7 +167,7 @@
       </div>
 
       <!-- Stage -->
-      <div class="card p-4">
+      <div class="card p-4 stage" id="stage">
         <div class="grid grid-cols-2 gap-2 items-center">
           <!-- Opponent -->
           <div class="flex flex-col items-center">
@@ -161,7 +213,7 @@
     </section>
   </main>
 
-  <!-- Picker Overlay (Team selection) -->
+  <!-- Picker Overlay (Team) -->
   <div id="picker" class="fixed inset-0 z-20 hidden">
     <div class="absolute inset-0 bg-black/40" data-close></div>
     <div class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl bg-white p-4 space-y-3">
@@ -182,8 +234,8 @@
       <div class="flex items-center gap-2">
         <div id="mvTitle" class="chip">Moves — ???</div>
         <div class="ml-auto flex items-center gap-2 text-xs">
-          <label class="flex items-center gap-1"><input id="fltLvl" type="checkbox" class="switch" checked><span>Level‑Up ≤50</span></label>
-          <label class="flex items-center gap-1"><input id="fltTM" type="checkbox" class="switch" checked><span>TM/HM</span></label>
+          <label class="flex items-center gap-1"><input id="fltLvl" type="checkbox" class="accent-emerald-600" checked><span>Level‑Up ≤50</span></label>
+          <label class="flex items-center gap-1"><input id="fltTM" type="checkbox" class="accent-emerald-600" checked><span>TM/HM</span></label>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -193,9 +245,7 @@
         <button id="mvDone" class="btn tap">Done</button>
       </div>
       <div id="mvPickedCount" class="text-xs text-slate-500">0 / 4 selected</div>
-      <div id="mvList" class="space-y-2 max-h-[55vh] overflow-auto pr-1">
-        <!-- items -->
-      </div>
+      <div id="mvList" class="space-y-2 max-h-[55vh] overflow-auto pr-1"></div>
     </div>
   </div>
 
@@ -204,11 +254,10 @@
   </footer>
 
   <script>
-    // =================== Utilities & Constants
+    /* ======= Utils & Constants ======= */
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
     const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const rand = (min, max) => Math.random() * (max - min) + min;
     const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
     const gridSpriteURL = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
 
@@ -220,7 +269,7 @@
     const SPECIAL_TYPES = new Set(['fire','water','grass','electric','ice','psychic','dragon']);
     const typeColor = t => TYPE_COLORS[t] || '#64748b';
 
-    // Gen‑1 type chart (attacker -> defender -> multiplier)
+    // Gen‑1 type chart
     const chart = {
       normal:{ rock:0.5, ghost:0 },
       fire:{ fire:0.5, water:0.5, grass:2, ice:2, bug:2, rock:0.5, dragon:0.5 },
@@ -232,7 +281,7 @@
       poison:{ grass:2, poison:0.5, ground:0.5, rock:0.5, ghost:0.5 },
       ground:{ fire:2, electric:2, grass:0.5, poison:2, flying:0, bug:0.5, rock:2 },
       flying:{ electric:0.5, grass:2, fighting:2, bug:2, rock:0.5 },
-      psychic:{ fighting:2, poison:2, psychic:0.5, steel:1 }, // steel ignored in Gen 1, safe
+      psychic:{ fighting:2, poison:2, psychic:0.5 },
       bug:{ fire:0.5, grass:2, fighting:0.5, poison:2, flying:0.5, psychic:2, ghost:0.5 },
       rock:{ fire:2, ice:2, fighting:0.5, ground:0.5, flying:2, bug:2 },
       ghost:{ normal:0, psychic:0, ghost:2 },
@@ -245,23 +294,26 @@
     }
     function categoryFromType(t){ return SPECIAL_TYPES.has(t) ? 'special' : 'physical'; }
 
-    // =================== App State
+    // Pace multiplier (bigger = slower)
+    function P(ms){ const m = Number($('#pace')?.value || 1.0); return Math.round(ms * m); }
+
+    /* ======= App State ======= */
     const state = {
-      allPokemon: [], // [{id,name}]
+      allPokemon: [],
       teamA: [], teamB: [],
       pickingFor: 'A', tempPick: new Set(),
       // Move editor
-      mvContext: null, // {team: 'A'|'B', id, name, types}
-      mvTemp: new Set(), // chosen move keys in editor
-      mvPoolCache: new Map(), // id -> [{...moveObj}]
-      moveCache: new Map(),   // name -> move detail JSON
-      typesById: new Map(),   // id -> ['electric',...]
+      mvContext: null,
+      mvTemp: new Set(),
+      mvPoolCache: new Map(),
+      moveCache: new Map(),
+      typesById: new Map(),
       // Battle
       rosterA: [], rosterB: [], aIdx:0, bIdx:0, round:1,
-      waitingForPlayerChoice: true, queuedMove: null, autoPlay:false, lock:false
+      waitingForPlayerChoice:true, queuedMove:null, autoPlay:false, lock:false
     };
 
-    // =================== Boot
+    /* ======= Boot ======= */
     document.addEventListener('DOMContentLoaded', async () => {
       renderTeams(); wireBuilder(); wireArena();
       await loadKanto();
@@ -276,7 +328,7 @@
       } catch (e) { toast('Could not load Kanto list. Try again.'); console.error(e); }
     }
 
-    // =================== Builder
+    /* ======= Builder ======= */
     function wireBuilder(){
       $('#pickA').addEventListener('click', ()=>openPicker('A'));
       $('#pickB').addEventListener('click', ()=>openPicker('B'));
@@ -335,7 +387,7 @@
       $('#buildHint').textContent = ok ? 'Optionally edit moves, then Start Battle.' : 'Pick 3 for each side to begin.';
     }
 
-    // =================== Team Picker (Pokémon)
+    /* ======= Team Picker ======= */
     function openPicker(team){
       state.pickingFor=team;
       state.tempPick = new Set((team==='A'?state.teamA:state.teamB).map(p=>p.id));
@@ -348,7 +400,6 @@
       if(commit){
         const list = Array.from(state.tempPick).slice(0,3).map(id=>{
           const existing = (state.pickingFor==='A'?state.teamA:state.teamB).find(x=>x.id===id);
-          // preserve any previously chosen moves
           return existing ? existing : ({id, name:nameFor(id)});
         });
         if(state.pickingFor==='A') state.teamA=list; else state.teamB=list;
@@ -388,7 +439,7 @@
     }
     function reflectPickedUI(id, el){ const picked=state.tempPick.has(id); el.style.borderColor=picked?'#10b981':'#e5e7eb'; el.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.2)':'none'; }
 
-    // =================== Move Picker
+    /* ======= Move Picker ======= */
     async function openMovePicker(team, id, name){
       $('#movePicker').classList.remove('hidden');
       $('#mvTitle').textContent = `Moves — ${name} (${team==='A'?'You':'Rival'})`;
@@ -400,7 +451,6 @@
       const types = state.typesById.get(id) || [];
       state.mvContext.types = types;
 
-      // Load existing selection for this mon (if any)
       const teamArr = state[team === 'A' ? 'teamA' : 'teamB'];
       const entry = teamArr.find(x=>x.id===id);
       state.mvTemp = new Set((entry?.moves || []).slice(0,4));
@@ -423,7 +473,7 @@
     $('#mvDone').addEventListener('click', ()=>closeMovePicker(true));
     $('#mvClear').addEventListener('click', ()=>{ state.mvTemp.clear(); renderMoveList(); });
     $('#mvRecommend').addEventListener('click', ()=>{
-      const pool = getFilteredMovePool(); // based on current filters
+      const pool = getFilteredMovePool();
       const picks = recommendMoves(pool, state.mvContext.types).slice(0,4).map(m=>m.key);
       state.mvTemp = new Set(picks);
       renderMoveList();
@@ -439,7 +489,6 @@
         return !q || m.display.toLowerCase().includes(q) || m.type.includes(q);
       });
 
-      // Sort: STAB first, then higher power, then level (desc), then method
       filtered.sort((a,b)=>{
         const stabA = state.mvContext.types?.includes(a.type) ? 1 : 0;
         const stabB = state.mvContext.types?.includes(b.type) ? 1 : 0;
@@ -490,18 +539,15 @@
       return pool;
     }
 
-    // Build Gen‑1 pool: Level‑Up ≤50 and TM/HM from red‑blue & yellow; exclude status / power null
     async function assembleGen1MovePool(movesArray){
       const vgOK = new Set(['red-blue','yellow']);
-      // name -> aggregated {method, level, sources:Set}
       const agg = new Map();
       for(const m of movesArray){
         for(const v of m.version_group_details){
           if(!vgOK.has(v.version_group.name)) continue;
-          const method = v.move_learn_method.name; // 'level-up' | 'machine' | ...
+          const method = v.move_learn_method.name;
           if(method==='level-up' && v.level_learned_at>50) continue;
           if(method!=='level-up' && method!=='machine') continue;
-
           const key = m.move.name;
           if(!agg.has(key)) agg.set(key, {name:key, methods:new Set(), level:null, sources:new Set()});
           const rec = agg.get(key);
@@ -512,36 +558,26 @@
           }
         }
       }
-
       const out = [];
       for(const {name, methods, level, sources} of agg.values()){
-        // fetch move details
         if(!state.moveCache.has(name)){
           const r = await fetch(`https://pokeapi.co/api/v2/move/${name}`);
           const mv = await r.json();
           state.moveCache.set(name, mv);
         }
         const mv = state.moveCache.get(name);
-        if(mv.damage_class?.name==='status') continue; // skip status
+        if(mv.damage_class?.name==='status') continue;
         const type = mv.type?.name;
-        if(!TYPE_COLORS[type]) continue; // keep to Gen‑1 types
-        const power = mv.power; // may be null for odd moves; skip if null
-        if(power==null) continue;
+        if(!(type in TYPE_COLORS)) continue;
+        const power = mv.power; if(power==null) continue;
 
-        // We emit one entry per method present so filters work cleanly
         if(methods.has('level-up')){
-          out.push({
-            key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
-            power, accuracy: mv.accuracy ?? 100,
-            method:'level-up', level: level || 1, sources:[...sources]
-          });
+          out.push({ key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
+            power, accuracy: mv.accuracy ?? 100, method:'level-up', level:level||1, sources:[...sources] });
         }
         if(methods.has('machine')){
-          out.push({
-            key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
-            power, accuracy: mv.accuracy ?? 100,
-            method:'machine', level:null, sources:[...sources]
-          });
+          out.push({ key:name, display:cleanMoveName(name), type, category:categoryFromType(type),
+            power, accuracy: mv.accuracy ?? 100, method:'machine', level:null, sources:[...sources] });
         }
       }
       return out;
@@ -550,26 +586,19 @@
     function cleanMoveName(n){ return n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
     function recommendMoves(pool, attackerTypes=[]){
-      // Rank by STAB, then power, then level (desc), prefer level-up over TM/HM slightly
       const scored = pool.map(m=>{
         const stab = attackerTypes.includes(m.type) ? 1.5 : 1.0;
         const score = (m.power||0) * stab + ((m.level||0)/5) + (m.method==='level-up'? 1 : 0);
         return {score, m};
       });
       scored.sort((a,b)=> b.score - a.score);
-      // Deduplicate by key (a move may appear twice if both methods present)
       const seen=new Set(), picks=[];
-      for(const s of scored){
-        if(!seen.has(s.m.key)){ seen.add(s.m.key); picks.push(s.m); }
-        if(picks.length>=4) break;
-      }
-      if(!picks.length){
-        picks.push({key:'bash', display:'Bash', type:'normal', category:'physical', power:50, accuracy:100, method:'level-up', level:1});
-      }
+      for(const s of scored){ if(!seen.has(s.m.key)){ seen.add(s.m.key); picks.push(s.m); } if(picks.length>=4) break; }
+      if(!picks.length){ picks.push({key:'bash', display:'Bash', type:'normal', category:'physical', power:50, accuracy:100, method:'level-up', level:1}); }
       return picks;
     }
 
-    // =================== Arena
+    /* ======= Arena ======= */
     function wireArena(){
       $('#reset').addEventListener('click', ()=>{ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); });
       $('#clearLog').addEventListener('click', clearLog);
@@ -584,15 +613,12 @@
       const all6=[...state.teamA, ...state.teamB];
       const details = await Promise.all(all6.map(async (p)=>{
         const mon = await buildMon(p.id);
-        // if custom moves selected for this team entry, use them
         if(p.moves && p.moves.length){
           const want = p.moves.slice(0,4);
           const pool = state.mvPoolCache.get(p.id) || await getMovePool(p.id);
           const byKey = new Map(pool.map(x=>[x.key,x]));
           const chosen = [];
-          for(const k of want){
-            if(byKey.has(k)) chosen.push(byKey.get(k));
-          }
+          for(const k of want){ if(byKey.has(k)) chosen.push(byKey.get(k)); }
           if(chosen.length){ mon.moves = chosen; }
         }
         return mon;
@@ -606,7 +632,6 @@
     }
 
     async function buildMon(id){
-      // use cache from move editor if available to save calls
       const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
       const p = await res.json();
       const getStat = k => p.stats.find(s=>s.stat.name===k).base_stat;
@@ -623,7 +648,6 @@
       const types = p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name);
       state.typesById.set(id, types);
 
-      // default moves: recommend 4 from pool
       const pool = state.mvPoolCache.get(id) || await assembleGen1MovePool(p.moves);
       state.mvPoolCache.set(id, pool);
       const moves = recommendMoves(pool, types).slice(0,4);
@@ -704,7 +728,7 @@
           state.queuedMove = bestMoveAgainst(A, B);
         }
         await resolveTurn();
-        await sleep(600);
+        await sleep(P(650));
       }
     }
 
@@ -731,6 +755,9 @@
       const A=currA(), B=currB();
       const cpuMove = bestMoveAgainst(B, A);
 
+      // small breathing room before actions
+      await sleep(P(200));
+
       // Speed order, coin flip on tie
       let order = [{ side:'A', move:state.queuedMove }, { side:'B', move:cpuMove }];
       if(B.stats.spe > A.stats.spe || (B.stats.spe===A.stats.spe && Math.random()<0.5)) order.reverse();
@@ -740,6 +767,8 @@
 
       for(const step of order){
         if(!battleAlive()) break;
+        const atkSide = (step.side==='A')? 'A':'B';
+        const defSide = (step.side==='A')? 'B':'A';
         const atk = (step.side==='A')? currA(): currB();
         const def = (step.side==='A')? currB(): currA();
         if(atk.hp<=0 || def.hp<=0) continue;
@@ -747,23 +776,28 @@
         const m = step.move;
 
         // Accuracy
+        await announce(`${atk.name} used ${m.display}!`);
+        await animateAttack(atkSide, defSide, m);
         if(Math.random()*100 > (m.accuracy ?? 100)){
+          await impactMiss(defSide);
           log(`${atk.name}'s ${m.display} missed!`);
-          await sleep(300); continue;
+          await sleep(P(250));
+          continue;
         }
 
         // Damage
         let dmg = computeDamage(atk, def, m);
-        const crit = Math.random() < 0.1; // simple crit
-        if(crit){ dmg = Math.floor(dmg*1.75); log('Critical hit!'); }
+        const crit = Math.random() < 0.1;
+        if(crit){ dmg = Math.floor(dmg*1.75); log('Critical hit!'); await screenShake(); }
         def.hp = Math.max(0, def.hp - dmg);
-        log(`${atk.name} used ${m.display} — ${dmg} dmg!`);
+        await impactHit(defSide, m.type);
         setHPBars();
-        await sleep(350);
+        log(`It dealt ${dmg} damage.`);
+        await sleep(P(350));
 
         if(def.hp<=0){
           log(`${def.name} fainted!`);
-          await sleep(350);
+          await sleep(P(450));
           if(step.side==='A'){
             const next = state.rosterB.findIndex((x,i)=> i>state.bIdx && x.hp>0);
             if(next!==-1) state.bIdx=next;
@@ -772,12 +806,16 @@
             if(next!==-1) state.aIdx=next;
           }
           if(!battleAlive()) break;
-          state.round++; setActiveDisplays(); await sleep(250);
+          state.round++; setActiveDisplays(); await sleep(P(300));
         }
+
+        // small delay between the two actions
+        await sleep(P(250));
       }
 
       if(!battleAlive()){
         const winner = state.rosterA.some(m=>m.hp>0)? 'You win!':'Rival wins!';
+        await screenShake();
         log(`🏆 ${winner}`);
         state.lock=false; return;
       }
@@ -795,16 +833,100 @@
       let base = (((2*50/5 + 2) * move.power * (A/Math.max(1,D))) / 50) + 2;
       const stab = attacker.types.includes(move.type)? 1.5 : 1.0;
       const eff = effMultiplier(move.type, defender.types);
-      return base * stab * eff * 0.925; // avg roll
+      return base * stab * eff * 0.925;
     }
-
     function computeDamage(attacker, defender, move){
       const base = estimateDamage(attacker, defender, move);
-      const roll = rand(0.85, 1.0);
+      const roll = (Math.random()*0.15)+0.85;
       return Math.max(1, Math.floor(base * roll));
     }
 
-    // =================== Log & Toast
+    /* ======= Animations & Effects ======= */
+    async function announce(text){
+      log(text);
+      await sleep(P(250));
+    }
+
+    async function animateAttack(attackerSide, defenderSide, move){
+      const atkImg = attackerSide==='A' ? $('#spriteA') : $('#spriteB');
+      const defImg = defenderSide==='A' ? $('#spriteA') : $('#spriteB');
+      const stage = $('#stage');
+      const isPhysical = move.category==='physical';
+
+      if(isPhysical){
+        // Lunge
+        atkImg.classList.add(attackerSide==='A' ? 'lunge-right' : 'lunge-left');
+        await sleep(P(350));
+        atkImg.classList.remove('lunge-right','lunge-left');
+      } else {
+        // Projectile with slight arc
+        const atkRect = atkImg.getBoundingClientRect();
+        const defRect = defImg.getBoundingClientRect();
+        const stRect = stage.getBoundingClientRect();
+
+        const start = {
+          x: (atkRect.left + atkRect.right)/2 - stRect.left + (attackerSide==='A'? 26 : -26),
+          y: (atkRect.top + atkRect.bottom)/2 - stRect.top - 8
+        };
+        const end = {
+          x: (defRect.left + defRect.right)/2 - stRect.left + (defenderSide==='A'? 26 : -26),
+          y: (defRect.top + defRect.bottom)/2 - stRect.top - 8
+        };
+
+        const proj = document.createElement('div');
+        proj.className='proj';
+        proj.style.background = typeColor(move.type);
+        stage.appendChild(proj);
+
+        const steps = 22, dx=(end.x-start.x)/steps, dy=(end.y-start.y)/steps;
+        for(let i=0;i<=steps;i++){
+          const t=i/steps;
+          const arc = -30 * Math.sin(Math.PI*t); // arc height
+          proj.style.left = (start.x + dx*i) + 'px';
+          proj.style.top  = (start.y + dy*i + arc) + 'px';
+          await sleep(P(10));
+        }
+        proj.remove();
+      }
+      await sleep(P(120));
+    }
+
+    async function impactHit(defenderSide, type){
+      const defImg = defenderSide==='A' ? $('#spriteA') : $('#spriteB');
+      const stage = $('#stage');
+      // flash + shake
+      defImg.classList.add('flash','shake');
+      // spark
+      const r = defImg.getBoundingClientRect();
+      const st = stage.getBoundingClientRect();
+      const spark = document.createElement('div');
+      spark.className='spark';
+      spark.style.left = ( (r.left+r.right)/2 - st.left ) + 'px';
+      spark.style.top  = ( (r.top+r.bottom)/2 - st.top ) + 'px';
+      spark.style.background = typeColor(type);
+      stage.appendChild(spark);
+      await sleep(P(350));
+      defImg.classList.remove('flash','shake');
+      spark.remove();
+      await sleep(P(120));
+    }
+
+    async function impactMiss(defenderSide){
+      // quick camera jiggle to show a whiff
+      const stage = $('#stage');
+      stage.classList.add('camshake');
+      await sleep(P(220));
+      stage.classList.remove('camshake');
+    }
+
+    async function screenShake(){
+      const stage = $('#stage');
+      stage.classList.add('camshake');
+      await sleep(P(260));
+      stage.classList.remove('camshake');
+    }
+
+    /* ======= Log & Toast ======= */
     function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; }
     function clearLog(){ $('#log').innerHTML=''; }
     let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-900 text-white text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1600); }
