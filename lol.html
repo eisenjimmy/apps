@@ -8,26 +8,23 @@
   <!-- Favicon (inline SVG) -->
   <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%235a7cff" offset="0"/><stop stop-color="%23a855f7" offset="1"/></linearGradient></defs><rect width="128" height="128" rx="24" fill="%230b1220"/><g fill="url(%23g)"><path d="M25 92l20-56h12l-20 56zM71 92l20-56h12l-20 56z"/><circle cx="64" cy="34" r="6"/></g></svg>' />
 
-  <!-- Theme / PWA polish -->
+  <!-- Theme / PWA -->
   <meta name="theme-color" content="#0b1220" />
   <meta name="color-scheme" content="dark light" />
 
   <!-- SEO -->
-  <meta name="description" content="Jimmy’s LoL Duel — a slick, mobile-first League of Legends duel sandbox. Pick two champions, tap abilities (Q/W/E/R), watch animations, and battle a smarter CPU." />
-  <meta name="keywords" content="League of Legends, LoL, champions, abilities, duel, QWER, arena, Tailwind, Data Dragon, Jimmy" />
+  <meta name="description" content="Jimmy’s LoL Duel — mobile-first League of Legends tag-team duel. Pick three champions per side, cast Q/W/E/R with AOE, heals, shields, burns and slows, battle a smarter CPU, and manually switch champs." />
+  <meta name="keywords" content="League of Legends, LoL, duel, QWER, arena, Tailwind, Data Dragon, tag team, AOE, burn, shield, switch, mana, energy" />
   <meta name="robots" content="index,follow" />
 
-  <!-- Open Graph -->
+  <!-- OG/Twitter (replace image with your repo-hosted absolute URL after deploy) -->
   <meta property="og:title" content="Jimmy’s LoL Duel" />
-  <meta property="og:description" content="Pick two champions and duel with Q/W/E/R. Smart CPU, tiny role passives, flashy effects — all in one static page." />
-  <!-- Tip: replace with an absolute URL in your repo after deploy -->
+  <meta property="og:description" content="Pick three champions per side and duel with Q/W/E/R. Smart CPU, AOE/heals/status, manual switching, and flashy effects — all in one static page." />
   <meta property="og:image" content="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg" />
   <meta property="og:type" content="website" />
-
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Jimmy’s LoL Duel" />
-  <meta name="twitter:description" content="LoL duel sandbox with smart CPU and role passives. Mobile-first and snappy." />
+  <meta name="twitter:description" content="LoL tag-team duel with smart CPU, AOE, heals, shields, burns, slows, and manual switching." />
   <meta name="twitter:image" content="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg" />
 
   <!-- Canonical -->
@@ -36,16 +33,7 @@
 
   <!-- JSON-LD -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Jimmy’s LoL Duel",
-    "applicationCategory": "GameApplication",
-    "operatingSystem": "Any",
-    "description": "A mobile-first League of Legends duel sandbox with smart CPU, animations, and tiny role passives.",
-    "author": {"@type":"Person","name":"Jimmy"},
-    "inLanguage": "en-US"
-  }
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Jimmy’s LoL Duel","applicationCategory":"GameApplication","operatingSystem":"Any","description":"A mobile-first League of Legends tag-team duel with smart CPU, AOE/heal/status moves, manual switching, animations, and tiny PWA touches.","author":{"@type":"Person","name":"Jimmy"},"inLanguage":"en-US"}
   </script>
 
   <!-- Tailwind (CDN) -->
@@ -61,13 +49,17 @@
             hit: { '0%': { transform:'translateX(0)' }, '20%': { transform:'translateX(-6px)' }, '40%': { transform:'translateX(6px)' }, '60%': { transform:'translateX(-3px)' }, '80%': { transform:'translateX(3px)' }, '100%': { transform:'translateX(0)' } },
             burst: { '0%': { transform:'scale(.85)', opacity:.9 }, '100%': { transform:'scale(1.6)', opacity:0 } },
             float: { '0%': { transform:'translateY(0)', opacity:1 }, '100%': { transform:'translateY(-24px)', opacity:0 } },
-            pulsebar: { '0%': { width:'100%' }, '100%': { width:'0%' } },
+            heal: { '0%': { boxShadow:'0 0 0 0 rgba(16,185,129,.7)' }, '100%': { boxShadow:'0 0 0 24px rgba(16,185,129,0)' } },
+            shield: { '0%':{opacity:.7}, '100%':{opacity:0} },
             press: { '0%': { transform:'scale(1)' }, '50%': { transform:'scale(.96)' }, '100%': { transform:'scale(1)' } },
+            pulsebar: { '0%': { width:'100%' }, '100%': { width:'0%' } },
           },
           animation: {
             hit: 'hit 300ms ease-in-out',
             burst: 'burst 500ms ease-out forwards',
             float: 'float 700ms ease-out forwards',
+            heal: 'heal 800ms ease-out',
+            shield: 'shield 800ms ease-out forwards',
             press: 'press 220ms ease-in-out',
           }
         }
@@ -80,7 +72,7 @@
     .tap-highlight-none{-webkit-tap-highlight-color:transparent}
     .abs-full{position:absolute;inset:0}
     @media (prefers-reduced-motion: reduce) {
-      .animate-hit, .animate-burst, .animate-float, .animate-press { animation: none !important; }
+      .animate-hit, .animate-burst, .animate-float, .animate-press, .animate-heal, .animate-shield { animation: none !important; }
     }
   </style>
 </head>
@@ -93,7 +85,7 @@
       </div>
       <div class="flex-1 min-w-0">
         <h1 class="text-lg font-semibold truncate">Jimmy’s LoL Duel</h1>
-        <p class="text-xs text-slate-400 truncate">P1 (Left) vs CPU (Right) by default • Tap Q/W/E/R</p>
+        <p class="text-xs text-slate-400 truncate">Tag‑team (3v3) • Manual switching • P1 Left vs CPU Right</p>
       </div>
 
       <!-- P2 toggle -->
@@ -113,7 +105,7 @@
       </div>
 
       <button id="shareBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-xs sm:text-sm bg-white/10 hover:bg-white/15">Share</button>
-      <button id="randomFightBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-xs sm:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 active:scale-[.98] transition focus:outline-none focus:ring-2 focus:ring-indigo-400">Random Duel</button>
+      <button id="randomFightBtn" class="tap-highlight-none rounded-lg px-3 py-2 text-xs sm:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 active:scale-[.98] transition focus:outline-none focus:ring-2 focus:ring-indigo-400">Random Teams</button>
     </div>
 
     <!-- Mobile controls row -->
@@ -133,31 +125,52 @@
     </div>
   </header>
 
-  <!-- App -->
   <main class="mx-auto max-w-6xl px-4 py-4 md:py-8">
-    <!-- Pickers -->
+    <!-- Pickers: three per side -->
     <section class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <!-- Left picker -->
       <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
-        <div class="flex items-center gap-2">
-          <div class="grow">
-            <label for="leftSearch" class="sr-only">Left champion</label>
-            <input id="leftSearch" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search left champion…" list="championsList" autocomplete="off">
-          </div>
-          <button id="leftPickRandom" class="tap-highlight-none rounded-md px-3 py-2 text-xs bg-white/10 hover:bg-white/15">Random</button>
-        </div>
+        <h2 class="text-sm font-semibold mb-2">Player 1 — Team</h2>
         <datalist id="championsList"></datalist>
-        <div id="leftCard" class="mt-3"></div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-2">
+            <input id="leftSearch0" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Champion 1…" list="championsList" autocomplete="off">
+            <div id="leftCard0"></div>
+          </div>
+          <div class="space-y-2">
+            <input id="leftSearch1" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Champion 2…" list="championsList" autocomplete="off">
+            <div id="leftCard1"></div>
+          </div>
+          <div class="space-y-2">
+            <input id="leftSearch2" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Champion 3…" list="championsList" autocomplete="off">
+            <div id="leftCard2"></div>
+          </div>
+        </div>
+        <div class="mt-2">
+          <button id="leftPickRandom" class="tap-highlight-none rounded-md px-3 py-2 text-xs bg-white/10 hover:bg-white/15">Randomize Team</button>
+        </div>
       </div>
 
+      <!-- Right picker -->
       <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
-        <div class="flex items-center gap-2">
-          <div class="grow">
-            <label for="rightSearch" class="sr-only">Right champion</label>
-            <input id="rightSearch" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-rose-500" placeholder="Search right champion…" list="championsList" autocomplete="off">
+        <h2 class="text-sm font-semibold mb-2">Player 2 / CPU — Team</h2>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-2">
+            <input id="rightSearch0" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-rose-500" placeholder="Champion 1…" list="championsList" autocomplete="off">
+            <div id="rightCard0"></div>
           </div>
-          <button id="rightPickRandom" class="tap-highlight-none rounded-md px-3 py-2 text-xs bg-white/10 hover:bg-white/15">Random</button>
+          <div class="space-y-2">
+            <input id="rightSearch1" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-rose-500" placeholder="Champion 2…" list="championsList" autocomplete="off">
+            <div id="rightCard1"></div>
+          </div>
+          <div class="space-y-2">
+            <input id="rightSearch2" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-rose-500" placeholder="Champion 3…" list="championsList" autocomplete="off">
+            <div id="rightCard2"></div>
+          </div>
         </div>
-        <div id="rightCard" class="mt-3"></div>
+        <div class="mt-2">
+          <button id="rightPickRandom" class="tap-highlight-none rounded-md px-3 py-2 text-xs bg-white/10 hover:bg-white/15">Randomize Team</button>
+        </div>
       </div>
     </section>
 
@@ -168,8 +181,8 @@
         <div id="fxLayer" class="abs-full pointer-events-none"></div>
 
         <div class="relative grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-8 p-3 md:p-6">
-          <!-- Left -->
-          <div id="leftFighter" class="relative rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+          <!-- Left board -->
+          <div id="leftBoard" class="relative rounded-xl bg-white/5 border border-white/10 overflow-hidden">
             <div class="abs-full pointer-events-none" id="leftFX"></div>
             <div class="p-3 flex items-center gap-3">
               <img id="leftIcon" alt="" class="size-12 rounded-lg ring-1 ring-white/10 object-cover" />
@@ -183,13 +196,22 @@
                   <div id="leftHpBar" class="h-full bg-green-500 transition-all"></div>
                 </div>
                 <div class="mt-1 text-[11px] text-slate-300"><span id="leftHpText">HP —/—</span></div>
+                <!-- Resource bar -->
+                <div id="leftResWrap" class="mt-1 hidden">
+                  <div class="h-2 w-full bg-slate-800 rounded overflow-hidden">
+                    <div id="leftResBar" class="h-full bg-sky-400 transition-all"></div>
+                  </div>
+                  <div class="mt-1 text-[11px] text-slate-300"><span id="leftResText">—</span></div>
+                </div>
+                <!-- Bench -->
+                <div id="leftBench" class="mt-2 flex gap-2"></div>
               </div>
             </div>
             <div class="px-2 pb-3 grid grid-cols-4 gap-2" id="leftAbilities"></div>
           </div>
 
-          <!-- Right -->
-          <div id="rightFighter" class="relative rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+          <!-- Right board -->
+          <div id="rightBoard" class="relative rounded-xl bg-white/5 border border-white/10 overflow-hidden">
             <div class="abs-full pointer-events-none" id="rightFX"></div>
             <div class="p-3 flex items-center gap-3">
               <img id="rightIcon" alt="" class="size-12 rounded-lg ring-1 ring-white/10 object-cover" />
@@ -203,6 +225,15 @@
                   <div id="rightHpBar" class="h-full bg-green-500 transition-all"></div>
                 </div>
                 <div class="mt-1 text-[11px] text-slate-300"><span id="rightHpText">HP —/—</span></div>
+                <!-- Resource bar -->
+                <div id="rightResWrap" class="mt-1 hidden">
+                  <div class="h-2 w-full bg-slate-800 rounded overflow-hidden">
+                    <div id="rightResBar" class="h-full bg-sky-400 transition-all"></div>
+                  </div>
+                  <div class="mt-1 text-[11px] text-slate-300"><span id="rightResText">—</span></div>
+                </div>
+                <!-- Bench -->
+                <div id="rightBench" class="mt-2 flex gap-2 justify-end"></div>
               </div>
             </div>
             <div class="px-2 pb-3 grid grid-cols-4 gap-2" id="rightAbilities"></div>
@@ -233,160 +264,101 @@
     const $ = (sel, el=document) => el.querySelector(sel);
     const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
 
-    // --- State ---
+    // --- State (3v3 teams) ---
     const state = {
       version: null,
       champions: {},
       champArray: [],
-      left: null,
-      right: null,
-      leftHP: 0, rightHP: 0,
-      leftHPMax: 0, rightHPMax: 0,
-      leftCD: [0,0,0,0], rightCD: [0,0,0,0],
-      // statuses
-      leftShield: 0, rightShield: 0,
-      leftWeaken: 0, rightWeaken: 0,
-      leftShieldFactor: .30, rightShieldFactor: .30, // Support bumps to .35
-      // passives
-      leftFirstHitBonus: true, rightFirstHitBonus: true, // Assassin first-hit +10%
-      leftRoleMods: {magic:1, physical:1, penA:0}, rightRoleMods: {magic:1, physical:1, penA:0},
-      // flow
-      turn: 'left',             // P1 starts
-      p2Mode: 'cpu',            // 'cpu' | 'human'  (right side)
-      difficulty: 'standard',   // 'casual' | 'standard' | 'tryhard'
+      leftTeam: [null,null,null],   // ChampState
+      rightTeam: [null,null,null],
+      leftIdx: 0, rightIdx: 0,
+      turn: 'left',
+      p2Mode: 'cpu',                // cpu | human
+      difficulty: 'standard',       // casual | standard | tryhard
       aiTimer: null,
     };
 
-    // Difficulty config
+    // ChampState structure:
+    // { data, tags, hp, max, cds:[4], statuses:{shield,shieldFactor,weaken,burn,slow,firstHit,roleMods}, resType, res, resMax }
+
+    // Difficulty
     const DIFF = {
-      casual:   { lowHP: 0.20, overkillPenalty: 0.4, preferR: 0.40, randomMistake: 0.20 },
-      standard: { lowHP: 0.30, overkillPenalty: 0.7, preferR: 0.20, randomMistake: 0.05 },
-      tryhard:  { lowHP: 0.40, overkillPenalty: 0.9, preferR: 0.05, randomMistake: 0.00 },
+      casual:   { lowHP: 0.20, overkillPenalty: 0.4, preferR: 0.40, randomMistake: 0.20, aiDelay: 450 },
+      standard: { lowHP: 0.30, overkillPenalty: 0.7, preferR: 0.20, randomMistake: 0.05, aiDelay: 450 },
+      tryhard:  { lowHP: 0.40, overkillPenalty: 0.9, preferR: 0.05, randomMistake: 0.00, aiDelay: 350 },
     };
 
-    // --- Elements ---
+    // Elements
     const els = {
-      list: $('#championsList'),
-      leftSearch: $('#leftSearch'), rightSearch: $('#rightSearch'),
-      leftCard: $('#leftCard'), rightCard: $('#rightCard'),
+      listNode: $('#championsList'),
+      // pickers
+      leftSearch: [$('#leftSearch0'), $('#leftSearch1'), $('#leftSearch2')],
+      rightSearch: [$('#rightSearch0'), $('#rightSearch1'), $('#rightSearch2')],
+      leftCard: [$('#leftCard0'), $('#leftCard1'), $('#leftCard2')],
+      rightCard: [$('#rightCard0'), $('#rightCard1'), $('#rightCard2')],
+      leftPickRandom: $('#leftPickRandom'),
+      rightPickRandom: $('#rightPickRandom'),
+      // arena
       leftIcon: $('#leftIcon'), rightIcon: $('#rightIcon'),
       leftName: $('#leftName'), rightName: $('#rightName'),
       leftTags: $('#leftTags'), rightTags: $('#rightTags'),
       leftBadges: $('#leftBadges'), rightBadges: $('#rightBadges'),
       leftHpBar: $('#leftHpBar'), rightHpBar: $('#rightHpBar'),
       leftHpText: $('#leftHpText'), rightHpText: $('#rightHpText'),
+      leftResWrap: $('#leftResWrap'), rightResWrap: $('#rightResWrap'),
+      leftResBar: $('#leftResBar'), rightResBar: $('#rightResBar'),
+      leftResText: $('#leftResText'), rightResText: $('#rightResText'),
       leftAbilities: $('#leftAbilities'), rightAbilities: $('#rightAbilities'),
-      turnBadge: $('#turnBadge'), log: $('#log'),
-      arenaBackdrop: $('#arenaBackdrop'),
-      leftFighter: $('#leftFighter'), rightFighter: $('#rightFighter'),
       leftFX: $('#leftFX'), rightFX: $('#rightFX'),
-      fxLayer: $('#fxLayer'),
-      randomFightBtn: $('#randomFightBtn'),
-      leftPickRandom: $('#leftPickRandom'),
-      rightPickRandom: $('#rightPickRandom'),
-      resetBtn: $('#resetBtn'),
-      swapBtn: $('#swapBtn'),
-      p2Mode: $('#p2Mode'),
-      p2ModeMobile: $('#p2Mode_mobile'),
-      diffRange: $('#diffRange'),
-      diffLabel: $('#diffLabel'),
-      diffRangeMobile: $('#diffRange_mobile'),
-      diffLabelMobile: $('#diffLabel_mobile'),
+      leftBench: $('#leftBench'), rightBench: $('#rightBench'),
+      arenaBackdrop: $('#arenaBackdrop'),
+      // header controls
+      p2Mode: $('#p2Mode'), p2ModeMobile: $('#p2Mode_mobile'),
+      diffRange: $('#diffRange'), diffRangeMobile: $('#diffRange_mobile'),
+      diffLabel: $('#diffLabel'), diffLabelMobile: $('#diffLabel_mobile'),
       shareBtn: $('#shareBtn'),
-      listNode: $('#championsList')
+      randomFightBtn: $('#randomFightBtn'),
+      resetBtn: $('#resetBtn'), swapBtn: $('#swapBtn'),
+      turnBadge: $('#turnBadge'), log: $('#log'),
     };
 
-    // --- Data Dragon helpers ---
+    // Data Dragon
     const DDRAGON_VERSIONS = 'https://ddragon.leagueoflegends.com/api/versions.json';
-    const ddragonData = (version, path) => `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/${path}`;
-    const ddragonImgChampion = (version, file) => `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${file}`;
-    const ddragonSplash = (champId, skinIndex=0) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champId}_${skinIndex}.jpg`;
+    const ddragonData = (v, path) => `https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/${path}`;
+    const ddragonImgChampion = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/champion/${file}`;
+    const ddragonSpell = (v, file) => `https://ddragon.leagueoflegends.com/cdn/${v}/img/spell/${file}`;
+    const ddragonSplash = (id, skinIndex=0) => `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_${skinIndex}.jpg`;
 
-    async function getJSON(url){
-      const res = await fetch(url, { cache: 'no-store' });
-      if(!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-      return res.json();
-    }
+    async function getJSON(url){ const res = await fetch(url, {cache:'no-store'}); if(!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); }
 
-    // --- Deep link helpers ---
+    // Deep links
     function encodeQuery(obj){ return new URLSearchParams(obj).toString(); }
     function decodeQuery(){ return Object.fromEntries(new URLSearchParams(location.search)); }
     async function shareMatch(){
-      const left = state.left?.id, right = state.right?.id, mode = state.p2Mode, diff = state.difficulty;
+      const L = state.leftTeam.map(s => s?.data?.id || '');
+      const R = state.rightTeam.map(s => s?.data?.id || '');
       const url = new URL(location.href);
-      url.search = encodeQuery({ l:left||'', r:right||'', mode, diff });
-      try {
-        await navigator.clipboard.writeText(url.toString());
-        logLine('🔗 Link copied to clipboard!');
-      } catch {
-        logLine('Could not copy; tap and copy: ' + url.toString());
-      }
+      url.search = encodeQuery({ l1:L[0], l2:L[1], l3:L[2], r1:R[0], r2:R[1], r3:R[2], mode:state.p2Mode, diff:state.difficulty });
+      try { await navigator.clipboard.writeText(url.toString()); logLine('🔗 Link copied to clipboard!'); }
+      catch { logLine('Copy failed — URL: ' + url.toString()); }
     }
 
-    async function bootstrap(){
-      try{
-        const versions = await getJSON(DDRAGON_VERSIONS);
-        state.version = versions[0];
-        const champShort = await getJSON(ddragonData(state.version, 'champion.json'));
-        state.champions = champShort.data;
-        state.champArray = Object.values(state.champions).sort((a,b) => a.name.localeCompare(b.name));
-        els.listNode.innerHTML = state.champArray.map(c => `<option value="${c.name}" data-id="${c.id}"></option>`).join('');
+    // Utils
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+    function median(arr){ const a=[...arr].sort((x,y)=>x-y); const m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2; }
+    function level10(base, per){ return (base||0) + (per||0)*9; }
+    function mitigate(dmg, resist){ return (resist>=0) ? dmg*(100/(100+resist)) : dmg*(2 - (100/(100-resist))); }
 
-        // Parse deep link
-        const q = decodeQuery();
-        if(q.mode){ state.p2Mode = (q.mode==='human'?'human':'cpu'); }
-        if(q.diff){ state.difficulty = ['casual','standard','tryhard'].includes(q.diff) ? q.diff : 'standard'; }
-        syncControlsFromState();
-
-        // Set champs either from query or random
-        const leftPromise  = q.l && state.champions[q.l] ? setChampionForSide('left', q.l)   : (pickRandom('left'), Promise.resolve());
-        const rightPromise = q.r && state.champions[q.r] ? setChampionForSide('right', q.r)  : (pickRandom('right'), Promise.resolve());
-        await Promise.all([leftPromise, rightPromise]);
-
-        state.turn = 'left'; // P1 starts
-        renderAll();
-        logLine(`Loaded Data Dragon ${state.version}. Player 1 begins.`);
-        maybeScheduleAI();
-      }catch(e){
-        console.error(e);
-        logLine('Failed to load Data Dragon.');
-      }
-    }
-
-    function syncControlsFromState(){
-      // p2 mode
-      if(els.p2Mode) els.p2Mode.value = state.p2Mode;
-      if(els.p2ModeMobile) els.p2ModeMobile.value = state.p2Mode;
-      // difficulty slider
-      const map = {casual:0, standard:1, tryhard:2};
-      const labels = ['Casual','Standard','Tryhard'];
-      const idx = map[state.difficulty] ?? 1;
-      if(els.diffRange) els.diffRange.value = idx;
-      if(els.diffRangeMobile) els.diffRangeMobile.value = idx;
-      if(els.diffLabel) els.diffLabel.textContent = labels[idx];
-      if(els.diffLabelMobile) els.diffLabelMobile.textContent = labels[idx];
-    }
-
-    function findChampionIdByName(name){
-      const found = state.champArray.find(c => c.name.toLowerCase() === String(name||'').toLowerCase());
-      return found?.id || null;
-    }
-
-    async function loadChampionFull(id){
-      const raw = await getJSON(ddragonData(state.version, `champion/${id}.json`));
-      return raw.data[id];
-    }
-
-    // --- Damage model helpers ---
-    function level10(valueBase, perLevel){ return (valueBase||0) + (perLevel||0) * 9; }
-    function mitigate(dmg, resist){
-      if (resist >= 0) return dmg * (100/(100+resist));
-      return dmg * (2 - (100/(100 - resist)));
-    }
+    // Heuristics / detectors
     const RE_DEFENSE = /(shield|heal|barrier|untargetable|stasis|invulnerable|damage\s*reduction)/i;
     const RE_CC = /(stun|silence|root|slow|taunt|knock|blind|fear|charm|suppres|disarm|cripple)/i;
     const RE_MAGIC = /(magic damage|magical|ap)/i;
     const RE_PHYS  = /(physical damage|ad|attack damage)/i;
+    const RE_AOE   = /(area of effect|nearby enemies|all enemies|in an area|cone|around)/i;
+    const RE_HEAL  = /(heal|restor(es|e))/i;
+    const RE_BURN  = /(burn|ignite|damage over time|bleed|poison)/i;
+    const RE_SLOW  = /(slow|slows|reduces movement|reduce attack speed)/i;
+    const RE_SHIELD= /(shield|barrier)/i;
 
     function detectDamageType(spell, champ){
       const t = ((spell.tooltip||'') + ' ' + (spell.description||'')).toLowerCase();
@@ -397,21 +369,115 @@
       if (tags.includes('Marksman') || tags.includes('Fighter') || tags.includes('Assassin')) return 'physical';
       return 'magic';
     }
-    function isDefensiveSpell(spell){
+    function classifySpell(spell){
       const t = (spell.tooltip||'') + ' ' + (spell.description||'');
-      return RE_DEFENSE.test(t);
+      return {
+        isDef: RE_DEFENSE.test(t),
+        isCC: RE_CC.test(t),
+        aoe: RE_AOE.test(t),
+        heal: RE_HEAL.test(t),
+        burn: RE_BURN.test(t),
+        slow: RE_SLOW.test(t) && !RE_HEAL.test(t),
+        shield: RE_SHIELD.test(t),
+      };
     }
-    function isCCSpell(spell){
-      const t = (spell.tooltip||'') + ' ' + (spell.description||'');
-      return RE_CC.test(t);
+    function estimateAbilityPower(sp, champ, idx){
+      let candidates=[];
+      if(Array.isArray(sp.effectBurn)){
+        sp.effectBurn.forEach(s => { if(!s) return; String(s).split('/').forEach(x => { const v=parseFloat(x); if(!isNaN(v)) candidates.push(v); }); });
+      }
+      if(candidates.length===0 && typeof sp.tooltip==='string'){
+        const nums = sp.tooltip.match(/\d+(\.\d+)?/g) || [];
+        candidates = nums.map(Number);
+      }
+      let base = candidates.length ? median(candidates) : 50;
+      if(idx===3) base *= 1.35; // R
+      const ad = champ.stats.attackdamage || 60;
+      const apish = (champ.tags||[]).includes('Mage') ? 40 : 10;
+      base += (ad*0.15) + apish;
+      return clamp(Math.round(base), 30, 260);
+    }
+    function abilityCooldown(sp){
+      if(Array.isArray(sp.cooldown) && sp.cooldown.length){
+        const v = Math.round(sp.cooldown[0]); return isNaN(v)?3:clamp(v,1,8);
+      } return 3;
     }
 
-    // --- Rendering ---
-    function renderChampionSide(side){
-      const champ = state[side];
-      if(!champ) return;
+    // Resources (Mana/Energy)
+    function detectResourceType(full){
+      const p = (full.partype||'').toLowerCase();
+      if(p.includes('mana')) return 'Mana';
+      if(p.includes('energy')) return 'Energy';
+      return 'None';
+    }
+    function resourceDefaults(type){
+      if(type==='Mana') return {max: 120, regen: 12};
+      if(type==='Energy') return {max: 120, regen: 20};
+      return {max: 0, regen: 0};
+    }
+    function spellCost(sp, idx, resType){
+      // Prefer data; fallback heuristics
+      let c = 0;
+      if(Array.isArray(sp.cost) && sp.cost.length) c = Number(sp.cost[0])||0;
+      if(!c && typeof sp.costBurn==='string'){
+        const m = sp.costBurn.match(/\d+/); if(m) c = Number(m[0])||0;
+      }
+      if(!c && resType!=='None'){
+        if(resType==='Mana'){ c = [30,40,35,60][idx] || 30; }
+        else if(resType==='Energy'){ c = [30,35,30,50][idx] || 30; }
+      }
+      return c;
+    }
 
+    // Build ChampState
+    function buildChampState(full){
+      const hpBase = (full.stats.hp || 600) + (full.stats.hpperlevel || 90)*9;
+      const resType = detectResourceType(full);
+      const resConf = resourceDefaults(resType);
+      const s = {
+        data: full,
+        tags: full.tags||[],
+        hp: hpBase,
+        max: hpBase,
+        cds: [0,0,0,0],
+        statuses: {
+          shield: 0, shieldFactor: .30,
+          weaken: 0, burn: 0, slow: 0,
+          firstHit: true,
+          roleMods: {magic:1, physical:1, penA:0}
+        },
+        resType,
+        res: resConf.max,
+        resMax: resConf.max,
+      };
+      // role passives
+      if (s.tags.includes('Tank')) { s.max = Math.round(s.max*1.10); s.hp = s.max; }
+      if (s.tags.includes('Mage')) s.statuses.roleMods.magic *= 1.05;
+      if (s.tags.includes('Marksman')) s.statuses.roleMods.physical *= 1.05;
+      if (s.tags.includes('Assassin')) s.statuses.roleMods.penA += 0.05;
+      if (s.tags.includes('Support')) s.statuses.shieldFactor = .35;
+      return s;
+    }
+
+    // Rendering helpers
+    function benchPill(champState, isActive, side, idx){
+      if(!champState) return '';
+      const pct = Math.max(0, Math.min(100, (champState.hp/champState.max)*100));
+      const clickable = champState.hp>0 && !isActive;
+      return `
+        <button ${clickable?'':'disabled'} data-side="${side}" data-slot="${idx}" title="${clickable ? 'Switch to '+champState.data.name : 'Unavailable'}"
+          class="bench-btn w-20 rounded-md border ${isActive?'border-indigo-500':'border-white/10'} bg-white/5 p-1 ${clickable?'hover:bg-white/10':''}">
+          <img class="w-full h-10 object-cover rounded" src="${ddragonImgChampion(state.version, champState.data.image.full)}" alt="">
+          <div class="mt-1 h-1.5 bg-slate-800 rounded overflow-hidden"><div style="width:${pct}%;" class="h-full ${pct>50?'bg-green-500':pct>20?'bg-yellow-400':'bg-rose-500'}"></div></div>
+        </button>
+      `;
+    }
+
+    function renderBoard(side){
       const isLeft = side==='left';
+      const team = isLeft ? state.leftTeam : state.rightTeam;
+      const activeIdx = isLeft ? state.leftIdx : state.rightIdx;
+      const active = team[activeIdx];
       const icon = isLeft ? els.leftIcon : els.rightIcon;
       const name = isLeft ? els.leftName : els.rightName;
       const tags = isLeft ? els.leftTags : els.rightTags;
@@ -419,51 +485,63 @@
       const hpBar = isLeft ? els.leftHpBar : els.rightHpBar;
       const hpText = isLeft ? els.leftHpText : els.rightHpText;
       const abilities = isLeft ? els.leftAbilities : els.rightAbilities;
+      const bench = isLeft ? els.leftBench : els.rightBench;
+      const resWrap = isLeft ? els.leftResWrap : els.rightResWrap;
+      const resBar = isLeft ? els.leftResBar : els.rightResBar;
+      const resText = isLeft ? els.leftResText : els.rightResText;
 
-      icon.src = ddragonImgChampion(state.version, champ.image.full);
-      name.textContent = champ.name;
-      tags.textContent = (champ.tags||[]).join(' / ') || '—';
+      if(!active){ icon.src=''; name.textContent='—'; tags.textContent=''; hpBar.style.width='0%'; hpText.textContent='HP —/—'; abilities.innerHTML=''; bench.innerHTML=''; resWrap.classList.add('hidden'); return; }
 
-      // badges (statuses)
-      const shield = isLeft ? state.leftShield : state.rightShield;
-      const weaken = isLeft ? state.leftWeaken : state.rightWeaken;
-      const shFactor = isLeft ? state.leftShieldFactor : state.rightShieldFactor;
-      badges.innerHTML = `
-        ${shield>0 ? `<span class="px-1.5 py-0.5 rounded bg-cyan-600/50 ring-1 ring-cyan-400/40">Shield ${Math.round(shFactor*100)}% · ${shield}</span>` : ''}
-        ${weaken>0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-600/50 ring-1 ring-amber-400/40">Weaken · ${weaken}</span>` : ''}
-      `;
-
-      const hp = isLeft ? state.leftHP : state.rightHP;
-      const max = isLeft ? state.leftHPMax : state.rightHPMax;
-      const pct = max ? Math.max(0, Math.min(100, (hp/max)*100)) : 0;
+      icon.src = ddragonImgChampion(state.version, active.data.image.full);
+      name.textContent = active.data.name;
+      tags.textContent = (active.data.tags||[]).join(' / ');
+      const pct = Math.max(0, Math.min(100, (active.hp/active.max)*100));
       hpBar.style.width = pct + '%';
       hpBar.className = 'h-full transition-all ' + (pct>50?'bg-green-500':pct>20?'bg-yellow-400':'bg-rose-500');
-      hpText.textContent = `HP ${Math.max(0, Math.round(hp))} / ${Math.round(max)}`;
+      hpText.textContent = `HP ${Math.max(0, Math.round(active.hp))} / ${Math.round(active.max)}`;
 
-      // abilities buttons
+      // Resource UI
+      if(active.resType!=='None'){
+        const rpct = Math.max(0, Math.min(100, (active.res/active.resMax)*100));
+        resWrap.classList.remove('hidden');
+        resBar.style.width = rpct+'%';
+        resBar.className = 'h-full transition-all ' + (active.resType==='Mana' ? 'bg-sky-400' : 'bg-amber-400');
+        resText.textContent = `${active.resType} ${Math.round(active.res)} / ${active.resMax}`;
+      } else {
+        resWrap.classList.add('hidden');
+      }
+
+      // status badges
+      const st = active.statuses;
+      badges.innerHTML = `
+        ${st.shield>0 ? `<span class="px-1.5 py-0.5 rounded bg-cyan-600/50 ring-1 ring-cyan-400/40">Shield ${Math.round(st.shieldFactor*100)}% · ${st.shield}</span>` : ''}
+        ${st.weaken>0 ? `<span class="px-1.5 py-0.5 rounded bg-amber-600/50 ring-1 ring-amber-400/40">Weaken · ${st.weaken}</span>` : ''}
+        ${st.burn>0 ? `<span class="px-1.5 py-0.5 rounded bg-red-600/50 ring-1 ring-red-400/40">Burn · ${st.burn}</span>` : ''}
+        ${st.slow>0 ? `<span class="px-1.5 py-0.5 rounded bg-fuchsia-600/50 ring-1 ring-fuchsia-400/40">Slow · ${st.slow}</span>` : ''}
+      `;
+
+      // abilities
       abilities.innerHTML = '';
-      (champ.spells||[]).slice(0,4).forEach((sp, idx) => {
-        const cdLeft = (isLeft ? state.leftCD[idx] : state.rightCD[idx]) || 0;
-        const disabled = cdLeft>0 || winner() || (state.turn !== side) || (side==='right' && state.p2Mode==='cpu');
+      (active.data.spells||[]).slice(0,4).forEach((sp, idx) => {
+        const cdLeft = active.cds[idx] || 0;
+        const cost = spellCost(sp, idx, active.resType);
+        const notEnough = active.resType!=='None' && active.res < cost;
+        const disabled = cdLeft>0 || winner() || (state.turn !== side) || (side==='right' && state.p2Mode==='cpu') || notEnough;
         const label = ['Q','W','E','R'][idx] || '?';
         const cdText = cdLeft>0 ? `<div class="absolute inset-0 bg-black/60 grid place-items-center text-sm font-semibold">${cdLeft}</div>` : '';
-        const tip = [
-          `${label}: ${sp.name}`,
-          (sp.cooldownBurn ? `CD: ${sp.cooldownBurn}` : null),
-          (sp.costBurn && champ.partype ? `Cost: ${sp.costBurn} ${champ.partype}` : null),
-        ].filter(Boolean).join(' • ');
-
+        const tip = [`${label}: ${sp.name}`, (sp.cooldownBurn ? `CD: ${sp.cooldownBurn}` : null), (cost?`Cost: ${cost} ${active.resType}`:null)].filter(Boolean).join(' • ');
         const btn = document.createElement('button');
-        btn.className = `relative group rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 focus:outline-none focus:ring-2 ${isLeft ? 'focus:ring-indigo-500' : 'focus:ring-rose-500'} overflow-hidden`;
+        btn.className = `relative rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 focus:outline-none focus:ring-2 ${isLeft ? 'focus:ring-indigo-500' : 'focus:ring-rose-500'} overflow-hidden`;
         btn.title = tip;
         btn.disabled = disabled;
         btn.dataset.side = side;
         btn.dataset.idx = idx;
         btn.innerHTML = `
           <div class="aspect-square grid place-items-center">
-            <img alt="${sp.name}" class="size-14 md:size-16 object-cover" src="https://ddragon.leagueoflegends.com/cdn/${state.version}/img/spell/${sp.image.full}">
+            <img alt="${sp.name}" class="size-14 md:size-16 object-cover" src="${ddragonSpell(state.version, sp.image.full)}">
           </div>
           <div class="absolute top-1 left-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${isLeft ? 'bg-indigo-600' : 'bg-rose-600'}">${label}</div>
+          ${cost?`<div class="absolute top-1 right-1 rounded px-1 py-0.5 text-[10px] bg-black/60">${cost}</div>`:''}
           <div class="absolute bottom-0 inset-x-0 h-1 bg-white/10"><div class="h-full ${cdLeft>0 ? 'animate-[pulsebar_1s_linear_infinite]' : ''} ${isLeft ? 'bg-indigo-500' : 'bg-rose-500'}"></div></div>
           ${cdText}
         `;
@@ -471,99 +549,107 @@
         abilities.appendChild(btn);
       });
 
-      // backdrop flair: left champ splash
-      els.arenaBackdrop.style.backgroundImage = state.left ? `url('${ddragonSplash(state.left.id, 0)}')` : '';
-      els.arenaBackdrop.style.backgroundSize = 'cover';
-      els.arenaBackdrop.style.backgroundPosition = 'center';
-    }
+      // bench (buttons to switch)
+      bench.innerHTML = team.map((s, i)=> benchPill(s, i===activeIdx, side, i)).join('');
+      bench.querySelectorAll('.bench-btn').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const s = b.getAttribute('data-side');
+          const i = +b.getAttribute('data-slot');
+          tryManualSwitch(s, i);
+        });
+      });
 
-    function renderAll(){
-      renderChampionSide('left');
-      renderChampionSide('right');
-      updateTurnBadge();
-    }
-
-    function updateTurnBadge(){
-      const t = state.turn === 'left' ? 'P1' : (state.p2Mode==='cpu' ? 'CPU' : 'P2');
-      els.turnBadge.textContent = `Turn: ${t}`;
-      els.turnBadge.className = `text-xs px-2 py-1 rounded ${state.turn==='left' ? 'bg-indigo-600' : 'bg-rose-600'}`;
-    }
-
-    function logLine(text){
-      const row = document.createElement('div');
-      row.className = 'rounded-lg border border-white/10 bg-white/5 px-3 py-2';
-      row.textContent = text;
-      els.log.prepend(row);
-      while(els.log.children.length > 100) els.log.removeChild(els.log.lastChild);
-    }
-
-    // --- Numbers (ability power heuristics & cooldowns) ---
-    function median(arr){ const a=[...arr].sort((x,y)=>x-y); const m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2; }
-    function estimateAbilityPower(spell, champ, idx){
-      let candidates=[];
-      if(Array.isArray(spell.effectBurn)){
-        spell.effectBurn.forEach(s => { if(!s) return; String(s).split('/').forEach(x => { const v=parseFloat(x); if(!isNaN(v)) candidates.push(v); }); });
-      }
-      if(candidates.length===0 && typeof spell.tooltip==='string'){
-        const nums = spell.tooltip.match(/\d+(\.\d+)?/g) || [];
-        candidates = nums.map(Number);
-      }
-      let base = candidates.length ? median(candidates) : 50;
-      if(idx===3) base *= 1.35; // R hits harder
-      const ad = champ.stats.attackdamage || 60;
-      const apish = (champ.tags||[]).includes('Mage') ? 40 : 10;
-      base += (ad*0.15) + apish;
-      return Math.max(30, Math.min(260, Math.round(base)));
-    }
-    function abilityCooldown(spell){
-      if(Array.isArray(spell.cooldown) && spell.cooldown.length){
-        const v = Math.round(spell.cooldown[0]);
-        return isNaN(v) ? 3 : Math.max(1, Math.min(8, v));
-      }
-      return 3;
-    }
-
-    // --- FX helpers ---
-    function burstFX(side){
-      const host = side==='left' ? els.leftFX : els.rightFX;
-      const ring = document.createElement('div');
-      ring.className = "absolute inset-0 grid place-items-center";
-      ring.innerHTML = `<div class="size-40 rounded-full bg-gradient-to-br from-white/60 to-white/10 blur-xl opacity-80 animate-burst"></div>`;
-      host.appendChild(ring);
-      setTimeout(()=> ring.remove(), 520);
-    }
-    function floatDamage(side, dmg){
-      const host = side==='left' ? els.leftFX : els.rightFX;
-      const n = document.createElement('div');
-      n.className = "absolute left-1/2 top-3 -translate-x-1/2 text-2xl font-extrabold drop-shadow-md";
-      n.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/40">-${Math.round(dmg)}</span>`;
-      host.appendChild(n);
-      n.classList.add('animate-float');
-      setTimeout(()=> n.remove(), 750);
-    }
-    function pressBtnFX(side, idx){
-      const container = side==='left' ? els.leftAbilities : els.rightAbilities;
-      const btn = container.querySelector(`[data-idx="${idx}"]`);
-      if(btn){
-        btn.classList.add('animate-press');
-        setTimeout(()=> btn.classList.remove('animate-press'), 240);
+      // backdrop flair with left active
+      if (side==='left' && active) {
+        els.arenaBackdrop.style.backgroundImage = `url('${ddragonSplash(active.data.id, 0)}')`;
+        els.arenaBackdrop.style.backgroundSize = 'cover';
+        els.arenaBackdrop.style.backgroundPosition = 'center';
       }
     }
-    function hitShake(side){
-      const target = side==='left' ? els.leftFighter : els.rightFighter;
-      target.classList.add('animate-hit');
-      setTimeout(()=> target.classList.remove('animate-hit'), 310);
+
+    function renderAll(){ renderBoard('left'); renderBoard('right'); updateTurnBadge(); }
+    function updateTurnBadge(){ const t = state.turn==='left' ? 'P1' : (state.p2Mode==='cpu'?'CPU':'P2'); els.turnBadge.textContent=`Turn: ${t}`; els.turnBadge.className=`text-xs px-2 py-1 rounded ${state.turn==='left'?'bg-indigo-600':'bg-rose-600'}`; }
+    function logLine(text){ const row=document.createElement('div'); row.className='rounded-lg border border-white/10 bg-white/5 px-3 py-2'; row.textContent=text; els.log.prepend(row); while(els.log.children.length>140) els.log.removeChild(els.log.lastChild); }
+
+    // FX
+    function fxBurst(side){ const host = side==='left'?els.leftFX:els.rightFX; const ring=document.createElement('div'); ring.className="absolute inset-0 grid place-items-center"; ring.innerHTML=`<div class="size-40 rounded-full bg-gradient-to-br from-white/60 to-white/10 blur-xl opacity-80 animate-burst"></div>`; host.appendChild(ring); setTimeout(()=>ring.remove(),520); }
+    function fxFloat(side, txt, kind='dmg'){ const host = side==='left'?els.leftFX:els.rightFX; const n=document.createElement('div'); n.className="absolute left-1/2 top-3 -translate-x-1/2 text-2xl font-extrabold drop-shadow-md"; const bg = kind==='heal'?'bg-emerald-600/70':kind==='shield'?'bg-cyan-600/70':'bg-black/60'; n.innerHTML = `<span class="px-2 py-0.5 rounded ${bg}">${txt}</span>`; host.appendChild(n); n.classList.add('animate-float'); setTimeout(()=>n.remove(),800); }
+    function fxHitShake(side){ const target = side==='left'?$('#leftBoard'):$('#rightBoard'); target.classList.add('animate-hit'); setTimeout(()=>target.classList.remove('animate-hit'),300); }
+    function fxHealPulse(side){ const target = side==='left'?$('#leftBoard'):$('#rightBoard'); target.classList.add('animate-heal'); setTimeout(()=>target.classList.remove('animate-heal'),800); }
+    function fxShieldGlow(side){ const host = side==='left'?els.leftFX:els.rightFX; const g=document.createElement('div'); g.className="absolute inset-0 rounded-xl border border-cyan-300/50 bg-cyan-300/10 animate-shield"; host.appendChild(g); setTimeout(()=>g.remove(),820); }
+
+    // Helpers
+    function winner(){
+      const Ldead = state.leftTeam.every(s => s && s.hp<=0);
+      const Rdead = state.rightTeam.every(s => s && s.hp<=0);
+      if (Ldead) return 'right';
+      if (Rdead) return 'left';
+      return null;
+    }
+    function active(side){ const idx = side==='left'?state.leftIdx:state.rightIdx; const team = side==='left'?state.leftTeam:state.rightTeam; return team[idx]; }
+    function enemyTeam(side){ return side==='left'?state.rightTeam:state.leftTeam; }
+    function myTeam(side){ return side==='left'?state.leftTeam:state.rightTeam; }
+    function enemySide(side){ return side==='left'?'right':'left'; }
+
+    // Switching
+    function tryManualSwitch(side, slot){
+      // Only allowed for the human side whose turn it is
+      const isHuman = (side==='left') || (side==='right' && state.p2Mode==='human');
+      if(!isHuman || state.turn!==side) return;
+      const team = myTeam(side);
+      const target = team[slot];
+      if(!target || target.hp<=0) return;
+      const curIdx = side==='left'?state.leftIdx:state.rightIdx;
+      if(curIdx===slot) return;
+      if(side==='left') state.leftIdx=slot; else state.rightIdx=slot;
+      logLine(`${(side==='left'?'P1':'P2')} switches to ${target.data.name}.`);
+      renderAll();
+      endTurn(); // switching consumes the turn
     }
 
-    // --- Turn / statuses ---
+    function switchIfDead(side){
+      const team = myTeam(side);
+      let idx = side==='left'?state.leftIdx:state.rightIdx;
+      if(team[idx] && team[idx].hp>0) return false;
+      for(let i=0;i<3;i++){ if(team[i] && team[i].hp>0){ if(side==='left') state.leftIdx=i; else state.rightIdx=i; logLine((side==='left'?'P1':'P2/CPU')+` sends in ${team[i].data.name}!`); return true; } }
+      return false;
+    }
+
+    // Turn & statuses
     function endTurn(){
-      state.leftCD = state.leftCD.map(c => Math.max(0, c-1));
-      state.rightCD = state.rightCD.map(c => Math.max(0, c-1));
-      if(state.leftShield>0) state.leftShield--;
-      if(state.rightShield>0) state.rightShield--;
-      if(state.leftWeaken>0) state.leftWeaken--;
-      if(state.rightWeaken>0) state.rightWeaken--;
-      state.turn = state.turn === 'left' ? 'right' : 'left';
+      // Start-of-next-actor effects (burn) & resource regen
+      const nextSide = state.turn==='left'?'right':'left';
+      const actor = active(nextSide);
+      if(actor){
+        // burn
+        if(actor.statuses.burn>0){
+          const burnDmg = Math.round(actor.max * 0.06);
+          actor.hp = Math.max(0, actor.hp - burnDmg);
+          fxFloat(nextSide, `-${burnDmg}`, 'dmg'); fxHitShake(nextSide);
+          logLine(`${actor.data.name} takes ${burnDmg} burn damage.`);
+          actor.statuses.burn--;
+          if(actor.hp<=0){ logLine(`${actor.data.name} is knocked out by burn!`); switchIfDead(nextSide); }
+        }
+        // resource regen
+        const regen = actor.resType==='Mana'?12 : actor.resType==='Energy'?20 : 0;
+        if(regen) actor.res = clamp(actor.res + regen, 0, actor.resMax);
+      }
+
+      // cooldowns tick (respect slow)
+      ['left','right'].forEach(side=>{
+        const a = active(side);
+        if(!a) return;
+        const slowed = a.statuses.slow>0;
+        if(!slowed || (slowed && state.turn===side)){ // tick when not slowed, or on own turn if slowed
+          a.cds = a.cds.map(c => Math.max(0, c-1));
+        }
+        if(a.statuses.weaken>0 && side!==state.turn) a.statuses.weaken--;
+        if(a.statuses.slow>0 && side!==state.turn) a.statuses.slow--;
+        if(a.statuses.shield>0 && side!==state.turn) a.statuses.shield--;
+      });
+
+      // swap turn
+      state.turn = nextSide;
       renderAll();
       maybeScheduleAI();
     }
@@ -572,385 +658,387 @@
       clearTimeout(state.aiTimer);
       if(winner()) return;
       if(state.turn==='right' && state.p2Mode==='cpu'){
-        state.aiTimer = setTimeout(cpuAct, 550);
+        const delay = (DIFF[state.difficulty]||DIFF.standard).aiDelay;
+        state.aiTimer = setTimeout(cpuAct, delay);
       }
     }
 
-    function winner(){
-      if (state.leftHP <= 0) return 'right';
-      if (state.rightHP <= 0) return 'left';
-      return null;
-    }
-
-    // --- Passives by role ---
-    function applyRolePassives(side){
-      const champ = state[side];
-      const tags = champ.tags||[];
-      // reset defaults
-      state[side==='left'?'leftShieldFactor':'rightShieldFactor'] = .30;
-      state[side==='left'?'leftRoleMods':'rightRoleMods'] = {magic:1, physical:1, penA:0};
-      state[side==='left'?'leftFirstHitBonus':'rightFirstHitBonus'] = true;
-
-      if (tags.includes('Tank')){
-        if(side==='left'){ state.leftHPMax = Math.round(state.leftHPMax * 1.10); state.leftHP = state.leftHPMax; }
-        else { state.rightHPMax = Math.round(state.rightHPMax * 1.10); state.rightHP = state.rightHPMax; }
-      }
-      if (tags.includes('Mage')){
-        const mods = side==='left'? state.leftRoleMods : state.rightRoleMods;
-        mods.magic *= 1.05;
-      }
-      if (tags.includes('Marksman')){
-        const mods = side==='left'? state.leftRoleMods : state.rightRoleMods;
-        mods.physical *= 1.05;
-      }
-      if (tags.includes('Assassin')){
-        const mods = side==='left'? state.leftRoleMods : state.rightRoleMods;
-        mods.penA += 0.05; // tiny armor pen
-      }
-      if (tags.includes('Support')){
-        const key = side==='left' ? 'leftShieldFactor' : 'rightShieldFactor';
-        state[key] = .35;
-      }
-    }
-
-    // --- Final damage pipeline ---
-    function computeFinalDamage(attackerSide, base, type){
+    // Damage pipeline
+    function computeFinalDamage(attacker, target, base, type){
       let dmg = base;
-
-      // role mods
-      const mods = attackerSide==='left' ? state.leftRoleMods : state.rightRoleMods;
+      const mods = attacker.statuses.roleMods;
       dmg *= (type==='magic') ? mods.magic : mods.physical;
-
-      // Assassin first-hit +10%
-      const firstKey = attackerSide==='left' ? 'leftFirstHitBonus' : 'rightFirstHitBonus';
-      if ((attackerSide==='left' ? state.left : state.right).tags.includes('Assassin') && state[firstKey]){
-        dmg *= 1.10;
-        state[firstKey] = false;
-      }
-
+      // Assassin first-hit
+      if(attacker.tags.includes('Assassin') && attacker.statuses.firstHit){ dmg *= 1.10; attacker.statuses.firstHit=false; }
       // Outgoing weaken
-      if(attackerSide==='left' && state.leftWeaken>0) dmg *= 0.8;
-      if(attackerSide==='right' && state.rightWeaken>0) dmg *= 0.8;
-
-      // Target resistances at "level 10"
-      const target = attackerSide==='left' ? state.right : state.left;
-      const stats = target.stats || {};
+      // Target resist
+      const stats = target.data.stats||{};
       const armor = level10(stats.armor, stats.armorperlevel);
       const mr = level10(stats.spellblock, stats.spellblockperlevel);
-
-      // Apply small % armor pen for assassins on physical
-      let resist = type==='magic'
-        ? mr
-        : Math.max(armor * (1 - (mods.penA||0)), -60); // clamp to avoid silly spikes
-
+      let resist = type==='magic' ? mr : Math.max(armor*(1-(mods.penA||0)), -60);
       dmg = mitigate(dmg, resist);
-
-      // Incoming shield reduction
-      const shieldTurns = attackerSide==='left' ? state.rightShield : state.leftShield;
-      if (shieldTurns > 0){
-        const fac = attackerSide==='left' ? state.rightShieldFactor : state.leftShieldFactor;
-        dmg *= (1 - fac);
-      }
-
+      // Shield
+      if(target.statuses.shield>0){ dmg *= (1 - target.statuses.shieldFactor); }
       return Math.max(1, Math.round(dmg));
     }
 
-    // --- CPU logic (difficulty-aware) ---
+    // Abilities
+    function performAbility(side, idx){
+      const me = active(side);
+      if(!me) return;
+      const theirSide = enemySide(side);
+      const themActive = active(theirSide);
+      if(!themActive) return;
+
+      const sp = (me.data.spells||[])[idx];
+      const raw = estimateAbilityPower(sp, me.data, idx);
+      const type = detectDamageType(sp, me.data);
+      const flags = classifySpell(sp);
+      const cd = abilityCooldown(sp);
+
+      // cost check
+      const cost = spellCost(sp, idx, me.resType);
+      if(me.resType!=='None' && cost>0 && me.res < cost){ logLine(`${me.data.name} lacks ${me.resType} for ${sp.name}.`); renderAll(); return; }
+      if(me.resType!=='None' && cost>0){ me.res = clamp(me.res - cost, 0, me.resMax); }
+
+      // apply weaken on attacker
+      let outgoing = raw;
+      if(me.statuses.weaken>0) outgoing = Math.round(outgoing*0.8);
+
+      // resolve effects
+      let totalDmg = 0;
+
+      if(flags.heal){
+        const allies = myTeam(side);
+        allies.forEach(ch => {
+          if(!ch || ch.hp<=0) return;
+          const amount = Math.round(ch.max * (flags.aoe?0.10:0.14));
+          ch.hp = Math.min(ch.max, ch.hp + amount);
+        });
+        fxHealPulse(side); fxFloat(side, '+heal', 'heal');
+        logLine(`${me.data.name} casts ${sp.name}: team healed.`);
+      }
+
+      if(flags.shield){
+        const allies = myTeam(side);
+        if(flags.aoe){
+          allies.forEach(ch => { if(!ch || ch.hp<=0) return; ch.statuses.shield = Math.max(ch.statuses.shield, 2); });
+          logLine(`${me.data.name} grants shields to the team.`);
+        } else {
+          me.statuses.shield = Math.max(me.statuses.shield, 2);
+          logLine(`${me.data.name} gains a shield.`);
+        }
+        fxShieldGlow(side); fxFloat(side, 'shield', 'shield');
+      }
+
+      // damage (single or AOE)
+      if(!flags.heal){
+        if(flags.aoe){
+          const enemies = enemyTeam(side);
+          enemies.forEach((t)=>{
+            if(!t || t.hp<=0) return;
+            const dmg = computeFinalDamage(me, t, Math.round(outgoing*0.75), type);
+            t.hp = Math.max(0, t.hp - dmg);
+            totalDmg += dmg;
+          });
+          fxBurst(theirSide); fxHitShake(theirSide); fxFloat(theirSide, `-${totalDmg}`, 'dmg');
+          logLine(`${me.data.name} used ${['Q','W','E','R'][idx]} — ${sp.name} (AOE) for ~${totalDmg} ${type} dmg.`);
+        } else {
+          const dmg = computeFinalDamage(me, themActive, outgoing, type);
+          themActive.hp = Math.max(0, themActive.hp - dmg);
+          totalDmg = dmg;
+          fxBurst(theirSide); fxHitShake(theirSide); fxFloat(theirSide, `-${dmg}`, 'dmg');
+          logLine(`${me.data.name} used ${['Q','W','E','R'][idx]} — ${sp.name} for ~${dmg} ${type} dmg.`);
+        }
+      }
+
+      // statuses on enemies
+      if(flags.burn){
+        const arr = flags.aoe ? enemyTeam(side) : [themActive];
+        arr.forEach(t => { if(!t || t.hp<=0) return; t.statuses.burn = Math.max(t.statuses.burn, 2); });
+        logLine(`Burn applied for 2 turns.`);
+      }
+      if(flags.slow){
+        const arr = flags.aoe ? enemyTeam(side) : [themActive];
+        arr.forEach(t => { if(!t || t.hp<=0) return; t.statuses.slow = Math.max(t.statuses.slow, 1); });
+        logLine(`Slow applied.`);
+      }
+      if(flags.isCC){
+        themActive.statuses.weaken = Math.max(themActive.statuses.weaken, 1);
+        logLine(`${themActive.data.name} is weakened (-20% dmg next turn).`);
+      }
+
+      // set cooldown for the caster
+      me.cds[idx] = cd;
+
+      // KO handling
+      if(themActive.hp<=0){
+        logLine(`${themActive.data.name} is knocked out!`);
+        switchIfDead(theirSide);
+      }
+
+      renderAll();
+      const w = winner();
+      if(w){ logLine(`🏆 ${active(w)?.data?.name || (w==='left'?'P1':'P2/CPU')} wins the match!`); updateTurnBadge(); return; }
+      endTurn();
+    }
+
+    // CPU
     function cpuAct(){
       if (winner() || state.turn!=='right' || state.p2Mode!=='cpu') return;
-
       const cfg = DIFF[state.difficulty] || DIFF.standard;
-      // occasional "mistake" in easier modes
+
+      const me = active('right');
+      const enemy = active('left');
+      if(!me || !enemy){ endTurn(); return; }
+
+      // If active is near death and there is a healthier bench, occasionally switch (tryhard more often)
+      const bench = state.rightTeam;
+      const hasBetter = bench.some((c,i)=> i!==state.rightIdx && c && c.hp> (me.hp+60));
+      if(hasBetter && (state.difficulty==='tryhard' ? me.hp < me.max*0.25 : me.hp < me.max*0.18)){
+        for(let i=0;i<3;i++){ const c=bench[i]; if(i!==state.rightIdx && c && c.hp>me.hp+60){ state.rightIdx=i; logLine(`CPU switches to ${c.data.name}.`); renderAll(); return endTurn(); } }
+      }
+
+      const cds = me.cds;
+      const ready = [0,1,2,3].filter(i=>cds[i]===0 && (me.resType==='None' || me.res >= spellCost(me.data.spells[i], i, me.resType)));
+      if(ready.length===0){ logLine(`${me.data.name} waits (CD/Res).`); endTurn(); return; }
+
       if(Math.random() < cfg.randomMistake){
-        return cpuRandomClick();
+        const idx = ready[Math.floor(Math.random()*ready.length)];
+        return cpuClick(idx);
       }
 
-      const champ = state.right;
-      const cds = state.rightCD;
-      const ready = [0,1,2,3].filter(i => cds[i]===0);
-      if(ready.length===0){ endTurn(); return; }
-
-      const options = ready.map(i => {
-        const sp = champ.spells[i];
-        const raw = estimateAbilityPower(sp, champ, i);
-        const type = detectDamageType(sp, champ);
-        const adj = computeFinalDamage('right', raw, type);
+      const options = ready.map(i=>{
+        const sp = me.data.spells[i];
+        const raw = estimateAbilityPower(sp, me.data, i);
+        const type = detectDamageType(sp, me.data);
+        const flags = classifySpell(sp);
         const cd = abilityCooldown(sp);
-        return {
-          idx: i, spell: sp, type,
-          rawDmg: raw, adjDmg: adj, cd,
-          isR: i===3,
-          defensive: isDefensiveSpell(sp),
-          cc: isCCSpell(sp),
-        };
+        const cost = spellCost(sp, i, me.resType);
+        // estimate value
+        let value = 0;
+        if(flags.heal){
+          const allies = myTeam('right').filter(x=>x&&x.hp>0);
+          const missing = allies.reduce((a,c)=>a+(c.max-c.hp),0);
+          value += missing * (flags.aoe?0.35:0.5);
+        }
+        if(!flags.heal){
+          const base = flags.aoe ? Math.round(raw*0.75)* enemyTeam('right').filter(x=>x&&x.hp>0).length : raw;
+          value += base;
+        }
+        if(flags.burn) value += 60;
+        if(flags.slow) value += 40;
+        if(flags.shield) value += 45;
+        if(flags.isCC) value += 35;
+        if(i===3) value += 100 * cfg.preferR;
+        // dps-ish & cost sensitivity
+        const dps = value / Math.max(1,cd);
+        const costPenalty = (me.resType!=='None' && cost) ? (cost / (me.resMax||120))*0.6 : 0;
+        const score = dps * (1 - costPenalty);
+        return {idx:i, score, cd, sp, raw, type, flags, cost};
       });
 
-      const targetHP = state.leftHP;
-
-      // 1) Lethal: still always try to finish — tie-break differs by difficulty
-      const lethals = options.filter(o => o.adjDmg >= targetHP);
-      if(lethals.length){
-        if(state.difficulty==='casual'){
-          // Flashy: prefer R, then bigger damage
-          lethals.sort((a,b) => (b.isR - a.isR) || (b.adjDmg - a.adjDmg) || (a.cd - b.cd));
-        } else if(state.difficulty==='tryhard'){
-          // Clinical: least overkill, shortest CD
-          lethals.sort((a,b) => {
-            const overA = a.adjDmg - targetHP, overB = b.adjDmg - targetHP;
-            if (overA !== overB) return overA - overB;
-            if (a.cd !== b.cd) return a.cd - b.cd;
-            return 0;
-          });
-        } else {
-          // Standard: least overkill, prefer R slightly
-          lethals.sort((a,b) => {
-            const overA = a.adjDmg - targetHP, overB = b.adjDmg - targetHP;
-            if (overA !== overB) return overA - overB;
-            if (a.cd !== b.cd) return a.cd - b.cd;
-            return (a.isR===b.isR)?0:(a.isR?-1:1);
-          });
-        }
-        return cpuClick(lethals[0].idx);
-      }
-
-      // 2) Low HP? consider defensive
-      const myHPpct = state.rightHP / state.rightHPMax;
-      if(myHPpct < cfg.lowHP){
-        const defensives = options.filter(o => o.defensive);
-        if(defensives.length){
-          // prefer shortest CD, and in casual prefer R if available
-          defensives.sort((a,b) => {
-            if(state.difficulty==='casual') return (b.isR - a.isR) || (a.cd - b.cd);
-            return a.cd - b.cd;
-          });
-          return cpuClick(defensives[0].idx);
-        }
-      }
-
-      // 3) Scoring by DPS with overkill penalty and "prefer R" weight
-      options.forEach(o => {
-        const dps = o.adjDmg / Math.max(1,o.cd);
-        const excess = Math.max(0, o.adjDmg - targetHP);
-        const penalty = cfg.overkillPenalty * (excess/200); // normalize
-        const rBonus = o.isR ? cfg.preferR : 0;
-        o.score = dps * (1 - penalty) + rBonus;
+      // Lethal preference (single-target)
+      const lethals = options.filter(o=>{
+        if(o.flags.heal || o.flags.aoe) return false;
+        const base = me.statuses.weaken>0?Math.round(o.raw*0.8):o.raw;
+        const dmg = computeFinalDamage(me, enemy, base, o.type);
+        return dmg >= enemy.hp;
       });
+      if(lethals.length){ lethals.sort((a,b)=> a.cd-b.cd); return cpuClick(lethals[0].idx); }
 
-      options.sort((a,b) => b.score - a.score || (a.cd - b.cd));
+      options.forEach(o=>{
+        if(!o.flags.heal && !o.flags.aoe){
+          const est = computeFinalDamage(me, enemy, me.statuses.weaken>0?Math.round(o.raw*0.8):o.raw, o.type);
+          const excess = Math.max(0, est - enemy.hp);
+          const penalty = cfg.overkillPenalty * (excess/200);
+          o.score *= (1 - penalty);
+        }
+      });
+      options.sort((a,b)=> b.score - a.score || a.cd - b.cd);
       return cpuClick(options[0].idx);
-    }
-    function cpuRandomClick(){
-      const ready = [0,1,2,3].filter(i => state.rightCD[i]===0);
-      if(ready.length===0){ endTurn(); return; }
-      const idx = ready[Math.floor(Math.random()*ready.length)];
-      cpuClick(idx);
     }
     function cpuClick(idx){
       const btn = els.rightAbilities.querySelector(`[data-idx="${idx}"]`);
       if(btn && !btn.disabled) btn.click(); else endTurn();
     }
 
-    // --- Player action ---
+    // Input handlers
     function onAbilityClick(e){
       const btn = e.currentTarget;
       const side = btn.dataset.side;
       const idx = +btn.dataset.idx;
-
-      if (winner()) return;
-      if (state.turn !== side) return;
-      if (side==='right' && state.p2Mode==='cpu') return;
-
+      if(winner()) return;
+      if(state.turn!==side) return;
+      if(side==='right' && state.p2Mode==='cpu') return;
       performAbility(side, idx);
     }
 
-    function performAbility(side, idx){
-      const me = state[side];
-      const themSide = side === 'left' ? 'right' : 'left';
-      const spell = (me.spells||[])[idx];
-      const raw = estimateAbilityPower(spell, me, idx);
-      const type = detectDamageType(spell, me);
-      const dmg = computeFinalDamage(side, raw, type);
-      const cd = abilityCooldown(spell);
-
-      if (side === 'left') {
-        state.rightHP -= dmg;
-        state.leftCD[idx] = cd;
-        hitShake('right'); burstFX('right'); floatDamage('right', dmg);
-      } else {
-        state.leftHP -= dmg;
-        state.rightCD[idx] = cd;
-        hitShake('left'); burstFX('left'); floatDamage('left', dmg);
-      }
-      pressBtnFX(side, idx);
-
-      applyStatusFromSpell(side, spell);
-
-      logLine(`${me.name} used ${['Q','W','E','R'][idx]} — ${spell.name} for ~${dmg} ${type} dmg.`);
-      renderAll();
-
-      const w = winner();
-      if (w){
-        const champ = state[w];
-        logLine(`🏆 ${champ.name} wins!`);
-        updateTurnBadge();
-        return;
-      }
-      endTurn();
+    // Team/selection
+    function findChampionIdByName(name){
+      const f = state.champArray.find(c=>c.name.toLowerCase()===String(name||'').toLowerCase());
+      return f?.id || null;
     }
+    async function loadChampionFull(id){ const raw = await getJSON(ddragonData(state.version, `champion/${id}.json`)); return raw.data[id]; }
 
-    // --- Status application ---
-    function applyStatusFromSpell(attackerSide, spell){
-      const targetSide = attackerSide==='left' ? 'right' : 'left';
-      if(isDefensiveSpell(spell)){
-        if(attackerSide==='left') state.leftShield = Math.min(3, 2);
-        else state.rightShield = Math.min(3, 2);
-        const fac = attackerSide==='left' ? state.leftShieldFactor : state.rightShieldFactor;
-        logLine(`${state[attackerSide].name} gains a shield (-${Math.round(fac*100)}% dmg for 2 turns).`);
-      }
-      if(isCCSpell(spell)){
-        if(targetSide==='left') state.leftWeaken = 1;
-        else state.rightWeaken = 1;
-        logLine(`${state[targetSide].name} is weakened (-20% dmg next turn).`);
-      }
-    }
-
-    // --- Picks / reset / swap ---
-    async function setChampionForSide(side, champId){
-      if(!champId) return;
+    async function setChampionForSlot(side, slot, champId){
       try{
         const full = await loadChampionFull(champId);
-        state[side] = full;
-
-        const hpBase = (full.stats.hp || 600) + (full.stats.hpperlevel || 90) * 9;
-        if(side==='left'){ state.leftHPMax = hpBase; state.leftHP = hpBase; state.leftCD=[0,0,0,0]; state.leftShield=0; state.leftWeaken=0; state.leftShieldFactor=.30; state.leftRoleMods={magic:1,physical:1,penA:0}; state.leftFirstHitBonus=true; }
-        else { state.rightHPMax = hpBase; state.rightHP = hpBase; state.rightCD=[0,0,0,0]; state.rightShield=0; state.rightWeaken=0; state.rightShieldFactor=.30; state.rightRoleMods={magic:1,physical:1,penA:0}; state.rightFirstHitBonus=true; }
-
-        applyRolePassives(side);
-        renderMiniCard(side, full);
+        const cs = buildChampState(full);
+        if(side==='left'){ state.leftTeam[slot]=cs; }
+        else { state.rightTeam[slot]=cs; }
+        renderMiniCard(side, slot, full);
         renderAll();
-      }catch(err){
-        console.error(err); logLine(`Failed to load ${champId}.`);
-      }
+      }catch(e){ console.error(e); logLine(`Failed to load ${champId}.`); }
     }
 
-    function renderMiniCard(side, champ){
-      const target = side==='left' ? els.leftCard : els.rightCard;
-      const roles = (champ.tags||[]).join(' • ');
+    function renderMiniCard(side, slot, full){
+      const target = (side==='left'?els.leftCard:els.rightCard)[slot];
+      const roles = (full.tags||[]).join(' • ');
       target.innerHTML = `
-        <div class="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 flex items-center gap-3">
-          <img class="size-12 rounded-md object-cover ring-1 ring-white/10" src="${ddragonImgChampion(state.version, champ.image.full)}" alt="">
+        <div class="rounded-lg border border-white/10 bg-white/5 p-2 flex items-center gap-2">
+          <img class="size-8 rounded-md object-cover ring-1 ring-white/10" src="${ddragonImgChampion(state.version, full.image.full)}" alt="">
           <div class="min-w-0">
-            <div class="font-medium truncate">${champ.name}</div>
-            <div class="text-xs text-slate-400">${roles || '—'}</div>
-            <p class="mt-1 text-xs text-slate-300 line-clamp-2">${champ.blurb || ''}</p>
+            <div class="text-xs font-medium truncate">${full.name}</div>
+            <div class="text-[10px] text-slate-400">${roles || '—'}</div>
           </div>
         </div>
       `;
     }
 
-    function pickRandom(side){
-      const r = state.champArray[Math.floor(Math.random() * state.champArray.length)];
-      if (!r) return;
-      (side==='left' ? els.leftSearch : els.rightSearch).value = r.name;
-      setChampionForSide(side, r.id);
+    function randomTeam(side){
+      for(let i=0;i<3;i++){
+        const r = state.champArray[Math.floor(Math.random()*state.champArray.length)];
+        (side==='left'?els.leftSearch:els.rightSearch)[i].value = r.name;
+        setChampionForSlot(side, i, r.id);
+      }
+      if(side==='left') state.leftIdx=0; else state.rightIdx=0;
     }
 
-    function swapSides(){
-      const L = state.left, R = state.right;
-      const Lhp = state.leftHP, Rhp = state.rightHP;
-      const Lmax = state.leftHPMax, Rmax = state.rightHPMax;
-      const Lcd = [...state.leftCD], Rcd = [...state.rightCD];
-      const Lsh = state.leftShield, Rsh = state.rightShield;
-      const Lwk = state.leftWeaken, Rwk = state.rightWeaken;
-      const Lsf = state.leftShieldFactor, Rsf = state.rightShieldFactor;
-      const Lmods = {...state.leftRoleMods}, Rmods = {...state.rightRoleMods};
-      const Lfh = state.leftFirstHitBonus, Rfh = state.rightFirstHitBonus;
-
-      state.left = R; state.right = L;
-      state.leftHP = Rhp; state.rightHP = Lhp;
-      state.leftHPMax = Rmax; state.rightHPMax = Lmax;
-      state.leftCD = Rcd; state.rightCD = Lcd;
-      state.leftShield = Rsh; state.rightShield = Lsh;
-      state.leftWeaken = Rwk; state.rightWeaken = Lwk;
-      state.leftShieldFactor = Rsf; state.rightShieldFactor = Lsf;
-      state.leftRoleMods = Rmods; state.rightRoleMods = Lmods;
-      state.leftFirstHitBonus = Rfh; state.rightFirstHitBonus = Lfh;
-
-      state.turn = state.turn === 'left' ? 'right' : 'left';
-      renderAll();
-      renderMiniCard('left', state.left);
-      renderMiniCard('right', state.right);
-      maybeScheduleAI();
-    }
-
-    function hardReset(){
-      if(state.left){ setChampionForSide('left', state.left.id); }
-      if(state.right){ setChampionForSide('right', state.right.id); }
-      state.turn = 'left';
+    function hardReset(fullReset=true){
+      if(fullReset){
+        ['left','right'].forEach(side=>{
+          const inputs = side==='left'?els.leftSearch:els.rightSearch;
+          for(let i=0;i<3;i++){
+            const id = findChampionIdByName(inputs[i].value);
+            if(id) setChampionForSlot(side, i, id);
+          }
+          if(side==='left') state.leftIdx=0; else state.rightIdx=0;
+        });
+      }
+      state.turn='left';
       renderAll();
       logLine('Match reset. Player 1 starts.');
       maybeScheduleAI();
     }
 
-    // --- Events ---
-    els.leftSearch.addEventListener('change', () => {
-      const id = findChampionIdByName(els.leftSearch.value);
-      if (id) setChampionForSide('left', id);
-    });
-    els.rightSearch.addEventListener('change', () => {
-      const id = findChampionIdByName(els.rightSearch.value);
-      if (id) setChampionForSide('right', id);
-    });
-    els.leftPickRandom.addEventListener('click', () => pickRandom('left'));
-    els.rightPickRandom.addEventListener('click', () => pickRandom('right'));
-    els.resetBtn.addEventListener('click', hardReset);
+    function swapSides(){
+      const LT=[...state.leftTeam], RT=[...state.rightTeam];
+      const Li=state.leftIdx, Ri=state.rightIdx;
+      state.leftTeam = RT; state.rightTeam = LT;
+      state.leftIdx = Ri; state.rightIdx = Li;
+      state.turn = state.turn==='left'?'right':'left';
+      renderAll();
+      logLine('Sides swapped.');
+      maybeScheduleAI();
+    }
+
+    // Controls sync
+    function syncControlsFromState(){
+      if(els.p2Mode) els.p2Mode.value = state.p2Mode;
+      if(els.p2ModeMobile) els.p2ModeMobile.value = state.p2Mode;
+      const map = {casual:0, standard:1, tryhard:2};
+      const idx = map[state.difficulty] ?? 1;
+      if(els.diffRange) els.diffRange.value=idx;
+      if(els.diffRangeMobile) els.diffRangeMobile.value=idx;
+      const label=['Casual','Standard','Tryhard'][idx];
+      if(els.diffLabel) els.diffLabel.textContent=label;
+      if(els.diffLabelMobile) els.diffLabelMobile.textContent=label;
+    }
+    function setP2Mode(v){ state.p2Mode=(v==='human'?'human':'cpu'); if(els.p2Mode) els.p2Mode.value=v; if(els.p2ModeMobile) els.p2ModeMobile.value=v; renderAll(); maybeScheduleAI(); logLine(`Player 2 mode: ${state.p2Mode.toUpperCase()}`); }
+    function setDifficultyByIndex(i){
+      const map=['casual','standard','tryhard']; state.difficulty=map[i]||'standard';
+      const label=['Casual','Standard','Tryhard'][i]||'Standard';
+      if(els.diffLabel) els.diffLabel.textContent=label;
+      if(els.diffLabelMobile) els.diffLabelMobile.textContent=label;
+      logLine('Difficulty: '+label);
+    }
+
+    // Bootstrap
+    async function bootstrap(){
+      try{
+        const versions = await getJSON(DDRAGON_VERSIONS);
+        state.version = versions[0];
+        const short = await getJSON(ddragonData(state.version, 'champion.json'));
+        state.champions = short.data;
+        state.champArray = Object.values(state.champions).sort((a,b)=>a.name.localeCompare(b.name));
+        els.listNode.innerHTML = state.champArray.map(c=>`<option value="${c.name}" data-id="${c.id}"></option>`).join('');
+
+        // Deep link parse
+        const q = decodeQuery();
+        if(q.mode) state.p2Mode = (q.mode==='human'?'human':'cpu');
+        if(q.diff) state.difficulty = ['casual','standard','tryhard'].includes(q.diff)?q.diff:'standard';
+        syncControlsFromState();
+
+        // Setup teams from link or random
+        const setOrRandom = async (side, keys) => {
+          const picks=[];
+          for(let i=0;i<3;i++){
+            const id = q[keys[i]];
+            if(id && state.champions[id]){ (side==='left'?els.leftSearch:els.rightSearch)[i].value = state.champions[id].name; picks.push(setChampionForSlot(side,i,id)); }
+            else { const r=state.champArray[Math.floor(Math.random()*state.champArray.length)]; (side==='left'?els.leftSearch:els.rightSearch)[i].value = r.name; picks.push(setChampionForSlot(side,i,r.id)); }
+          }
+          await Promise.all(picks);
+        };
+        await setOrRandom('left', ['l1','l2','l3']);
+        await setOrRandom('right',['r1','r2','r3']);
+
+        state.leftIdx=0; state.rightIdx=0; state.turn='left';
+        renderAll();
+        logLine(`Loaded Data Dragon ${state.version}. 3v3 duel ready. Player 1 begins.`);
+        maybeScheduleAI();
+      }catch(e){ console.error(e); logLine('Failed to load Data Dragon.'); }
+    }
+
+    // Events
+    els.leftPickRandom.addEventListener('click', ()=>{ randomTeam('left'); renderAll(); });
+    els.rightPickRandom.addEventListener('click', ()=>{ randomTeam('right'); renderAll(); });
+
+    els.leftSearch.forEach((inp,i)=> inp.addEventListener('change', ()=>{ const id=findChampionIdByName(inp.value); if(id) setChampionForSlot('left', i, id); }));
+    els.rightSearch.forEach((inp,i)=> inp.addEventListener('change', ()=>{ const id=findChampionIdByName(inp.value); if(id) setChampionForSlot('right', i, id); }));
+
+    els.resetBtn.addEventListener('click', ()=>hardReset(true));
     els.swapBtn.addEventListener('click', swapSides);
-    els.randomFightBtn.addEventListener('click', () => { pickRandom('left'); pickRandom('right'); hardReset(); });
+    els.randomFightBtn.addEventListener('click', ()=>{ randomTeam('left'); randomTeam('right'); hardReset(false); });
     els.shareBtn.addEventListener('click', shareMatch);
 
-    // P2 mode (both desktop & mobile controls kept in sync)
-    function setP2Mode(v){ state.p2Mode = (v==='human'?'human':'cpu'); if(els.p2Mode) els.p2Mode.value=v; if(els.p2ModeMobile) els.p2ModeMobile.value=v; renderAll(); maybeScheduleAI(); logLine(`Player 2 mode: ${state.p2Mode.toUpperCase()}`); }
-    if(els.p2Mode) els.p2Mode.addEventListener('change', e => setP2Mode(e.target.value));
-    if(els.p2ModeMobile) els.p2ModeMobile.addEventListener('change', e => setP2Mode(e.target.value));
+    if(els.p2Mode) els.p2Mode.addEventListener('change', e=>setP2Mode(e.target.value));
+    if(els.p2ModeMobile) els.p2ModeMobile.addEventListener('change', e=>setP2Mode(e.target.value));
+    if(els.diffRange) els.diffRange.addEventListener('input', e=>setDifficultyByIndex(+e.target.value));
+    if(els.diffRangeMobile) els.diffRangeMobile.addEventListener('input', e=>setDifficultyByIndex(+e.target.value));
 
-    // Difficulty (slider: 0/1/2)
-    function labelForDiffIndex(i){ return ['Casual','Standard','Tryhard'][i] || 'Standard'; }
-    function setDifficultyByIndex(i){
-      const map = ['casual','standard','tryhard'];
-      state.difficulty = map[i] || 'standard';
-      if(els.diffLabel) els.diffLabel.textContent = labelForDiffIndex(i);
-      if(els.diffLabelMobile) els.diffLabelMobile.textContent = labelForDiffIndex(i);
-      if(els.diffRange) els.diffRange.value = i;
-      if(els.diffRangeMobile) els.diffRangeMobile.value = i;
-      logLine('Difficulty: ' + labelForDiffIndex(i));
-      // no need to re-render; AI uses this on its turn
-    }
-    if(els.diffRange) els.diffRange.addEventListener('input', e => setDifficultyByIndex(+e.target.value));
-    if(els.diffRangeMobile) els.diffRangeMobile.addEventListener('input', e => setDifficultyByIndex(+e.target.value));
-
-    // --- Init ---
+    // init
     bootstrap();
 
-    // --- Service Worker (tiny inline) ---
+    // Service Worker (inline)
     if ('serviceWorker' in navigator) {
       const swCode = `
         self.addEventListener('install', e => {
-          e.waitUntil(caches.open('jld-v1').then(c => c.addAll(['./'])));
+          e.waitUntil(caches.open('jld-v3').then(c => c.addAll(['./'])));
           self.skipWaiting();
         });
         self.addEventListener('activate', e => self.clients.claim());
         self.addEventListener('fetch', e => {
           const u = new URL(e.request.url);
-          // Cache-first for same-origin; network-default for external (ddragon)
           if (u.origin === location.origin) {
             e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
           }
         });
       `;
-      const blob = new Blob([swCode], {type: 'text/javascript'});
+      const blob = new Blob([swCode], {type:'text/javascript'});
       navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
     }
   })();
   </script>
 </body>
-</html> 
+</html>
