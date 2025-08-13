@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#10b981">
+  <meta name="theme-color" content="#0b1220">
   <title>Jimmy’s Pokémon Stadium</title>
 
   <!-- Favicon (Poké Ball) -->
@@ -16,27 +16,44 @@
       theme: {
         extend: {
           fontFamily: { ui: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial'] },
-          boxShadow: { soft: '0 6px 30px rgba(0,0,0,.08)' }
+          boxShadow: { soft: '0 8px 40px rgba(0,0,0,.32)' }
         }
       }
     }
   </script>
 
   <style>
+    /* ===== Dark theme base ===== */
+    :root{
+      --bg: #0b1220;
+      --bg-2: #0f172a;
+      --panel: rgba(15,23,42,.85);
+      --border: #1f2a44;
+      --border-2:#2a3b61;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+    }
     .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
     .hpbar-inner { transition: width .35s ease; }
-    .card { background: rgba(255,255,255,.8); backdrop-filter: blur(8px); border:1px solid #e5e7eb; border-radius: 1rem; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
-    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius: .75rem; padding:.5rem 1rem; font-weight:600; color:#fff; background: linear-gradient(180deg, #22c55e, #16a34a); }
-    .btn:active { opacity:.9 }
-    .btn-secondary { color:#111827; background: linear-gradient(180deg, #e5e7eb, #d1d5db); }
-    .btn-warn { background: linear-gradient(180deg, #f59e0b, #d97706); color:#111827; }
-    .btn-ghost { background: transparent; color:#334155; }
-    .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.25rem .625rem; font-size:.75rem; font-weight:700; background:#f1f5f9; color:#334155; }
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border:1px solid var(--border);
+      border-radius: 1rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,.28);
+    }
+    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:.75rem; padding:.55rem 1rem; font-weight:700; color:#fff; gap:.5rem; }
+    .btn:active { opacity:.92 }
+    .btn-primary { background: linear-gradient(180deg, #10b981, #059669); }
+    .btn-secondary { background: linear-gradient(180deg, #334155, #475569); color: var(--text); }
+    .btn-warn { background: linear-gradient(180deg, #eab308, #ca8a04); color:#111827; }
+    .btn-ghost { background: transparent; color: var(--muted); }
+    .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.25rem .625rem; font-size:.75rem; font-weight:800; background:#0b1220; color:#cbd5e1; border:1px solid var(--border-2); }
     .grid-auto-fit { display:grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap:.75rem; }
     .tap { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    .type-badge { font-size:10px; font-weight:800; padding:.125rem .5rem; border-radius:999px; color:#fff; }
-    .move-btn { width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.9rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:space-between; }
-    .tag { font-size:10px; font-weight:700; padding:.125rem .5rem; border-radius:999px; background:#e5e7eb; color:#334155; }
+    .type-badge { font-size:10px; font-weight:900; padding:.125rem .5rem; border-radius:999px; color:#fff; }
+    .move-btn { width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.92rem; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.08); }
+    .tag { font-size:10px; font-weight:800; padding:.125rem .5rem; border-radius:.5rem; background:#0f172a; color:#cbd5e1; border:1px solid var(--border); }
 
     /* Bottom-sheet layout + scroll fix */
     .sheet { max-height: 85vh; display: flex; flex-direction: column; }
@@ -67,11 +84,11 @@
     .camshake { animation: jiggle .25s ease; }
 
     /* Projectile + spark */
-    .proj { position:absolute; width:10px; height:10px; border-radius:999px; box-shadow: 0 0 10px rgba(0,0,0,.25); transform: translate(-50%, -50%); pointer-events:none; }
+    .proj { position:absolute; width:10px; height:10px; border-radius:999px; box-shadow: 0 0 10px rgba(0,0,0,.45); transform: translate(-50%, -50%); pointer-events:none; }
     @keyframes spark { 0% { transform: scale(.6); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
-    .spark { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow: 0 0 18px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation: spark .35s ease forwards; pointer-events:none; }
+    .spark { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow: 0 0 22px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation: spark .35s ease forwards; pointer-events:none; }
 
-    /* Faint animation (drop + fade) */
+    /* Faint (drop + fade) */
     @keyframes faint {
       0% { transform: translateY(0); opacity: 1; filter:none; }
       100% { transform: translateY(34px); opacity: .2; filter: grayscale(100%); }
@@ -83,47 +100,55 @@
     .battle {
       position:relative; height: 320px;
       background:
-        radial-gradient(ellipse at 20% 85%, rgba(0,0,0,.06), transparent 45%),
-        radial-gradient(ellipse at 80% 15%, rgba(0,0,0,.06), transparent 45%);
-      border-radius: .75rem;
+        radial-gradient(ellipse at 20% 85%, rgba(255,255,255,.04), transparent 48%),
+        radial-gradient(ellipse at 80% 15%, rgba(255,255,255,.04), transparent 48%);
+      border-radius: .75rem; border:1px solid var(--border);
     }
     @media (min-width: 640px){ .battle { height: 380px; } }
 
-    /* GB-style HP box */
-    .hpbox { min-width: 210px; background:#fff; border:2px solid #111827; border-radius:.5rem; padding:.35rem .5rem .5rem; box-shadow: inset 0 0 0 2px #e5e7eb; }
-    .hpbox-title { font-weight:800; font-size:.8rem; letter-spacing:.02em; }
-    .hpbox-hp { font-size:.65rem; color:#475569; display:flex; justify-content:space-between; align-items:center; }
-    .hpbar { height:8px; width:100%; background:#e5e7eb; border-radius:999px; overflow:hidden; }
-    .lv { font-size:.7rem; font-weight:800; color:#111827; }
-    .st-dot { width:8px; height:8px; border-radius:999px; border:1px solid #0f172a; }
-    .st-tag { font-size:.6rem; font-weight:800; padding:.05rem .3rem; border:1px solid #0f172a; border-radius:.25rem; }
+    /* GB-style HP box (dark) */
+    .hpbox { min-width: 210px; background: #0b1220; border:2px solid #334155; border-radius:.5rem; padding:.35rem .5rem .5rem; box-shadow: inset 0 0 0 2px #1e293b; color:var(--text); }
+    .hpbox-title { font-weight:900; font-size:.8rem; letter-spacing:.02em; }
+    .hpbox-hp { font-size:.68rem; color:#a1a1aa; display:flex; justify-content:space-between; align-items:center; }
+    .hpbar { height:8px; width:100%; background:#1f2937; border-radius:999px; overflow:hidden; }
 
-    /* Positions — always player bottom-left, rival top-right */
+    .lv { font-size:.7rem; font-weight:900; color:#e5e7eb; }
+    .st-dot { width:8px; height:8px; border-radius:999px; border:1px solid #e2e8f0; }
+    .st-tag { font-size:.6rem; font-weight:900; padding:.05rem .3rem; border:1px solid #94a3b8; border-radius:.25rem; color:#e5e7eb; }
+
+    /* Positions — player bottom-left, rival top-right */
     .opp-hp     { position:absolute; top:10px; left:10px; }
-    .opp-sprite { position:absolute; top:64px; right:18px; width: 140px; height: 140px; }
-    .ply-sprite { position:absolute; bottom:72px; left:18px; width: 140px; height: 140px; }
+    .opp-sprite { position:absolute; top:70px; right:18px; width: 140px; height: 140px; }
+    .ply-sprite { position:absolute; bottom:74px; left:18px; width: 140px; height: 140px; }
     .ply-hp     { position:absolute; bottom:10px; right:10px; }
 
     @media (min-width: 640px){
-      .opp-sprite { width: 168px; height: 168px; top:70px; right:26px; }
-      .ply-sprite { width: 168px; height: 168px; bottom:82px; left:26px; }
+      .opp-sprite { width: 168px; height: 168px; top:72px; right:26px; }
+      .ply-sprite { width: 168px; height: 168px; bottom:84px; left:26px; }
       .hpbox { min-width: 230px; }
     }
 
-    /* ===== GB box (Game Boy-style frame for banner & modals) ===== */
+    /* Roster strips under HP boxes */
+    .roster-strip img { border-radius: 8px; border:1px solid var(--border); }
+    .roster-strip .slot { width:28px; height:28px; border-radius:8px; overflow:hidden; opacity:.95 }
+    .roster-strip .active { outline:2px solid #10b981; outline-offset:1px; }
+    .roster-strip .down { filter:grayscale(100%); opacity:.5 }
+
+    /* ===== GB box (for banner & modals) ===== */
     .gb-box{
       position:relative;
-      background:#fff;
-      border:2px solid #111827;
+      background:#0b1220;
+      border:2px solid #334155;
       border-radius:.75rem;
       box-shadow:
-        inset 0 0 0 2px #e5e7eb,
-        0 6px 30px rgba(0,0,0,.06);
+        inset 0 0 0 2px #1e293b,
+        0 10px 40px rgba(0,0,0,.35);
+      color: var(--text);
     }
     .gb-box::before, .gb-box::after{
       content:"";
       position:absolute; pointer-events:none;
-      border:2px solid #111827;
+      border:2px solid #334155;
       width:14px; height:14px; opacity:.9;
     }
     .gb-box::before{ top:-6px; left:-6px; border-right:none; border-bottom:none; border-radius:.5rem 0 0 0; }
@@ -131,22 +156,22 @@
 
     /* Blinking caret for "your turn" */
     @keyframes caret-blink { 0%,60%{opacity:1; transform:translateY(0)} 80%{opacity:.15} 100%{opacity:1; transform:translateY(1px)} }
-    .gb-caret{
-      font-weight:900; margin-left:.5rem; display:inline-block;
-      animation: caret-blink .9s steps(1,end) infinite;
-    }
+    .gb-caret{ font-weight:900; margin-left:.5rem; display:inline-block; animation: caret-blink .9s steps(1,end) infinite; }
 
     /* Results modal */
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 40; }
     .modal.show { display: flex; }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white font-ui text-slate-800">
-  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-      <img alt="Poké Ball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
-      <h1 class="text-lg font-bold">Jimmy’s Pokémon Stadium</h1>
-      <span class="ml-auto text-xs text-slate-500">Gen‑1 layout • Lv.50 • Status • TM/HM</span>
+<body class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 font-ui text-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-10 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+    <div class="max-w-5xl mx-auto px-4 py-3">
+      <div class="flex items-center gap-3">
+        <img alt="Poké Ball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
+        <h1 class="text-lg font-extrabold leading-none">Jimmy’s Pokémon Stadium</h1>
+      </div>
+      <div class="pl-9 text-[12px] text-slate-400">Gen‑1 layout • Lv.50 • Status • TM/HM</div>
     </div>
   </header>
 
@@ -154,10 +179,10 @@
     <!-- Builder -->
     <section id="builder" class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold">Build your teams</h2>
+        <h2 class="text-base font-bold text-slate-300">Build your teams</h2>
         <div class="flex gap-2">
-          <button id="btnRandomize" class="btn-secondary tap">Randomize teams</button>
-          <button id="btnClear" class="btn-ghost tap">Clear</button>
+          <button id="btnRandomize" class="btn btn-secondary tap">Randomize teams</button>
+          <button id="btnClear" class="btn btn-ghost tap">Clear</button>
         </div>
       </div>
 
@@ -165,8 +190,8 @@
         <div class="card p-4">
           <div class="flex items-center gap-2 mb-3">
             <span class="chip">You</span>
-            <div class="text-sm text-slate-500">Choose 3 (tap Moves to pick up to 4)</div>
-            <div class="ml-auto"><button id="pickA" class="btn tap">Pick</button></div>
+            <div class="text-sm text-slate-400">Choose 3 (tap Moves to pick up to 4)</div>
+            <div class="ml-auto"><button id="pickA" class="btn btn-primary tap">Pick</button></div>
           </div>
           <div id="teamA" class="grid grid-cols-3 gap-3"></div>
         </div>
@@ -174,8 +199,8 @@
         <div class="card p-4">
           <div class="flex items-center gap-2 mb-3">
             <span class="chip">Rival</span>
-            <div class="text-sm text-slate-500">Rival team is auto‑picked (you can edit)</div>
-            <div class="ml-auto"><button id="pickB" class="btn tap">Pick</button></div>
+            <div class="text-sm text-slate-400">Rival team is auto‑picked (you can edit)</div>
+            <div class="ml-auto"><button id="pickB" class="btn btn-primary tap">Pick</button></div>
           </div>
           <div id="teamB" class="grid grid-cols-3 gap-3"></div>
         </div>
@@ -183,44 +208,20 @@
 
       <div class="flex flex-wrap items-center gap-3 pt-2">
         <button id="startBattle" class="btn btn-warn tap disabled:opacity-50" disabled>Start Battle</button>
-        <div id="buildHint" class="text-sm text-slate-500">Pick 3 for each side to begin.</div>
+        <div id="buildHint" class="text-sm text-slate-400">Pick 3 for each side to begin.</div>
       </div>
     </section>
 
     <!-- Arena -->
-    <section id="arena" class="hidden space-y-4">
-      <div class="flex items-center gap-3">
-        <h2 class="text-xl font-bold">Battle</h2>
+    <section id="arena" class="hidden space-y-3">
+      <!-- Compact top bar for mobile -->
+      <div class="flex items-center gap-2">
         <span id="roundTag" class="chip">Round 1</span>
-        <div class="ml-auto flex items-center gap-3">
-          <label class="flex items-center gap-2 text-sm">
-            Pace
-            <select id="pace" class="border rounded-lg px-2 py-1">
-              <option value="1.3">Slow</option>
-              <option value="1.0" selected>Normal</option>
-              <option value="0.8">Fast</option>
-            </select>
-          </label>
-          <label class="flex items-center gap-2 text-sm">
-            <input id="autoPlay" type="checkbox" class="accent-emerald-600"> Auto play
-          </label>
+        <label class="ml-2 flex items-center gap-2 text-xs text-slate-300">
+          <input id="autoPlay" type="checkbox" class="accent-emerald-500"> Auto play
+        </label>
+        <div class="ml-auto">
           <button id="reset" class="btn btn-secondary tap">Back to builder</button>
-        </div>
-      </div>
-
-      <!-- Rosters -->
-      <div class="grid md:grid-cols-2 gap-4">
-        <div class="card p-3">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="chip">You</span><div class="text-xs text-slate-500">Roster</div>
-          </div>
-          <div id="rosterA" class="flex gap-2"></div>
-        </div>
-        <div class="card p-3">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="chip">Rival</span><div class="text-xs text-slate-500">Roster</div>
-          </div>
-          <div id="rosterB" class="flex gap-2"></div>
         </div>
       </div>
 
@@ -239,6 +240,8 @@
             </div>
             <div class="hpbox-hp"><span>HP <span id="hpTextB"></span></span></div>
             <div class="hpbar mt-1"><div id="hpBarB" class="hpbar-inner h-full" style="width:100%"></div></div>
+            <!-- Opponent roster strip -->
+            <div id="rosterB" class="roster-strip mt-2 flex gap-2"></div>
           </div>
 
           <!-- Opponent sprite (top-right) -->
@@ -259,11 +262,13 @@
             </div>
             <div class="hpbox-hp"><span>HP <span id="hpTextA"></span></span></div>
             <div class="hpbar mt-1"><div id="hpBarA" class="hpbar-inner h-full" style="width:100%"></div></div>
+            <!-- Player roster strip -->
+            <div id="rosterA" class="roster-strip mt-2 flex gap-2 justify-end"></div>
           </div>
         </div>
 
         <!-- Turn banner (GB border + blinking caret on your turn) -->
-        <div id="turnBanner" class="gb-box mt-4 p-3 text-sm ring-2 ring-slate-400" aria-live="polite">
+        <div id="turnBanner" class="gb-box mt-4 p-3 text-sm ring-2 ring-slate-600" aria-live="polite">
           Ready! <span id="gbCaret" class="gb-caret hidden">►</span>
         </div>
 
@@ -277,24 +282,23 @@
 
       <!-- (Log hidden by default; kept for debugging) -->
       <details class="card p-3">
-        <summary class="text-sm cursor-pointer">Show battle log (debug)</summary>
-        <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1 mt-2"></ol>
-        <!-- Optional clear button; binding is guarded -->
+        <summary class="text-sm cursor-pointer text-slate-300">Show battle log (debug)</summary>
+        <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1 mt-2 text-slate-300"></ol>
         <div class="mt-2"><button id="clearLog" class="btn btn-ghost tap">Clear log</button></div>
       </details>
     </section>
   </main>
 
-  <!-- Picker Overlay (Team) -->
+  <!-- Team Picker Overlay -->
   <div id="picker" class="fixed inset-0 z-20 hidden">
-    <div class="absolute inset-0 bg-black/40" data-close></div>
-    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-white p-4 space-y-3">
+    <div class="absolute inset-0 bg-black/50" data-close></div>
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800">
       <div class="flex items-center gap-2">
         <div id="pickerLabel" class="chip">Pick — You</div>
-        <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         <button id="donePick" class="btn btn-secondary tap">Done</button>
       </div>
-      <div id="pickedCount" class="text-xs text-slate-500">0 / 3 selected</div>
+      <div id="pickedCount" class="text-xs text-slate-400">0 / 3 selected</div>
       <div class="sheet-scroll pr-1">
         <div id="grid" class="grid-auto-fit"></div>
       </div>
@@ -303,22 +307,22 @@
 
   <!-- Move Picker Overlay -->
   <div id="movePicker" class="fixed inset-0 z-30 hidden">
-    <div class="absolute inset-0 bg-black/40" data-close-mv></div>
-    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-white p-4 space-y-3">
+    <div class="absolute inset-0 bg-black/50" data-close-mv></div>
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800">
       <div class="flex items-center gap-2">
         <div id="mvTitle" class="chip">Moves — ???</div>
         <div class="ml-auto flex items-center gap-2 text-xs">
-          <label class="flex items-center gap-1"><input id="fltLvl" type="checkbox" class="accent-emerald-600" checked><span>Level‑Up ≤50</span></label>
-          <label class="flex items-center gap-1"><input id="fltTM" type="checkbox" class="accent-emerald-600" checked><span>TM/HM</span></label>
+          <label class="flex items-center gap-1 text-slate-300"><input id="fltLvl" type="checkbox" class="accent-emerald-500" checked><span>Level‑Up ≤50</span></label>
+          <label class="flex items-center gap-1 text-slate-300"><input id="fltTM" type="checkbox" class="accent-emerald-500" checked><span>TM/HM</span></label>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <input id="mvSearch" type="text" placeholder="Search moves…" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <input id="mvSearch" type="text" placeholder="Search moves…" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         <button id="mvRecommend" class="btn btn-secondary tap">Recommend 4</button>
         <button id="mvClear" class="btn btn-ghost tap">Clear</button>
-        <button id="mvDone" class="btn tap">Done</button>
+        <button id="mvDone" class="btn btn-primary tap">Done</button>
       </div>
-      <div id="mvPickedCount" class="text-xs text-slate-500">0 / 4 selected</div>
+      <div id="mvPickedCount" class="text-xs text-slate-400">0 / 4 selected</div>
       <div class="sheet-scroll pr-1">
         <div id="mvList" class="space-y-2"></div>
       </div>
@@ -327,33 +331,33 @@
 
   <!-- Results Modal -->
   <div id="resultModal" class="modal">
-    <div class="gb-box max-w-md w-[92%] p-5 bg-white">
+    <div class="gb-box max-w-md w-[92%] p-5 bg-slate-900">
       <div id="resultTitle" class="text-2xl font-extrabold text-center mb-2">You Win!</div>
-      <div id="resultSubtitle" class="text-center text-slate-600 mb-4">Battle Summary</div>
+      <div id="resultSubtitle" class="text-center text-slate-400 mb-4">Battle Summary</div>
       <div class="grid grid-cols-2 gap-3 text-sm mb-4">
-        <div class="border rounded-lg p-3">
+        <div class="border border-slate-700 rounded-lg p-3">
           <div class="font-bold mb-1">Rounds</div>
           <div id="rsRounds">—</div>
         </div>
-        <div class="border rounded-lg p-3">
+        <div class="border border-slate-700 rounded-lg p-3">
           <div class="font-bold mb-1">KOs</div>
           <div id="rsKO">You — / Rival —</div>
         </div>
-        <div class="border rounded-lg p-3">
+        <div class="border border-slate-700 rounded-lg p-3">
           <div class="font-bold mb-1">Damage (You)</div>
           <div id="rsDmgA">—</div>
         </div>
-        <div class="border rounded-lg p-3">
+        <div class="border border-slate-700 rounded-lg p-3">
           <div class="font-bold mb-1">Damage (Rival)</div>
           <div id="rsDmgB">—</div>
         </div>
-        <div class="border rounded-lg p-3 col-span-2">
+        <div class="border border-slate-700 rounded-lg p-3 col-span-2">
           <div class="font-bold mb-1">Statuses Inflicted</div>
           <div id="rsStatus" class="flex flex-wrap gap-2 text-[12px]"></div>
         </div>
       </div>
       <div class="flex gap-2 justify-center">
-        <button id="btnRematch" class="btn tap">Try Again?</button>
+        <button id="btnRematch" class="btn btn-primary tap">Try Again?</button>
         <button id="btnBack" class="btn btn-secondary tap">Back to Builder</button>
       </div>
     </div>
@@ -370,6 +374,9 @@
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
     const gridSpriteURL = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
+    // No more "Pace" control — keep timing stable
+    const P = (ms) => ms;
 
     // Static fallback Kanto names (1..151) for offline/failed fetch
     const KANTO_FALLBACK = ["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","Nidoran♀","Nidorina","Nidoqueen","Nidoran♂","Nidorino","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetch’d","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","Mr. Mime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew"];
@@ -402,12 +409,8 @@
     };
     function effMultiplier(moveType, targetTypes){ let mult = 1; for(const t of targetTypes){ mult *= (chart[moveType]?.[t] ?? 1); } return mult; }
 
-    // Pace multiplier (bigger = slower)
-    function P(ms){ const m = Number($('#pace')?.value || 1.0); return Math.round(ms * m); }
-
     // Status constants
     const PAR_SPEED = 0.5;      // paralysis speed modifier
-    const BRN_PHYS  = 0.5;      // burn physical damage modifier
     const RESIDUAL_FRACTION = 16; // 1/16 max HP
 
     const AIL_MAP = {
@@ -436,7 +439,7 @@
     /* ======= Boot ======= */
     document.addEventListener('DOMContentLoaded', async () => {
       renderTeams(); wireBuilder(); wireArena(); wireResults();
-      await loadKanto();   // seeds Rival inside after Kanto list ready
+      await loadKanto();   // seeds Rival after list ready
     });
 
     // Fetch with timeout
@@ -458,7 +461,6 @@
         state.allPokemon = KANTO_FALLBACK.map((name,i)=>({id:i+1, name}));
         toast('Using offline Kanto list.');
       }
-      // Always render grid and seed Rival AFTER list is ready
       renderGrid();
       autoSeedRival();
       renderTeams();
@@ -471,7 +473,7 @@
       $('#pickB').addEventListener('click', ()=>openPicker('B'));
       $('#btnClear').addEventListener('click', ()=>{
         state.teamA=[]; state.teamB=[];
-        autoSeedRival();               // Random rival on Clear
+        autoSeedRival();
         renderTeams(); updateStartButton();
       });
       $('#btnRandomize').addEventListener('click', ()=>{
@@ -501,7 +503,7 @@
     function renderTeams(){
       const moveChips = (p) => {
         const list = p.moves?.slice(0,4) || [];
-        if(!list.length) return '<span class="text-[10px] text-slate-500">No moves chosen</span>';
+        if(!list.length) return '<span class="text-[10px] text-slate-400">No moves chosen</span>';
         return list.map(n=>`<span class="tag">${cleanMoveName(n)}</span>`).join(' ');
       };
       const slot = (teamKey, p, idx) => `
@@ -510,11 +512,11 @@
           <div class="text-xs mt-1 text-center">${p.name}</div>
           <div class="mt-2 flex items-center gap-2">
             <button class="btn-ghost text-xs tap" data-mv>Edit Moves</button>
-            <button class="btn-ghost text-xs tap text-rose-600" data-remove>Remove</button>
+            <button class="btn-ghost text-xs tap text-rose-400" data-remove>Remove</button>
           </div>
           <div class="mt-2 flex flex-wrap gap-1 justify-center">${moveChips(p)}</div>
         </div>`;
-      const filler = `<div class="rounded-2xl border border-dashed border-slate-300 h-24 flex items-center justify-center text-slate-400 text-xs">Empty</div>`;
+      const filler = `<div class="rounded-2xl border border-dashed border-slate-700 h-24 flex items-center justify-center text-slate-500 text-xs">Empty</div>`;
 
       const mount=(el, teamKey)=>{
         el.innerHTML='';
@@ -545,7 +547,6 @@
       $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
       document.body.classList.add('no-scroll');
       $('#picker').classList.remove('hidden');
-      // Ensure grid is present (fallback safe)
       if(!state.allPokemon.length){ state.allPokemon = KANTO_FALLBACK.map((n,i)=>({id:i+1, name:n})); }
       $('#search').value=''; filterGrid('');
       if(!$('#grid').children.length) renderGrid();
@@ -570,7 +571,7 @@
       const grid=$('#grid'); grid.innerHTML='';
       state.allPokemon.forEach(p=>{
         const card=document.createElement('button');
-        card.className='tap rounded-2xl border border-slate-200 p-2 flex flex-col items-center hover:border-emerald-400 focus:outline-none';
+        card.className='tap rounded-2xl border border-slate-700 bg-slate-800 p-2 flex flex-col items-center hover:border-emerald-400 focus:outline-none';
         card.setAttribute('data-id', p.id);
         card.innerHTML=`<img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-14 h-14 pixel"/><div class="text-xs mt-1">${p.name}</div>`;
         card.addEventListener('click', ()=>toggleTempPick(p.id, card));
@@ -592,7 +593,7 @@
       $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
       reflectPickedUI(id, el);
     }
-    function reflectPickedUI(id, el){ const picked=state.tempPick.has(id); el.style.borderColor=picked?'#10b981':'#e5e7eb'; el.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.2)':'none'; }
+    function reflectPickedUI(id, el){ const picked=state.tempPick.has(id); el.style.borderColor=picked?'#10b981':'#334155'; el.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.25)':'none'; }
 
     /* ======= Move Picker ======= */
     async function openMovePicker(team, id, name){
@@ -657,15 +658,14 @@
       for(const m of filtered){
         const row = document.createElement('button');
         const picked = state.mvTemp.has(m.key);
-        row.className = 'w-full border rounded-xl p-2 flex items-center gap-3 tap';
-        row.style.borderColor = picked ? '#10b981' : '#e5e7eb';
-        row.style.boxShadow = picked ? '0 0 0 3px rgba(16,185,129,.15)' : 'none';
+        row.className = 'w-full border border-slate-700 rounded-xl p-2 flex items-center gap-3 tap bg-slate-800';
+        row.style.boxShadow = picked ? '0 0 0 3px rgba(16,185,129,.20)' : 'none';
         const ail = m.ailment_code ? ` • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}` : '';
         row.innerHTML = `
           <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
           <div class="flex-1 text-left">
             <div class="font-bold">${m.display}</div>
-            <div class="text-[11px] text-slate-600">
+            <div class="text-[11px] text-slate-400">
               ${m.category==='status' ? 'Status' : ('Pow ' + (m.power ?? '—'))}
               • Acc ${m.accuracy ?? '—'}%
               • ${cap(m.category)}${ail}
@@ -673,7 +673,7 @@
               ${m.sources?.length? '• ' + m.sources.map(src=>src==='red-blue'?'RB':'Y').join('/') : ''}
             </div>
           </div>
-          <div class="text-[11px] px-2 py-1 rounded-md ${picked?'bg-emerald-100 text-emerald-700':'bg-slate-100 text-slate-600'}">${picked?'Selected':'Select'}</div>
+          <div class="text-[11px] px-2 py-1 rounded-md ${picked?'bg-emerald-100 text-emerald-700':'bg-slate-700 text-slate-200'}">${picked?'Selected':'Select'}</div>
         `;
         row.addEventListener('click', ()=>{
           if(picked){ state.mvTemp.delete(m.key); }
@@ -732,11 +732,11 @@
         const mv = state.moveCache.get(name);
         const type = mv.type?.name;
         if(!(type in TYPE_COLORS)) continue;
-
         const category = mv.damage_class?.name || 'status';
         const power = mv.power ?? null;
         const accuracy = mv.accuracy ?? 100;
 
+        // Ailment
         const ailmentRaw = mv.meta?.ailment?.name || 'none';
         const ailment_chance = mv.meta?.ailment_chance ?? mv.effect_chance ?? 0;
         const ailment_code = AIL_MAP[ailmentRaw] || (ailmentRaw==='none'? null : ailmentRaw);
@@ -774,7 +774,7 @@
     /* ======= Arena ======= */
     function wireArena(){
       $('#reset').addEventListener('click', ()=>{ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); });
-      const clearBtn = $('#clearLog'); if(clearBtn) clearBtn.addEventListener('click', clearLog); // guarded
+      const clearBtn = $('#clearLog'); if(clearBtn) clearBtn.addEventListener('click', clearLog);
       $('#btnNext').addEventListener('click', async ()=>{ if(!state.waitingForPlayerChoice && !state.lock) await resolveTurn(); });
       $('#autoPlay').addEventListener('change', (e)=>{ state.autoPlay=e.target.checked; if(state.autoPlay) autoLoop(); });
     }
@@ -842,9 +842,11 @@
     const currB=()=>state.rosterB[state.bIdx];
 
     function updateRosterBadges(){
-      const mk=(mon,isActive)=>`<div title="${mon.name}" class="w-9 h-9 rounded-full border ${isActive?'ring-2 ring-emerald-400':''} border-slate-300 overflow-hidden ${mon.hp>0?'':'grayscale opacity-50'}">
-        <img class="w-full h-full pixel" src="${gridSpriteURL(mon.id)}" alt="${mon.name}">
-      </div>`;
+      // Small GB-like icons inside the HP boxes (under bars)
+      const mk=(mon,isActive)=>`
+        <div class="slot ${isActive?'active':''} ${mon.hp>0?'':'down'}">
+          <img class="w-7 h-7 pixel" src="${gridSpriteURL(mon.id)}" alt="${mon.name}">
+        </div>`;
       $('#rosterA').innerHTML = state.rosterA.map((m,i)=>mk(m,i===state.aIdx)).join('');
       $('#rosterB').innerHTML = state.rosterB.map((m,i)=>mk(m,i===state.bIdx)).join('');
     }
@@ -882,7 +884,7 @@
           case 'brn': color='#f97316'; break;
           case 'psn': color='#8b5cf6'; break;
           case 'frz': color='#22d3ee'; break;
-          case 'slp': color='#64748b'; break;
+          case 'slp': color='#94a3b8'; break;
           default: color='#10b981';
         }
       } else {
@@ -900,11 +902,11 @@
       A.moves.forEach((m)=>{
         const btn=document.createElement('button');
         btn.className='move-btn tap';
-        btn.style.background = `linear-gradient(180deg, ${typeColor(m.type)}, #333333)`;
+        btn.style.background = `linear-gradient(180deg, ${typeColor(m.type)}, #1f2937)`;
         const ail = m.ailment_code ? ` • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}` : '';
         btn.innerHTML = `
           <div class="text-left">
-            <div class="font-bold">${m.display}</div>
+            <div class="font-extrabold">${m.display}</div>
             <div class="text-[10px] opacity-90">
               ${m.category==='status' ? 'Status' : ('Pow ' + (m.power ?? '—'))}
               • Acc ${m.accuracy ?? '—'}% • ${cap(m.category)}${ail}
@@ -925,8 +927,8 @@
     function enableMoveButtons(on){
       $$('#moveButtons .move-btn').forEach(b=>{
         b.disabled = !on;
-        b.style.opacity = on ? '1' : '.6';
-        b.style.filter = on ? 'none' : 'grayscale(40%)';
+        b.style.opacity = on ? '1' : '.65';
+        b.style.filter = on ? 'none' : 'grayscale(35%)';
         b.style.cursor = on ? 'pointer' : 'not-allowed';
       });
     }
@@ -976,7 +978,7 @@
       const caret = $('#gbCaret');
       b.textContent = text + ' ';
       b.appendChild(caret);
-      const ring = mode==='your' ? 'ring-emerald-500' : mode==='rival' ? 'ring-rose-500' : 'ring-slate-400';
+      const ring = mode==='your' ? 'ring-emerald-500' : mode==='rival' ? 'ring-rose-500' : 'ring-slate-600';
       b.className = `gb-box mt-4 p-3 text-sm ring-2 ${ring}`;
       if(mode==='your'){ caret.classList.remove('hidden'); }
       else { caret.classList.add('hidden'); }
@@ -1102,8 +1104,8 @@
 
       // End-of-turn residuals
       if(battleAlive()){
-        endOfTurnResidual(currA(), 'A');
-        endOfTurnResidual(currB(), 'B');
+        endOfTurnResidual(currA());
+        endOfTurnResidual(currB());
         setHPBars();
       }
 
@@ -1112,7 +1114,6 @@
         const youWin = state.rosterA.some(m=>m.hp>0);
         await screenShake();
         setBanner(youWin? '🏆 You win!' : '🏆 Rival wins!', youWin?'your':'rival');
-        // Show results modal
         state.stats.rounds = state.round;
         showResult(youWin);
         state.lock=false; return;
@@ -1132,7 +1133,7 @@
       const D = (move.category==='physical')? defender.stats.def : defender.stats.spd;
       let aEff = A;
       if(move.category==='physical' && attacker.status?.type==='brn'){ aEff = Math.floor(aEff * 0.5); }
-      let base = (((2*50/5 + 2) * (m.power||0) * (aEff/Math.max(1,D))) / 50) + 2;
+      let base = (((2*50/5 + 2) * (move.power||0) * (aEff/Math.max(1,D))) / 50) + 2; // FIXED: move.power (not m.power)
       const stab = attacker.types.includes(move.type)? 1.5 : 1.0;
       const eff = effMultiplier(move.type, defender.types);
       const dmg = base * stab * eff * 0.925;
@@ -1175,7 +1176,7 @@
     function endOfTurnResidual(mon){
       if(mon.hp<=0) return;
       if(mon.status?.type==='brn' || mon.status?.type==='psn'){
-        const dmg = Math.max(1, Math.floor(mon.stats.maxHP / 16));
+        const dmg = Math.max(1, Math.floor(mon.stats.maxHP / RESIDUAL_FRACTION));
         mon.hp = Math.max(0, mon.hp - dmg);
         log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`);
         setBanner(`${mon.name} takes damage from ${mon.status.type==='brn'?'burn':'poison'}…`, 'info');
@@ -1191,7 +1192,7 @@
       $('#rsDmgA').textContent = state.stats.dmgA;
       $('#rsDmgB').textContent = state.stats.dmgB;
       const st = state.stats.statusCounts;
-      const mk = (k,l)=>`<span class="px-2 py-1 rounded-full text-slate-700" style="border:1px solid #94a3b8;background:#f8fafc">${l}: ${st[k]||0}</span>`;
+      const mk = (k,l)=>`<span class="px-2 py-1 rounded-full text-slate-200" style="border:1px solid #334155;background:#0f172a">${l}: ${st[k]||0}</span>`;
       $('#rsStatus').innerHTML = mk('par','PAR')+mk('brn','BRN')+mk('psn','PSN')+mk('frz','FRZ')+mk('slp','SLP');
       $('#resultModal').classList.add('show');
     }
@@ -1250,7 +1251,7 @@
     /* ======= Log & Toast ======= */
     function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; }
     function clearLog(){ $('#log').innerHTML=''; }
-    let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-900 text-white text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1800); }
+    let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-800 text-slate-100 border border-slate-700 text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1800); }
   </script>
 </body>
 </html>
