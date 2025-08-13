@@ -34,6 +34,11 @@
     .move-btn { width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.9rem; font-weight:700; color:#fff; display:flex; align-items:center; justify-content:space-between; }
     .tag { font-size:10px; font-weight:700; padding:.125rem .5rem; border-radius:999px; background:#e5e7eb; color:#334155; }
 
+    /* Bottom-sheet layout + scroll fix */
+    .sheet { max-height: 85vh; display: flex; flex-direction: column; }
+    .sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    body.no-scroll { overflow: hidden; }
+
     /* ====== Battle Animations ====== */
     @keyframes lunge-right { 0%{transform:translateX(0)} 40%{transform:translateX(22px)} 100%{transform:translateX(0)} }
     @keyframes lunge-left  { 0%{transform:translateX(0)} 40%{transform:translateX(-22px)} 100%{transform:translateX(0)} }
@@ -79,7 +84,7 @@
     /* Screen shake (camera) */
     .camshake { animation: jiggle .25s ease; }
 
-    /* Hide overflow of stage for projectiles */
+    /* Stage overflow for projectiles */
     .stage { position:relative; overflow:hidden; }
   </style>
 </head>
@@ -216,21 +221,23 @@
   <!-- Picker Overlay (Team) -->
   <div id="picker" class="fixed inset-0 z-20 hidden">
     <div class="absolute inset-0 bg-black/40" data-close></div>
-    <div class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl bg-white p-4 space-y-3">
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-white p-4 space-y-3">
       <div class="flex items-center gap-2">
         <div id="pickerLabel" class="chip">Pick — You</div>
         <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
         <button id="donePick" class="btn-secondary tap">Done</button>
       </div>
       <div id="pickedCount" class="text-xs text-slate-500">0 / 3 selected</div>
-      <div id="grid" class="grid-auto-fit"></div>
+      <div class="sheet-scroll pr-1">
+        <div id="grid" class="grid-auto-fit"></div>
+      </div>
     </div>
   </div>
 
   <!-- Move Picker Overlay -->
   <div id="movePicker" class="fixed inset-0 z-30 hidden">
     <div class="absolute inset-0 bg-black/40" data-close-mv></div>
-    <div class="absolute inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl bg-white p-4 space-y-3">
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-white p-4 space-y-3">
       <div class="flex items-center gap-2">
         <div id="mvTitle" class="chip">Moves — ???</div>
         <div class="ml-auto flex items-center gap-2 text-xs">
@@ -245,7 +252,9 @@
         <button id="mvDone" class="btn tap">Done</button>
       </div>
       <div id="mvPickedCount" class="text-xs text-slate-500">0 / 4 selected</div>
-      <div id="mvList" class="space-y-2 max-h-[55vh] overflow-auto pr-1"></div>
+      <div class="sheet-scroll pr-1">
+        <div id="mvList" class="space-y-2"></div>
+      </div>
     </div>
   </div>
 
@@ -393,6 +402,7 @@
       state.tempPick = new Set((team==='A'?state.teamA:state.teamB).map(p=>p.id));
       $('#pickerLabel').textContent=`Pick — ${team==='A'?'You':'Rival'}`;
       $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
+      document.body.classList.add('no-scroll');   // lock background
       $('#picker').classList.remove('hidden');
       $('#search').value=''; filterGrid('');
     }
@@ -406,6 +416,7 @@
         renderTeams(); updateStartButton();
       }
       $('#picker').classList.add('hidden');
+      document.body.classList.remove('no-scroll'); // unlock
     }
     $('#donePick').addEventListener('click', ()=>closePicker(true));
     $('#picker').addEventListener('click', (e)=>{ if(e.target.hasAttribute('data-close')) closePicker(false); });
@@ -441,11 +452,12 @@
 
     /* ======= Move Picker ======= */
     async function openMovePicker(team, id, name){
-      $('#movePicker').classList.remove('hidden');
       $('#mvTitle').textContent = `Moves — ${name} (${team==='A'?'You':'Rival'})`;
       $('#mvPickedCount').textContent = `0 / 4 selected`;
       $('#mvSearch').value=''; $('#fltLvl').checked = true; $('#fltTM').checked = true;
       state.mvContext = {team, id, name, types: null};
+      document.body.classList.add('no-scroll');   // lock background
+      $('#movePicker').classList.remove('hidden');
 
       const pool = await getMovePool(id);
       const types = state.typesById.get(id) || [];
@@ -465,6 +477,7 @@
         renderTeams();
       }
       $('#movePicker').classList.add('hidden');
+      document.body.classList.remove('no-scroll'); // unlock
       state.mvContext = null; state.mvTemp = new Set();
     }
     document.addEventListener('click', (e)=>{
@@ -755,7 +768,6 @@
       const A=currA(), B=currB();
       const cpuMove = bestMoveAgainst(B, A);
 
-      // small breathing room before actions
       await sleep(P(200));
 
       // Speed order, coin flip on tie
@@ -809,7 +821,6 @@
           state.round++; setActiveDisplays(); await sleep(P(300));
         }
 
-        // small delay between the two actions
         await sleep(P(250));
       }
 
@@ -854,12 +865,10 @@
       const isPhysical = move.category==='physical';
 
       if(isPhysical){
-        // Lunge
         atkImg.classList.add(attackerSide==='A' ? 'lunge-right' : 'lunge-left');
         await sleep(P(350));
         atkImg.classList.remove('lunge-right','lunge-left');
       } else {
-        // Projectile with slight arc
         const atkRect = atkImg.getBoundingClientRect();
         const defRect = defImg.getBoundingClientRect();
         const stRect = stage.getBoundingClientRect();
@@ -881,7 +890,7 @@
         const steps = 22, dx=(end.x-start.x)/steps, dy=(end.y-start.y)/steps;
         for(let i=0;i<=steps;i++){
           const t=i/steps;
-          const arc = -30 * Math.sin(Math.PI*t); // arc height
+          const arc = -30 * Math.sin(Math.PI*t);
           proj.style.left = (start.x + dx*i) + 'px';
           proj.style.top  = (start.y + dy*i + arc) + 'px';
           await sleep(P(10));
@@ -894,9 +903,7 @@
     async function impactHit(defenderSide, type){
       const defImg = defenderSide==='A' ? $('#spriteA') : $('#spriteB');
       const stage = $('#stage');
-      // flash + shake
       defImg.classList.add('flash','shake');
-      // spark
       const r = defImg.getBoundingClientRect();
       const st = stage.getBoundingClientRect();
       const spark = document.createElement('div');
@@ -912,7 +919,6 @@
     }
 
     async function impactMiss(defenderSide){
-      // quick camera jiggle to show a whiff
       const stage = $('#stage');
       stage.classList.add('camshake');
       await sleep(P(220));
