@@ -230,7 +230,6 @@ const SEMI_HITS={fly:{hits:new Set(['gust','twister','thunder','hurricane']),bon
 const PRI_P1=new Set(['quick-attack','aqua-jet','bullet-punch','ice-shard','shadow-sneak','sucker-punch']);
 const PRI_P2=new Set(['extreme-speed']);
 const spec={ selfKO:new Set(['self-destruct','explosion']), drain50:new Set(['absorb','mega-drain','giga-drain','drain-punch','leech-life']), recoil33:new Set(['double-edge','flare-blitz','brave-bird','volt-tackle','wild-charge','wood-hammer']), recoil25:new Set(['take-down','submission']), fixed50:new Set(['seismic-toss','night-shade']), fixed40:new Set(['dragon-rage']), fixed20:new Set(['sonic-boom']), protect:new Set(['protect','detect']), sub:new Set(['substitute']), leech:new Set(['leech-seed']), destiny:new Set(['destiny-bond']) };
-const AIL_MAP={paralysis:'par',burn:'brn',poison:'psn','bad-poison':'psn',freeze:'frz',sleep:'slp'};
 const PAR_SPEED=.5, RESIDUAL_FRACTION=16;
 
 /* ===== Global State ===== */
@@ -672,7 +671,7 @@ function recommend(pool,types){
 
 /* ===== Arena & Engine ===== */
 function wireArena(){
-  $('#reset').addEventListener('click',function(){ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); });
+  $('#reset').addEventListener('click',function(){ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); S.queuedMove=null; S.queuedAction=null; S.lock=false; });
   $('#btnSwitch').addEventListener('click',function(){ if(S.lock || !S.waiting) return; openSwitchPicker(); });
   $('#switchPicker').addEventListener('click',function(e){ if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-close-sw')) closeSwitchPicker(); });
   $('#swCancel').addEventListener('click',closeSwitchPicker);
@@ -757,9 +756,40 @@ function bestMove(att,def){
   return best;
 }
 
-/* Turn flow */
+/* Turn flow (handles switching properly) */
 async function takeTurn(){
-  if(S.lock) return; S.lock=true; if(!S.queuedMove){ toast('Choose a move'); S.lock=false; return; }
+  if(S.lock) return; S.lock=true;
+
+  // If player chose to switch this turn, process switching inside the engine
+  if (S.queuedAction && S.queuedAction.type==='switch') {
+    const targetIndex = S.queuedAction.to;
+    // Perform player's switch
+    await performSwitch('A', targetIndex);
+    S.queuedAction=null; S.queuedMove=null; S.waiting=false;
+
+    // CPU acts once after your switch (if battle still alive)
+    if (alive()) {
+      const cpuMove = bestMove(currB(), currA());
+      await act('B', currB(), currA(), cpuMove);
+    }
+
+    // End-of-turn effects, round advance (if still alive)
+    if (alive()) {
+      endResidual(currA(),'A'); endResidual(currB(),'B');
+      S.round++; $('#roundTag').textContent='Round '+S.round;
+      S.waiting=true; setBanner('Your turn — choose a move for '+currA().name+'.','your');
+      requestRender();
+    } else {
+      setBanner(S.rosterA.some(function(m){return m.hp>0;})?'🏆 You win!':'🏆 Rival wins!');
+      requestRender();
+    }
+
+    S.lock=false; return;
+  }
+
+  // Otherwise, normal move vs. move turn
+  if(!S.queuedMove){ toast('Choose a move'); S.lock=false; return; }
+
   const A=currA(), B=currB();
   const cpuMove=bestMove(B,A);
 
@@ -961,7 +991,11 @@ function openSwitchPicker(){
     btn.className='border border-slate-700 rounded-xl p-2 bg-slate-800 flex flex-col items-center'; btn.disabled=disabled; btn.style.opacity=disabled?'.5':'1';
     btn.innerHTML='<img src="'+spriteURL(mon.id)+'" class="w-12 h-12 pixel"/><div class="mt-1 text-[11px]">'+mon.name+'</div>';
     btn.addEventListener('click', async function(){
-      if(disabled) return; S.queuedAction={type:'switch',to:i}; closeSwitchPicker(); await performSwitch('A',i); S.waiting=false; await takeTurn();
+      if(disabled) return;
+      // Queue the switch and let the turn engine handle order and CPU response
+      S.queuedAction={type:'switch',to:i};
+      closeSwitchPicker();
+      await takeTurn();
     });
     list.appendChild(btn);
   });
@@ -990,9 +1024,6 @@ let toastTimer; function toast(msg){
   }
   t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(function(){t.style.opacity='0';},1600);
 }
-
-/* Shared derive (dupe for clarity where used) */
-function deriveLv50(base){ const hp=Math.floor(((2*base.hp)*LV)/100)+LV+10; const atk=Math.floor(((2*base.atk)*LV)/100)+5; const def=Math.floor(((2*base.def)*LV)/100)+5; const spa=Math.floor(((2*base.spa)*LV)/100)+5; const spd=Math.floor(((2*base.spd)*LV)/100)+5; const spe=Math.floor(((2*base.spe)*LV)/100)+5; return {maxHP:hp,atk:atk,def:def,spa:spa,spd:spd,spe:spe}; }
 </script>
 </body>
-</html> 
+</html>
