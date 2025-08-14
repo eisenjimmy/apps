@@ -1,705 +1,997 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Jimmy’s LoL Duel</title>
-<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="%230b1220"/><path fill="%23a855f7" d="M24 92 44 36h12L36 92zM70 92l20-56h12L82 92z"/><circle cx="64" cy="34" r="6" fill="%235a7cff"/></svg>'/>
-<meta name="theme-color" content="#0b1220"/>
-<meta name="description" content="Jimmy’s LoL Duel — Mobile 3v3 LoL duel with roster pick, CPU, items, status effects, rotating fields, and an ultimate meter."/>
-<meta property="og:title" content="Jimmy’s LoL Duel"/>
-<meta property="og:image" content="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config={theme:{extend:{
-  keyframes:{
-    hit:{'0%':{transform:'translateX(0) scale(1)'},'20%':{transform:'translateX(-6px) scale(1.02)'},'40%':{transform:'translateX(6px) scale(1.02)'},'60%':{transform:'translateX(-3px)'},'80%':{transform:'translateX(3px)'},'100%':{transform:'translateX(0) scale(1)'}},
-    flash:{'0%':{opacity:0},'30%':{opacity:.6},'100%':{opacity:0}},
-    float:{'0%':{transform:'translateY(0)',opacity:1},'100%':{transform:'translateY(-24px)',opacity:0}},
-    blink:{'0%,100%':{opacity:1},'50%':{opacity:.1}},
-    ken:{'0%':{transform:'scale(1) translate(0,0)'},'100%':{transform:'scale(1.15) translate(-2%,-2%)'}}
-  },
-  animation:{hit:'hit .3s ease-in-out',flash:'flash .5s ease-out',float:'float .7s ease-out forwards',blink:'blink 1s steps(2,start) infinite',ken:'ken 14s ease-in-out infinite alternate'}
-}}}
-</script>
-<style>
-*{touch-action:manipulation}
-canvas.radar{width:100%;height:160px}
-html,body{height:100%}
-.chip{padding:.35rem .6rem;border-radius:.5rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
-.chip.active{background:rgba(99,102,241,.28);border-color:rgba(99,102,241,.6)}
-.badge{font-size:10px;padding:.15rem .35rem;border-radius:.35rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
-.statdot{font-size:11px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jimmy’s LoL Duel</title>
+  <!-- Tailwind CSS via CDN (mobile-first utilities) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Include Chart.js for radar charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    /* Custom CSS for animations (screen shake, hit flash, etc.) */
+    @keyframes shake {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-5px, 0); }
+      40% { transform: translate(5px, 0); }
+      60% { transform: translate(-5px, 0); }
+      80% { transform: translate(5px, 0); }
+      100% { transform: translate(0, 0); }
+    }
+    .shake {
+      animation: shake 0.5s ease-in-out;
+    }
+    @keyframes hitflash {
+      0%   { opacity: 0.8; }
+      50%  { opacity: 0.0; }
+      100% { opacity: 0.8; }
+    }
+    .hit-flash::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 0, 0, 0.5);
+      animation: hitflash 0.3s 2;
+      pointer-events: none;
+    }
+    .modal-bg {
+      /* Modal background overlay */
+      background: rgba(0, 0, 0, 0.8);
+    }
+    /* Victory/Defeat text style */
+    .end-text {
+      font-family: serif;
+      text-shadow: 0 0 10px rgba(0,0,0,0.7);
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased">
-
-<header class="sticky top-0 z-50 backdrop-blur bg-slate-950/80 border-b border-white/10">
-  <div class="mx-auto max-w-6xl px-3 sm:px-4 py-3 flex items-center gap-2">
-    <div class="size-8 rounded-md bg-indigo-500/20 grid place-items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 6 .9-4.5 4.3L17.8 20 12 16.9 6.2 20l1.3-6.8L3 8.9 9 8z"/></svg>
-    </div>
-    <div class="min-w-0 flex-1">
-      <h1 class="text-lg font-semibold truncate">Jimmy’s LoL Duel</h1>
-      <p class="text-xs text-slate-400 truncate">Roster pick • 3v3 • Elements • Status • Fields • Ult meter</p>
-    </div>
-    <button id="shareBtn" class="hidden sm:inline rounded-lg px-3 py-2 bg-white/10 hover:bg-white/15 text-sm">Share</button>
-  </div>
-  <!-- Sticky select bar -->
-  <div id="pickBar" class="border-t border-white/10">
-    <div class="mx-auto max-w-6xl px-3 sm:px-4 py-2 flex items-center gap-2">
-      <div class="text-xs flex items-center gap-2">
-        <span class="opacity-70">Assign to:</span>
-        <select id="assignSide" class="rounded bg-slate-900/70 border border-white/10 px-2 py-1.5 text-xs">
-          <option value="left" selected>P1</option>
-          <option value="right">P2 / CPU</option>
-        </select>
-        <span class="opacity-70">P2 Mode:</span>
-        <select id="p2ModeSelect" class="rounded bg-slate-900/70 border border-white/10 px-2 py-1.5 text-xs">
-          <option value="cpu" selected>CPU</option>
-          <option value="human">Human</option>
-        </select>
+<body class="bg-gray-900 text-gray-100 font-sans">
+  <!-- Main container -->
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Selection Screen -->
+    <div id="selection-screen" class="flex-1 flex flex-col p-4">
+      <!-- Header with title and Start button -->
+      <div class="flex items-center justify-between sticky top-0 bg-gray-900 py-2 z-10 border-b border-gray-700">
+        <h1 class="text-lg font-bold">Pick Your Team (3 Champions)</h1>
+        <button id="start-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-1 px-3 rounded disabled:opacity-50 disabled:pointer-events-none">
+          Start Battle
+        </button>
       </div>
-      <div class="text-xs ml-2">
-        <span class="mr-2">P1: <b id="cntLeft">0</b>/3</span>
-        <span>P2: <b id="cntRight">0</b>/3</span>
-      </div>
-      <div class="ml-auto flex items-center gap-2">
-        <button id="randomBoth" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15 text-xs">Randomize Both</button>
-        <button id="startBattleTop" class="rounded-md px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed" disabled>Start Battle</button>
-      </div>
-    </div>
-  </div>
-</header>
-
-<main class="mx-auto max-w-6xl px-3 sm:px-4 py-4 md:py-6">
-  <!-- ====================== SELECT SCREEN ====================== -->
-  <section id="selectScreen" class="space-y-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="rounded-lg border border-white/10 bg-white/5 p-2">
-        <div class="text-xs font-semibold mb-2">P1 Picks</div>
-        <div id="leftPicks" class="flex gap-2"></div>
-      </div>
-      <div class="rounded-lg border border-white/10 bg-white/5 p-2">
-        <div class="text-xs font-semibold mb-2">P2 / CPU Picks</div>
-        <div id="rightPicks" class="flex gap-2 justify-end"></div>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="rounded-lg border border-white/10 bg-white/5 p-2">
-      <div class="text-xs font-semibold">Quick Filters</div>
-      <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-        <div class="flex flex-wrap gap-2 items-center text-xs" id="roleFilters">
-          <span class="text-slate-400">Role:</span>
-          <button class="chip" data-role="">All</button>
-          <button class="chip" data-role="Assassin">Assassin</button>
-          <button class="chip" data-role="Fighter">Fighter</button>
-          <button class="chip" data-role="Mage">Mage</button>
-          <button class="chip" data-role="Marksman">Marksman</button>
-          <button class="chip" data-role="Support">Support</button>
-          <button class="chip" data-role="Tank">Tank</button>
+      <!-- Filter bar -->
+      <div class="mt-2 flex flex-wrap gap-2 text-sm">
+        <div class="flex items-center gap-1">
+          <span>Role:</span>
+          <select id="role-filter" class="bg-gray-800 text-gray-100 py-1 px-2 rounded">
+            <option value="All">All</option>
+            <option value="Fighter">Fighter</option>
+            <option value="Assassin">Assassin</option>
+            <option value="Mage">Mage</option>
+            <option value="Marksman">Marksman</option>
+            <option value="Tank">Tank</option>
+            <option value="Support">Support</option>
+          </select>
         </div>
-        <div class="flex flex-wrap gap-2 items-center text-xs" id="elemFilters">
-          <span class="text-slate-400">Element:</span>
-          <button class="chip" data-elem="">All</button>
-          <button class="chip" data-elem="Fire">Fire</button>
-          <button class="chip" data-elem="Water">Water</button>
-          <button class="chip" data-elem="Electric">Electric</button>
-          <button class="chip" data-elem="Wind">Wind</button>
-          <button class="chip" data-elem="Earth">Earth</button>
-          <button class="chip" data-elem="Light">Light</button>
-          <button class="chip" data-elem="Dark">Dark</button>
-          <button class="chip" data-elem="Arcane">Arcane</button>
-          <button class="chip" data-elem="Physical">Physical</button>
+        <div class="flex items-center gap-1">
+          <span>Element:</span>
+          <select id="element-filter" class="bg-gray-800 text-gray-100 py-1 px-2 rounded">
+            <option value="All">All</option>
+            <option value="Arcane">Arcane</option>
+            <option value="Earth">Earth</option>
+            <option value="Radiant">Radiant</option>
+            <option value="Shadow">Shadow</option>
+          </select>
         </div>
       </div>
-    </div>
-
-    <!-- Roster search + grid -->
-    <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
-      <div class="flex items-center gap-2 mb-3">
-        <input id="rosterSearch" class="flex-1 rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm" placeholder="Search champions…">
-        <button id="clearPicks" class="rounded-lg px-3 py-2 bg-white/10 hover:bg-white/15 text-sm">Clear Picks</button>
+      <!-- Champions Roster Grid -->
+      <div id="champion-grid" class="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 overflow-y-auto">
+        <!-- Champion cards will be injected here by JS -->
       </div>
-      <div id="roster" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2"></div>
-    </div>
-  </section>
-
-  <!-- ====================== BATTLE SCREEN ====================== -->
-  <section id="battleScreen" class="hidden">
-    <div class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs flex items-center gap-2 mb-3">
-      <span class="opacity-70">Field:</span><span id="fieldName">Calm</span>
-      <span class="opacity-70">⏳</span><span id="fieldTurns">5</span>
-      <span class="ml-auto opacity-70" id="turnBadge">Turn: P1</span>
-      <button id="backToSelect" class="ml-2 rounded-md px-2 py-1 bg-white/10 hover:bg-white/15">Change Teams</button>
     </div>
 
-    <div id="arenaWrap" class="rounded-2xl border border-white/10 overflow-hidden bg-slate-900">
-      <div class="p-3 sm:p-4 bg-[radial-gradient(ellipse_at_center,_rgba(22,22,32,.6),_rgba(2,6,23,.95))] relative">
-        <div id="arenaFlash" class="pointer-events-none absolute inset-0"></div>
-
-        <!-- Enemy -->
-        <div class="flex justify-end mb-6">
-          <div class="flex items-center gap-3 max-w-xl">
-            <img id="rightIcon" class="size-20 sm:size-24 rounded-full ring-2 ring-white/20 object-cover" alt="">
-            <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-2">
-              <div class="flex items-center gap-2">
-                <div class="min-w-0">
-                  <div id="rightName" class="text-sm font-semibold truncate">—</div>
-                  <div id="rightTags" class="text-[10px] text-slate-300 truncate">—</div>
-                </div>
-                <div id="rightBadges" class="ml-auto text-[10px] flex gap-1 items-center"></div>
-              </div>
-              <div class="mt-1 h-2 w-full bg-slate-800 rounded overflow-hidden">
-                <div id="rightHpBar" class="h-full bg-rose-500 transition-all"></div>
-              </div>
-              <div class="mt-1 text-[11px] text-slate-300">
-                <span id="rightHpText">HP —/—</span> · <span id="rightResMini"></span> · <span id="rightUltMini">ULT 0%</span>
-              </div>
+    <!-- Battle Screen (hidden until battle starts) -->
+    <div id="battle-screen" class="flex-1 flex flex-col p-4 hidden">
+      <!-- Top info bar: Field and Turn -->
+      <div id="field-info" class="text-center mb-2">
+        <!-- Field name and turns left -->
+        <div id="field-text" class="text-sm"></div>
+        <!-- Turn indicator -->
+        <div id="turn-text" class="font-semibold"></div>
+      </div>
+      <!-- Battle arena (champion status panels) -->
+      <div class="flex-1 relative">
+        <!-- Opponent (CPU) champion panel - positioned at top -->
+        <div id="cpu-panel" class="flex items-center mb-4">
+          <img id="cpu-portrait" src="" alt="CPU Champ" class="w-12 h-12 rounded-full border-2 border-gray-500">
+          <div class="ml-3 relative">
+            <div id="cpu-name" class="font-bold text-base"></div>
+            <div id="cpu-role" class="text-xs text-gray-300"></div>
+            <div class="w-40 bg-gray-700 rounded h-3 mt-1">
+              <div id="cpu-hp-bar" class="bg-red-600 h-3 rounded"></div>
             </div>
-          </div>
-        </div>
-
-        <!-- Player -->
-        <div class="flex justify-start">
-          <div class="flex items-center gap-3 max-w-xl">
-            <img id="leftIcon" class="size-20 sm:size-24 rounded-full ring-2 ring-white/20 object-cover" alt="">
-            <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-2">
-              <div class="flex items-center gap-2">
-                <div class="min-w-0">
-                  <div id="leftName" class="text-sm font-semibold truncate">—</div>
-                  <div id="leftTags" class="text-[10px] text-slate-300 truncate">—</div>
-                </div>
-                <div id="leftBadges" class="ml-auto text-[10px] flex gap-1 items-center"></div>
-              </div>
-              <div class="mt-1 h-2 w-full bg-slate-800 rounded overflow-hidden">
-                <div id="leftHpBar" class="h-full bg-green-500 transition-all"></div>
-              </div>
-              <div class="mt-1 text-[11px] text-slate-300">
-                <span id="leftHpText">HP —/—</span> · <span id="leftResMini"></span> · <span id="leftUltMini">ULT 0%</span>
-              </div>
+            <div class="w-40 bg-gray-700 rounded h-2 mt-1">
+              <div id="cpu-mana-bar" class="bg-blue-600 h-2 rounded"></div>
             </div>
+            <div id="cpu-hp-mp" class="text-xs mt-1"></div>
+          </div>
+        </div>
+        <!-- Player (P1) champion panel - positioned at bottom -->
+        <div id="player-panel" class="flex items-center absolute bottom-0">
+          <img id="player-portrait" src="" alt="Player Champ" class="w-16 h-16 rounded-full border-2 border-gray-500">
+          <div class="ml-3 relative">
+            <div id="player-name" class="font-bold text-lg"></div>
+            <div id="player-role" class="text-sm text-gray-300"></div>
+            <div class="w-48 bg-gray-700 rounded h-4 mt-2">
+              <div id="player-hp-bar" class="bg-red-600 h-4 rounded"></div>
+            </div>
+            <div class="w-48 bg-gray-700 rounded h-3 mt-1">
+              <div id="player-mana-bar" class="bg-blue-600 h-3 rounded"></div>
+            </div>
+            <div id="player-hp-mp" class="text-sm mt-1"></div>
           </div>
         </div>
       </div>
-
-      <!-- Controls -->
-      <div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div id="leftPanel" class="rounded-xl bg-white/5 border border-white/10 p-2">
-          <div class="flex items-center justify-between mb-1">
-            <div class="text-xs font-semibold">Abilities (hold to inspect)</div>
-            <div id="p2ModeBadge" class="text-[11px]">CPU</div>
-          </div>
-          <div id="leftAbilities" class="grid grid-cols-5 gap-1.5 sm:gap-2"></div>
-          <div class="mt-3 flex items-center gap-2">
-            <div class="text-xs font-semibold">Items</div>
-            <button id="itemPotion" class="rounded-md px-2 py-1.5 text-xs bg-emerald-600/70 hover:bg-emerald-600">Potion (x<span id="potionLeftL">2</span>)</button>
-            <button id="itemEther" class="rounded-md px-2 py-1.5 text-xs bg-sky-600/70 hover:bg-sky-600">Ether (x<span id="etherLeftL">2</span>)</button>
-            <button id="btnSwap" class="ml-auto rounded-md px-2 py-1.5 text-xs bg-white/10 hover:bg-white/15">Switch</button>
-          </div>
-          <div id="leftBench" class="mt-2 flex gap-2"></div>
+      <!-- Abilities and Items bar -->
+      <div id="controls" class="mt-3">
+        <!-- Abilities -->
+        <div id="ability-buttons" class="flex justify-center items-center gap-2">
+          <!-- Buttons will be generated via JS -->
         </div>
-
-        <div id="rightPanel" class="rounded-xl bg-white/5 border border-white/10 p-2 opacity-60">
-          <div class="flex items-center justify-between mb-1">
-            <div class="text-xs font-semibold">Opponent</div>
-            <div id="oppItemsInfo" class="text-[11px]">Items: Potion x<span id="potionLeftR">2</span>, Ether x<span id="etherLeftR">2</span></div>
-          </div>
-          <details id="rightAbilitiesWrap" class="group">
-            <summary class="cursor-pointer text-xs text-slate-300 flex items-center gap-2 select-none">
-              <span id="rightAbilitiesLabel">Enemy Skills (CPU)</span>
-              <span class="ml-auto text-slate-500 transition group-open:rotate-90">▸</span>
-            </summary>
-            <div id="rightAbilities" class="mt-2 grid grid-cols-5 gap-1.5 sm:gap-2 opacity-70"></div>
-          </details>
-          <div id="rightBench" class="mt-2 flex gap-2 justify-end"></div>
+        <!-- Items -->
+        <div id="item-buttons" class="flex justify-center items-center gap-4 mt-2">
+          <button id="use-potion" class="bg-green-700 hover:bg-green-800 text-white text-xs font-semibold py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50">
+            <span>🍵 Potion</span> <span id="potion-count"></span>
+          </button>
+          <button id="use-ether" class="bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold py-1 px-2 rounded flex items-center gap-1 disabled:opacity-50">
+            <span>🔹 Ether</span> <span id="ether-count"></span>
+          </button>
+          <button id="switch-btn" class="bg-gray-600 hover:bg-gray-500 text-white text-xs font-semibold py-1 px-2 rounded">Switch</button>
         </div>
       </div>
+      <!-- Battle log -->
+      <div id="log" role="log" aria-label="Battle Log" class="mt-4 p-2 h-24 overflow-y-auto text-xs bg-gray-800 bg-opacity-50 rounded"></div>
+    </div>
 
-      <!-- Live feed -->
-      <div class="bg-slate-900/90 border-t border-white/10">
-        <div class="px-3 sm:px-4 py-3 font-mono text-sm flex items-center gap-2">
-          <span class="animate-blink">▶</span>
-          <div id="liveMsg" class="truncate" aria-live="polite">Welcome to Jimmy’s LoL Duel!</div>
-          <div class="ml-auto flex items-center gap-2">
-            <button id="resetBtn" class="tap-none rounded-lg px-2.5 py-1.5 text-xs bg-white/10 hover:bg-white/15">Reset</button>
-          </div>
-        </div>
-        <details class="px-3 sm:px-4 pb-4">
-          <summary class="cursor-pointer text-xs text-slate-300">Battle Log</summary>
-          <div id="log" class="mt-2 space-y-2 max-h-56 overflow-auto text-sm"></div>
-        </details>
+    <!-- Victory/Defeat End Screen Modal -->
+    <div id="end-screen" class="fixed inset-0 hidden flex flex-col items-center justify-center modal-bg text-center p-4">
+      <div id="end-message" class="text-5xl font-extrabold end-text mb-4"></div>
+      <div class="flex gap-4">
+        <button id="try-again-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Try Again</button>
+        <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Reset Game</button>
       </div>
     </div>
-  </section>
 
-  <footer class="mt-6 text-xs text-slate-400">Uses Riot’s Data Dragon. Fan‑made demo.</footer>
-</main>
-
-<!-- =============== CHAMPION INFO MODAL (with splash animation) =============== -->
-<div id="champModal" class="fixed inset-0 hidden z-[60]">
-  <div id="champBackdrop" class="absolute inset-0 bg-black/80"></div>
-  <div class="absolute inset-0 p-3 grid place-items-center">
-    <div class="relative max-w-3xl w-full rounded-xl overflow-hidden border border-white/10 bg-slate-950">
-      <div id="champSplash" class="absolute inset-0 opacity-25 bg-center bg-cover animate-ken"></div>
-      <div class="relative p-4">
-        <div class="flex items-center gap-3">
-          <img id="cmIcon" class="size-12 rounded-lg ring-1 ring-white/10 object-cover" alt="">
-          <div class="min-w-0">
-            <div id="cmName" class="text-lg font-semibold truncate"></div>
-            <div id="cmTags" class="text-xs text-slate-300 truncate"></div>
-          </div>
-          <div id="cmElem" class="ml-auto text-[11px] px-2 py-1 rounded bg-white/10"></div>
-        </div>
-        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <canvas id="cmRadar" width="360" height="240" class="w-full rounded-lg bg-slate-950/70 border border-white/10"></canvas>
-          <div id="cmSpells" class="text-sm space-y-2"></div>
-        </div>
-        <div class="mt-4 flex items-center justify-end gap-2">
-          <button id="cmAddLeft" class="rounded-md px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-sm">Add to P1</button>
-          <button id="cmAddRight" class="rounded-md px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-sm">Add to P2</button>
-          <button id="cmClose" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm">Close</button>
+    <!-- Champion Detail Modal (for info on long-press in selection) -->
+    <div id="champion-modal" class="fixed inset-0 hidden modal-bg items-center justify-center p-4">
+      <div class="relative bg-gray-900 bg-opacity-90 max-w-md w-full max-h-full overflow-y-auto rounded-lg p-4">
+        <button id="modal-close" class="absolute top-2 right-2 text-gray-400 hover:text-gray-200">&times;</button>
+        <div id="modal-content">
+          <!-- Champion details (filled by JS when opened) -->
+          <h2 id="modal-champ-name" class="text-2xl font-bold mb-2"></h2>
+          <div id="modal-role-element" class="mb-2 text-gray-300"></div>
+          <canvas id="stat-radar" width="300" height="300" class="mx-auto mb-4"></canvas>
+          <div id="modal-skills" class="text-sm space-y-2"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Sound and Music Toggle Buttons -->
+    <div class="absolute top-2 right-2 flex flex-col gap-2">
+      <button id="music-toggle" aria-pressed="false" aria-label="Toggle Music" class="bg-gray-800 bg-opacity-50 text-xl p-2 rounded">
+        🎵
+      </button>
+      <button id="sound-toggle" aria-pressed="false" aria-label="Toggle Sound Effects" class="bg-gray-800 bg-opacity-50 text-xl p-2 rounded">
+        🔈
+      </button>
     </div>
   </div>
-</div>
 
-<!-- Inspect overlay -->
-<div id="inspectOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-[70]">
-  <div class="absolute inset-0 grid place-items-center p-4">
-    <div class="max-w-md w-full rounded-xl border border-white/10 bg-slate-900 p-4">
-      <div class="text-sm font-semibold" id="insName">Ability</div>
-      <div class="text-xs text-slate-300 mt-1" id="insChamp">Champion</div>
-      <div class="mt-2 h-px bg-white/10"></div>
-      <div class="mt-2 text-sm" id="insDesc"></div>
-      <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div><span class="text-slate-400">Element:</span> <span id="insElem"></span></div>
-        <div><span class="text-slate-400">Type:</span> <span id="insDmgType"></span></div>
-        <div><span class="text-slate-400">Cost:</span> <span id="insCost"></span></div>
-        <div><span class="text-slate-400">Cooldown:</span> <span id="insCD"></span></div>
-      </div>
-      <div class="mt-4 text-right"><button id="insClose" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm">Close</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- End screen -->
-<div id="endOverlay" class="fixed inset-0 hidden z-[80]">
-  <div id="endArt" class="absolute inset-0 opacity-20 md:opacity-30 bg-cover bg-center"></div>
-  <div class="absolute inset-0 bg-gradient-to-b from-slate-900/90 to-black/95 backdrop-blur-sm"></div>
-  <div class="relative h-full flex flex-col items-center justify-center p-6">
-    <div id="endTitle" class="text-5xl sm:text-6xl font-extrabold tracking-wide drop-shadow-xl"></div>
-    <div id="endSubtitle" class="mt-2 text-slate-300"></div>
-    <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-      <button id="btnTryAgain" class="rounded-lg px-5 py-3 bg-indigo-600 hover:bg-indigo-500 font-semibold">Try Again</button>
-      <button id="btnResetBattle" class="rounded-lg px-5 py-3 bg-white/10 hover:bg-white/15">Back to Select</button>
-    </div>
-  </div>
-</div>
+  <!-- Audio elements -->
+  <audio id="bg-music" src="" loop></audio>
+  <audio id="sound-effect" src=""></audio>
 
 <script>
-(()=>{
-// ---------- helpers ----------
-const $=(s,e=document)=>e.querySelector(s);
-const $$=(s,e=document)=>[...e.querySelectorAll(s)];
-const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const live=(m)=>{$('#liveMsg')&&($('#liveMsg').textContent=m);}
-function flashArena(){const f=$('#arenaFlash'); f.className='pointer-events-none absolute inset-0 bg-white/60 animate-flash'; setTimeout(()=>f.className='pointer-events-none absolute inset-0',520);}
-
-// ---------- constants ----------
-const TURN_DELAY_MS=950;
-const BAL={BASE_HP:240,ROLE_HP_BONUS:{Tank:80,Fighter:40},BASE_DMG:[70,90,80,130],BASIC_ATK:55,CRIT:.1,CRITM:1.75,MISS:.07,
-  RES:{Mana:{max:100,regen:15,costs:[20,25,25,45]},Energy:{max:100,regen:22,costs:[20,25,25,40]},None:{max:0,regen:0,costs:[0,0,0,0]}},
-  ULT_REQ:100, ULT_GAIN:{basic:15,Q:20,W:25,E:25,taken:10},
-  BURN_PCT:.10, SHIELD_REDUCE:.30, STATUS_TURNS:2
-};
-const EFF={Fire:{Wind:1.2,Earth:.5,Water:.5},Water:{Fire:2,Earth:1.2,Electric:.5},Electric:{Water:2,Wind:1.5,Earth:.5},Wind:{Earth:2,Fire:.8},Earth:{Electric:2,Wind:.5,Fire:1.2},Arcane:{Dark:1.2,Light:.8},Dark:{Light:2,Arcane:.8},Light:{Dark:2,Arcane:1.2},Physical:{}};
-
-// Fields: name, duration, boosts map
-const FIELDS=[
-  {name:'Calm', turns:5, boost:{}},
-  {name:'Inferno', turns:4, boost:{Fire:1.2,Water:0.85}},
-  {name:'Rain', turns:4, boost:{Water:1.2,Electric:1.1}},
-  {name:'Storm', turns:4, boost:{Electric:1.2,Earth:0.9}},
-  {name:'Gale', turns:4, boost:{Wind:1.2,Fire:0.9}},
-  {name:'Quake', turns:4, boost:{Earth:1.2,Wind:0.85}},
-  {name:'Eclipse', turns:4, boost:{Dark:1.2,Light:0.9}},
-  {name:'Radiance', turns:4, boost:{Light:1.2,Dark:0.9}},
-  {name:'Arcana', turns:4, boost:{Arcane:1.15,Physical:0.95}}
+/***** Game Data Setup *****/
+// Define champion data (name, roles, element, base stats, skills)
+const champions = [
+  {
+    name: "Annie",
+    roles: ["Mage"],
+    element: "Arcane",
+    stats: { attack: 30, defense: 20, magic: 90, speed: 40, control: 70 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Annie attacks with a fireball from her teddy bear Tibbers.", cost: 0 },
+      Q: { name: "Disintegrate", desc: "Annie hurls a fireball that deals moderate damage.", cost: 50 },
+      W: { name: "Incinerate", desc: "Annie scorches enemies in a cone (single target here).", cost: 70 },
+      E: { name: "Molten Shield", desc: "Annie shields herself (in duel, minor damage move).", cost: 40 },
+      R: { name: "Summon Tibbers", desc: "Annie releases Tibbers for a massive attack.", cost: 100 }
+    }
+  },
+  {
+    name: "Rell",
+    roles: ["Tank","Support"],
+    element: "Earth",
+    stats: { attack: 50, defense: 90, magic: 30, speed: 20, control: 80 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Rell strikes with her lance.", cost: 0 },
+      Q: { name: "Shattering Strike", desc: "Rell pierces through magic, dealing damage.", cost: 50 },
+      W: { name: "Ferromancy", desc: "Rell slams down, creating shockwaves.", cost: 60 },
+      E: { name: "Attract and Repel", desc: "Rell binds and stuns an enemy (damage here).", cost: 40 },
+      R: { name: "Magnet Storm", desc: "Rell pulls enemies in with a magnetic burst.", cost: 100 }
+    }
+  },
+  {
+    name: "Renata Glasc",
+    roles: ["Support","Mage"],
+    element: "Arcane",
+    stats: { attack: 40, defense: 40, magic: 80, speed: 30, control: 60 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Renata fires a basic chemshot.", cost: 0 },
+      Q: { name: "Handshake", desc: "Renata launches a missile that damages and can throw an enemy.", cost: 60 },
+      W: { name: "Bailout", desc: "Renata grants an ally (herself) attack speed (damage move in duel).", cost: 70 },
+      E: { name: "Loyalty Program", desc: "Renata sends out chemtech waves damaging enemies.", cost: 50 },
+      R: { name: "Hostile Takeover", desc: "Renata releases a cloud that enrages enemies (heavy damage here).", cost: 100 }
+    }
+  },
+  {
+    name: "Aatrox",
+    roles: ["Fighter","Tank"],
+    element: "Shadow",
+    stats: { attack: 85, defense: 70, magic: 20, speed: 50, control: 40 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Aatrox swings his greatsword.", cost: 0 },
+      Q: { name: "Darkin Blade", desc: "Aatrox slams down his sword, dealing damage.", cost: 30 },
+      W: { name: "Infernal Chains", desc: "Aatrox smashes chains, damaging the foe.", cost: 40 },
+      E: { name: "Umbral Dash", desc: "Aatrox dashes (in duel, a quick strike).", cost: 25 },
+      R: { name: "World Ender", desc: "Aatrox unleashes his full power (big damage).", cost: 100 }
+    }
+  },
+  {
+    name: "Aurelion Sol",
+    roles: ["Mage"],
+    element: "Arcane",
+    stats: { attack: 20, defense: 30, magic: 95, speed: 35, control: 50 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Aurelion Sol fires a star fragment.", cost: 0 },
+      Q: { name: "Starsurge", desc: "Aurelion creates an expanding star that explodes.", cost: 60 },
+      W: { name: "Celestial Expansion", desc: "A.Sol expands his stars (damage).", cost: 70 },
+      E: { name: "Comet of Legend", desc: "A.Sol takes flight (no effect in duel).", cost: 30 },
+      R: { name: "Voice of Light", desc: "Aurelion Sol breathes starfire in a line (heavy damage).", cost: 100 }
+    }
+  },
+  {
+    name: "Xin Zhao",
+    roles: ["Fighter","Assassin"],
+    element: "Earth",
+    stats: { attack: 75, defense: 60, magic: 25, speed: 60, control: 30 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Xin Zhao thrusts his spear.", cost: 0 },
+      Q: { name: "Three Talon Strike", desc: "Three swift strikes with increased damage.", cost: 40 },
+      W: { name: "Wind Becomes Lightning", desc: "Xin slashes then thrusts, damaging foes.", cost: 50 },
+      E: { name: "Audacious Charge", desc: "Xin Zhao leaps and deals damage (single target).", cost: 50 },
+      R: { name: "Crescent Guard", desc: "Xin Zhao sweeps enemies around him (big hit here).", cost: 100 }
+    }
+  },
+  {
+    name: "Cassiopeia",
+    roles: ["Mage"],
+    element: "Shadow",
+    stats: { attack: 35, defense: 30, magic: 85, speed: 55, control: 75 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Cassiopeia bites with venom (basic).", cost: 0 },
+      Q: { name: "Noxious Blast", desc: "Cassiopeia erupts a poison blast under the enemy.", cost: 50 },
+      W: { name: "Miasma", desc: "Cassiopeia spreads poison in an area (single target damage).", cost: 70 },
+      E: { name: "Twin Fang", desc: "Cassiopeia rapidly strikes with fangs (low cooldown).", cost: 30 },
+      R: { name: "Petrifying Gaze", desc: "Cassiopeia’s glare deals massive damage (no stun in duel).", cost: 100 }
+    }
+  },
+  {
+    name: "Fiora",
+    roles: ["Fighter","Assassin"],
+    element: "Earth",
+    stats: { attack: 90, defense: 50, magic: 20, speed: 80, control: 40 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Fiora strikes with her sword.", cost: 0 },
+      Q: { name: "Lunge", desc: "Fiora lunges to strike the opponent quickly.", cost: 50 },
+      W: { name: "Riposte", desc: "Fiora parries and hits back (damage in duel).", cost: 60 },
+      E: { name: "Bladework", desc: "Fiora slashes in quick succession.", cost: 40 },
+      R: { name: "Grand Challenge", desc: "Fiora marks vital points and strikes (heavy dmg).", cost: 100 }
+    }
+  },
+  {
+    name: "Camille",
+    roles: ["Fighter","Assassin"],
+    element: "Earth",
+    stats: { attack: 80, defense: 55, magic: 25, speed: 70, control: 50 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Camille slashes with her leg blades.", cost: 0 },
+      Q: { name: "Precision Protocol", desc: "Camille’s next attack deals bonus damage.", cost: 30 },
+      W: { name: "Tactical Sweep", desc: "Camille sweeps a leg dealing damage.", cost: 50 },
+      E: { name: "Hookshot", desc: "Camille dashes in (damage in duel).", cost: 40 },
+      R: { name: "The Hextech Ultimatum", desc: "Camille leaps and deals massive damage.", cost: 100 }
+    }
+  },
+  {
+    name: "Katarina",
+    roles: ["Assassin","Mage"],
+    element: "Arcane",
+    stats: { attack: 60, defense: 40, magic: 70, speed: 75, control: 20 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Katarina throws a dagger on basic attack.", cost: 0 },
+      Q: { name: "Bouncing Blade", desc: "Kat throws a blade that ricochets (single target here).", cost: 50 },
+      W: { name: "Preparation", desc: "Katarina gains speed (minor damage effect).", cost: 40 },
+      E: { name: "Shunpo", desc: "Katarina blinks to the enemy and strikes.", cost: 30 },
+      R: { name: "Death Lotus", desc: "Katarina spins, throwing daggers (big damage to one).", cost: 100 }
+    }
+  },
+  {
+    name: "Cho'Gath",
+    roles: ["Tank","Mage"],
+    element: "Arcane",
+    stats: { attack: 70, defense: 80, magic: 50, speed: 25, control: 60 },
+    skills: {
+      A: { name: "Basic Attack", desc: "Cho'Gath claws the enemy.", cost: 0 },
+      Q: { name: "Rupture", desc: "Cho'Gath ruptures the ground under the foe.", cost: 60 },
+      W: { name: "Feral Scream", desc: "Cho'Gath unleashes a scream (single target damage).", cost: 70 },
+      E: { name: "Vorpal Spikes", desc: "Cho'Gath’s attacks launch spikes (damage).", cost: 0 },
+      R: { name: "Feast", desc: "Cho'Gath attempts to devour the enemy (huge damage).", cost: 100 }
+    }
+  }
 ];
+// Some default CPU team selection (optional, if we want a fixed CPU lineup or random)
+let cpuTeam = [];
 
-// ---------- ddragon ----------
-const DDRAGON='https://ddragon.leagueoflegends.com';
-const VERS=`${DDRAGON}/api/versions.json`;
-const ddata=(v,p)=>`${DDRAGON}/cdn/${v}/data/en_US/${p}`;
-const imgChamp=(v,f)=>`${DDRAGON}/cdn/${v}/img/champion/${f}`;
-const imgSpell=(v,f)=>`${DDRAGON}/cdn/${v}/img/spell/${f}`;
-const splash=(id)=>`${DDRAGON}/cdn/img/champion/splash/${id}_0.jpg`;
-async function J(u){const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.json();}
+/***** Game State Variables *****/
+let playerTeam = [];        // array of selected champions for player
+let playerActiveIndex = 0;  // index of current active champion in playerTeam
+let cpuActiveIndex = 0;     // index for CPU active champ
+let turn = 'P1';            // 'P1' or 'P2' to indicate whose turn
+let fieldElement = null;    // current field element (string)
+let fieldTurnsLeft = 0;
+let potionCount = 2;
+let etherCount = 2;
+let battleActive = false;
+let gameOver = false;
 
-// ---------- parsing ----------
-const RE_MAGIC=/(magic damage|magical|ap)/i, RE_PHYS=/(physical damage|ad|attack damage)/i;
-const RE_HEAL=/(heal|restore)/i, RE_SHIELD=/(shield|barrier)/i, RE_BURN=/(burn|ignite|bleed|poison|damage over time)/i;
-function roleElem(tags){if(tags.includes('Mage'))return'Arcane'; if(tags.includes('Marksman'))return'Wind'; if(tags.includes('Tank'))return'Earth'; if(tags.includes('Fighter'))return'Earth'; if(tags.includes('Assassin'))return'Dark'; if(tags.includes('Support'))return'Light'; return'Physical'}
-function spellElem(sp,fb){const s=((sp.tooltip||'')+' '+(sp.description||'')).toLowerCase(); if(/\b(fire|ignite|flame|burn)\b/.test(s))return'Fire'; if(/\b(water|ice|frost|tide)\b/.test(s))return'Water'; if(/\b(lightning|electric|storm|thunder)\b/.test(s))return'Electric'; if(/\b(wind|gale|gust)\b/.test(s))return'Wind'; if(/\b(earth|stone|rock|ground|quake)\b/.test(s))return'Earth'; if(/\b(holy|light)\b/.test(s))return'Light'; if(/\b(shadow|dark)\b/.test(s))return'Dark'; return fb||'Physical'}
-function dmgType(sp,ch){const t=((sp.tooltip||'')+' '+(sp.description||'')).toLowerCase(); if(RE_MAGIC.test(t))return'magic'; if(RE_PHYS.test(t))return'physical'; return ch.tags?.includes('Mage')?'magic':'physical'}
-const clean=(h)=>String(h||'').replace(/<\/?br\s*\/?>/gi,' ').replace(/\{\{[^}]+\}\}/g,'').replace(/\s+/g,' ').trim();
-const short=(t,n=90)=>{t=clean(t);return t.length>n?t.slice(0,n-1)+'…':t}
+/***** UI Element References *****/
+const selectionScreen = document.getElementById('selection-screen');
+const battleScreen = document.getElementById('battle-screen');
+const startBtn = document.getElementById('start-btn');
+const championGrid = document.getElementById('champion-grid');
+const roleFilter = document.getElementById('role-filter');
+const elementFilter = document.getElementById('element-filter');
 
-// ---------- state ----------
-const S={version:null,list:[],champs:{},
-  left:[null,null,null], right:[null,null,null],
-  li:0, ri:0, turn:'left', p2:'cpu',
-  items:{left:{potion:2,ether:2}, right:{potion:2,ether:2}},
-  field:{name:'Calm', turns:5, boost:{}}
-};
+const fieldText = document.getElementById('field-text');
+const turnText = document.getElementById('turn-text');
+const cpuPanel = document.getElementById('cpu-panel');
+const playerPanel = document.getElementById('player-panel');
+const cpuPortrait = document.getElementById('cpu-portrait');
+const playerPortrait = document.getElementById('player-portrait');
+const cpuNameEl = document.getElementById('cpu-name');
+const playerNameEl = document.getElementById('player-name');
+const cpuRoleEl = document.getElementById('cpu-role');
+const playerRoleEl = document.getElementById('player-role');
+const cpuHPBar = document.getElementById('cpu-hp-bar');
+const playerHPBar = document.getElementById('player-hp-bar');
+const cpuManaBar = document.getElementById('cpu-mana-bar');
+const playerManaBar = document.getElementById('player-mana-bar');
+const cpuHPMPText = document.getElementById('cpu-hp-mp');
+const playerHPMPText = document.getElementById('player-hp-mp');
 
-// ---------- radar ----------
-function drawRadar(cv,labels,vals){const ctx=cv.getContext('2d');const W=cv.width,H=cv.height,cx=W/2,cy=H/2+8,r=Math.min(W,H)*.36,steps=5;ctx.clearRect(0,0,W,H);ctx.strokeStyle='rgba(148,163,184,.35)';ctx.lineWidth=1;
-  for(let s=1;s<=steps;s++){ctx.beginPath();for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2,rr=r*s/steps,x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();}
-  for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2,x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
-  ctx.fillStyle='rgba(99,102,241,.28)';ctx.strokeStyle='rgba(99,102,241,.85)';ctx.beginPath();
-  for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2,rr=r*(vals[i]/10),x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.fillStyle='rgba(203,213,225,.9)';ctx.font='12px system-ui';labels.forEach((lb,i)=>{const a=(Math.PI*2/labels.length)*i-Math.PI/2,x=cx+(r+14)*Math.cos(a),y=cy+(r+14)*Math.sin(a);ctx.textAlign=Math.cos(a)>0.2?'left':(Math.cos(a)<-0.2?'right':'center');ctx.fillText(lb,x,y);});
+const abilityButtonsDiv = document.getElementById('ability-buttons');
+const usePotionBtn = document.getElementById('use-potion');
+const useEtherBtn = document.getElementById('use-ether');
+const potionCountSpan = document.getElementById('potion-count');
+const etherCountSpan = document.getElementById('ether-count');
+const switchBtn = document.getElementById('switch-btn');
+const logDiv = document.getElementById('log');
+
+const endScreen = document.getElementById('end-screen');
+const endMessage = document.getElementById('end-message');
+const tryAgainBtn = document.getElementById('try-again-btn');
+const resetBtn = document.getElementById('reset-btn');
+
+const championModal = document.getElementById('champion-modal');
+const modalContent = document.getElementById('modal-content');
+const modalChampName = document.getElementById('modal-champ-name');
+const modalRoleElem = document.getElementById('modal-role-element');
+const statRadarCanvas = document.getElementById('stat-radar');
+const modalSkillsDiv = document.getElementById('modal-skills');
+const modalCloseBtn = document.getElementById('modal-close');
+
+const musicToggle = document.getElementById('music-toggle');
+const soundToggle = document.getElementById('sound-toggle');
+const bgMusic = document.getElementById('bg-music');
+const soundEffect = document.getElementById('sound-effect');
+
+/***** Helper Functions *****/
+function updateStartButton() {
+  // Enable start when 3 champions selected
+  startBtn.disabled = (playerTeam.length !== 3);
 }
-
-// ---------- selection UI refs ----------
-const E={
-  roster:$('#roster'), search:$('#rosterSearch'),
-  leftPicks:$('#leftPicks'), rightPicks:$('#rightPicks'),
-  cntLeft:$('#cntLeft'), cntRight:$('#cntRight'),
-  startTop:$('#startBattleTop'), assignSide:$('#assignSide'), p2ModeSelect:$('#p2ModeSelect'),
-  roleFilters:$('#roleFilters'), elemFilters:$('#elemFilters'),
-  champModal:$('#champModal'), champBackdrop:$('#champBackdrop'),
-  cmIcon:$('#cmIcon'), cmName:$('#cmName'), cmTags:$('#cmTags'), cmElem:$('#cmElem'),
-  cmRadar:$('#cmRadar'), cmSpells:$('#cmSpells'), cmSplash:$('#champSplash'),
-  cmAddLeft:$('#cmAddLeft'), cmAddRight:$('#cmAddRight'),
-  leftIcon:$('#leftIcon'), rightIcon:$('#rightIcon'),
-  leftName:$('#leftName'), rightName:$('#rightName'),
-  leftTags:$('#leftTags'), rightTags:$('#rightTags'),
-  leftHpBar:$('#leftHpBar'), rightHpBar:$('#rightHpBar'),
-  leftHpText:$('#leftHpText'), rightHpText:$('#rightHpText'),
-  leftResMini:$('#leftResMini'), rightResMini:$('#rightResMini'),
-  leftUltMini:$('#leftUltMini'), rightUltMini:$('#rightUltMini'),
-  leftBadges:$('#leftBadges'), rightBadges:$('#rightBadges'),
-  leftAbilities:$('#leftAbilities'), rightAbilities:$('#rightAbilities'),
-  leftBench:$('#leftBench'), rightBench:$('#rightBench'),
-  turnBadge:$('#turnBadge'),
-  itemPotion:$('#itemPotion'), itemEther:$('#itemEther'),
-  endOverlay:$('#endOverlay'), endTitle:$('#endTitle'), endSubtitle:$('#endSubtitle'), endArt:$('#endArt'),
-  fieldName:$('#fieldName'), fieldTurns:$('#fieldTurns')
-};
-
-// ---------- build champ ----------
-function resType(f){const p=(f.partype||'').toLowerCase(); if(p.includes('mana'))return'Mana'; if(p.includes('energy'))return'Energy'; return'None'}
-function buildChamp(full){
-  const base=BAL.BASE_HP+(full.tags||[]).reduce((a,t)=>a+(BAL.ROLE_HP_BONUS[t]||0),0);
-  const rt=resType(full), R=BAL.RES[rt];
-  return {data:full, elem:roleElem(full.tags||[]), tags:full.tags||[], hp:base, max:base, cds:[0,0,0,0],
-    resType:rt, res:R.max, resMax:R.max, ult:0,
-    status:{burn:0, shield:0},
-    roleMods:{magic:(full.tags||[]).includes('Mage')?1.05:1, physical:(full.tags||[]).some(x=>['Marksman','Fighter','Assassin'].includes(x))?1.05:1}
-  }
-}
-
-// ---------- roster (filters + skill tooltips) ----------
-let filterRole="", filterElem="";
-function renderRoster(filter=''){
-  const q=filter.trim().toLowerCase(); E.roster.innerHTML='';
-  S.list.filter(c=>{
-    const roleOK=!filterRole || (c.tags||[]).includes(filterRole);
-    const elemOK=!filterElem || roleElem(c.tags||[])===filterElem;
-    const qOK=!q || c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q);
-    return roleOK && elemOK && qOK;
-  }).forEach(c=>{
-    const el=roleElem(c.tags||[]);
-    const card=document.createElement('button');
-    card.className='group relative rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 p-2 text-left';
-    card.innerHTML=`
-      <img class="w-full aspect-square object-cover rounded-md ring-1 ring-white/10 mb-2" src="${imgChamp(S.version,c.image.full)}" alt="">
-      <div class="text-sm font-medium truncate">${c.name}</div>
-      <div class="text-[10px] text-slate-400 truncate">${(c.tags||[]).join(' • ')}</div>
-      <div class="absolute top-2 right-2 text-[10px] bg-black/50 px-1.5 py-0.5 rounded">${el}</div>`;
-    // brief skill blurbs on hover (desktop)
-    let loaded=false; card.title='Loading…';
-    card.addEventListener('mouseenter',async()=>{if(loaded) return; try{const js=await (await fetch(`${DDRAGON}/cdn/${S.version}/data/en_US/champion/${c.id}.json`)).json(); const sp=(js.data[c.id].spells||[]).slice(0,3).map(s=>`${s.name}: ${short(s.tooltip,70)}`); card.title=sp.join('\n');}catch{card.title='';} loaded=true;},{passive:true});
-    // tap to add, long‑press to modal
-    let t=null, opened=false; const start=()=>{t=setTimeout(()=>{opened=true; openChampModal(c);},420)}; const clear=()=>{if(t){clearTimeout(t);t=null}}
-    card.addEventListener('mousedown',start); card.addEventListener('touchstart',start,{passive:true});
-    ['mouseleave','mouseup','touchend','touchcancel'].forEach(ev=>card.addEventListener(ev,()=>{if(!opened){clear(); addPick(E.assignSide.value,c.id);} opened=false;},{passive:true}));
-    card.addEventListener('click',e=>e.preventDefault());
-    E.roster.appendChild(card);
+function renderChampionGrid() {
+  // Clear existing
+  championGrid.innerHTML = '';
+  // Get filter criteria
+  const roleVal = roleFilter.value;
+  const elemVal = elementFilter.value;
+  champions.forEach(champ => {
+    // Check filters:
+    if ((roleVal === 'All' || champ.roles.includes(roleVal)) &&
+        (elemVal === 'All' || champ.element === elemVal)) {
+      // Create card
+      const card = document.createElement('div');
+      card.className = 'champ-card relative cursor-pointer text-center p-2 bg-gray-800 bg-opacity-50 rounded hover:bg-opacity-75';
+      // Champion icon (using Data Dragon if available)
+      const imgName = champ.name.replace(/[^a-zA-Z0-9]/g, ""); // remove apostrophes/spaces for URL
+      const img = document.createElement('img');
+      img.src = `https://ddragon.leagueoflegends.com/cdn/15.16.1/img/champion/${imgName}.png`;
+      img.alt = champ.name;
+      img.className = 'mx-auto mb-1 w-16 h-16 object-cover rounded-full';
+      card.appendChild(img);
+      // Name label
+      const nameLbl = document.createElement('div');
+      nameLbl.textContent = champ.name;
+      nameLbl.className = 'text-sm';
+      card.appendChild(nameLbl);
+      // Selection number badge (if selected)
+      const badge = document.createElement('div');
+      badge.className = 'selection-badge absolute top-1 right-1 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center';
+      badge.style.display = 'none';
+      card.appendChild(badge);
+      // Click event: select or open modal if already selected 3?
+      card.addEventListener('click', () => {
+        if (playerTeam.length < 3 && !playerTeam.includes(champ)) {
+          // Select champion for team
+          playerTeam.push(champ);
+          badge.textContent = playerTeam.length; // assign number
+          badge.style.display = 'flex';
+          updateStartButton();
+        } else if (playerTeam.includes(champ)) {
+          // If already selected (maybe allow deselect on second tap)
+          const idx = playerTeam.indexOf(champ);
+          if (idx !== -1) {
+            playerTeam.splice(idx, 1);
+            badge.style.display = 'none';
+            // Update other badges numbering
+            document.querySelectorAll('.selection-badge').forEach(b=> {
+              if(b.textContent) {
+                const num = parseInt(b.textContent);
+                if(num > idx+1) { // idx+1 because team length was one less
+                  b.textContent = num-1;
+                }
+              }
+            });
+            updateStartButton();
+          }
+        } else {
+          // If team is full and champ not selected, maybe ignore or show modal
+          openChampionModal(champ);
+        }
+      });
+      // Long press (touch) or right-click for info modal
+      card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        openChampionModal(champ);
+      });
+      card.addEventListener('touchstart', function(e) {
+        this._touchStart = Date.now();
+      });
+      card.addEventListener('touchend', function(e) {
+        if (Date.now() - this._touchStart > 500) {
+          openChampionModal(champ);
+        }
+      });
+      championGrid.appendChild(card);
+    }
   });
 }
-function markChips(group){$$('.chip',group).forEach(b=>b.classList.toggle('active', (b.dataset.role??'')===filterRole || (b.dataset.elem??'')===filterElem || ((b.dataset.role===''&&filterRole==='')||(b.dataset.elem===''&&filterElem===''))))}
-E.roleFilters.addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b)return; filterRole=b.dataset.role??""; markChips(E.roleFilters); renderRoster(E.search.value||'');});
-E.elemFilters.addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b)return; filterElem=b.dataset.elem??""; markChips(E.elemFilters); renderRoster(E.search.value||'');});
-
-// ---------- picks ----------
-function drawPicks(){
-  const pill=(ch,side,idx)=> ch?`<div class="relative">
-      <img class="size-14 rounded ring-2 ${side==='left'?'ring-indigo-500':'ring-rose-500'} object-cover" src="${imgChamp(S.version,ch.data.image.full)}" alt="">
-      <button class="absolute -top-2 -right-2 size-6 grid place-items-center rounded-full bg-rose-600 text-white text-xs remove" data-side="${side}" data-idx="${idx}">×</button>
-      <div class="absolute -top-1 -left-1 bg-black/70 rounded text-[10px] px-1">${idx+1}</div>
-    </div>`:`<div class="size-14 rounded border border-dashed border-white/15"></div>`;
-  E.leftPicks.innerHTML=S.left.map((x,i)=>pill(x,'left',i)).join('');
-  E.rightPicks.innerHTML=S.right.map((x,i)=>pill(x,'right',i)).join('');
-  $$('#leftPicks .remove').forEach(b=>b.addEventListener('click',()=>{S.left[+b.dataset.idx]=null; updatePickCounters(); drawPicks();}));
-  $$('#rightPicks .remove').forEach(b=>b.addEventListener('click',()=>{S.right[+b.dataset.idx]=null; updatePickCounters(); drawPicks();}));
-  updatePickCounters();
-}
-function updatePickCounters(){E.cntLeft.textContent=S.left.filter(Boolean).length; E.cntRight.textContent=S.right.filter(Boolean).length; E.startTop.disabled=!(S.left.every(Boolean)&&S.right.every(Boolean));}
-async function addPick(side,id){const list=side==='left'?S.left:S.right; const slot=list.findIndex(x=>!x); if(slot===-1) return; const full=(await (await fetch(`${DDRAGON}/cdn/${S.version}/data/en_US/champion/${id}.json`)).json()).data[id]; list[slot]=buildChamp(full); drawPicks();}
-function randomFill(side){const arr=S.list.slice().sort(()=>Math.random()-.5).slice(0,3); Promise.all(arr.map(c=>addPick(side,c.id)));}
-
-// ---------- modal ----------
-function openChampModal(c){
-  $('#cmIcon').src=imgChamp(S.version,c.image.full);
-  $('#cmName').textContent=c.name; $('#cmTags').textContent=(c.tags||[]).join(' • '); $('#cmElem').textContent=roleElem(c.tags||[]);
-  $('#champSplash').style.backgroundImage=`url('${splash(c.id)}')`;
-  const info=c.info||{attack:5,defense:5,magic:5,difficulty:5}; const speed=(c.tags||[]).some(t=>['Assassin','Marksman'].includes(t))?8:(c.tags||[]).includes('Tank')?4:6;
-  drawRadar($('#cmRadar'),['Attack','Defense','Magic','Speed','Control'],[info.attack||5,info.defense||5,info.magic||5,speed,info.difficulty||5]);
-  $('#cmSpells').innerHTML='Loading…';
-  fetch(`${DDRAGON}/cdn/${S.version}/data/en_US/champion/${c.id}.json`).then(r=>r.json()).then(j=>{
-    const full=j.data[c.id];
-    $('#cmSpells').innerHTML=(full.spells||[]).map(s=>`<div class="flex items-start gap-2"><img class="size-6 mt-0.5" src="${imgSpell(S.version,s.image.full)}" alt=""><div><div class="font-medium">${s.name}</div><div class="text-slate-300 text-xs">${short(s.tooltip,120)}</div></div></div>`).join('');
-    $('#cmAddLeft').onclick=()=>addPick('left',c.id); $('#cmAddRight').onclick=()=>addPick('right',c.id);
-  }).catch(()=>$('#cmSpells').textContent='—');
-  $('#champModal').classList.remove('hidden');
-}
-$('#cmClose').onclick=()=>$('#champModal').classList.add('hidden'); $('#champBackdrop').onclick=()=>$('#champModal').classList.add('hidden');
-
-// ---------- battle helpers ----------
-function team(s){return s==='left'?S.left:S.right}
-function active(s){return team(s)[s==='left'?S.li:S.ri]}
-function foeSide(s){return s==='left'?'right':'left'}
-function eff(a,b){return (EFF[a]&&EFF[a][b])||1}
-function abBase(i){return BAL.BASE_DMG[i]||80}
-function scost(sp,i,rt){const C=BAL.RES[rt||'None']; let c=0; if(Array.isArray(sp.cost)&&sp.cost.length)c=+sp.cost[0]; if(!c&&typeof sp.costBurn==='string'){const m=sp.costBurn.match(/\d+/); if(m)c=+m[0];} if(!c)c=C.costs[i]||0; return c}
-function grantUlt(ch,amt){const was=ch.ult; ch.ult=clamp(ch.ult+amt,0,BAL.ULT_REQ); if(was<BAL.ULT_REQ && ch.ult>=BAL.ULT_REQ) logLine(`${ch.data.name}'s Ultimate is ready!`);}
-function spendUlt(ch){ch.ult=0;}
-
-// Field apply
-function fieldMult(elem){const b=S.field.boost||{}; return (elem in b)?b[elem]:1;}
-
-// ---------- UI render ----------
-function statusBadges(ch){
-  const arr=[];
-  if(ch.status.burn>0) arr.push(`<span class="badge">🔥 Burn ${ch.status.burn}</span>`);
-  if(ch.status.shield>0) arr.push(`<span class="badge">🛡 Shield ${ch.status.shield}</span>`);
-  return arr.join(' ');
-}
-function renderHUD(side){
-  const cur=active(side), isL=side==='left';
-  const icon=$(isL?'#leftIcon':'#rightIcon'), name=$(isL?'#leftName':'#rightName'), tags=$(isL?'#leftTags':'#rightTags'), hpbar=$(isL?'#leftHpBar':'#rightHpBar'), hptext=$(isL?'#leftHpText':'#rightHpText'), resmini=$(isL?'#leftResMini':'#rightResMini'), ultmini=$(isL?'#leftUltMini':'#rightUltMini'), badges=$(isL?'#leftBadges':'#rightBadges'), abil=$(isL?'#leftAbilities':'#rightAbilities'), bench=$(isL?'#leftBench':'#rightBench'), panel=$(isL?'#leftPanel':'#rightPanel');
-  if(!cur){icon.src=''; name.textContent='—'; tags.textContent=''; hpbar.style.width='0%'; hptext.textContent='HP —/—'; resmini.textContent=''; ultmini.textContent='ULT —'; badges.innerHTML=''; abil.innerHTML=''; bench.innerHTML=''; return;}
-  icon.src=imgChamp(S.version,cur.data.image.full);
-  name.textContent=`${cur.data.name} (${cur.elem})`; tags.textContent=(cur.data.tags||[]).join(' / ');
-  hpbar.style.width=Math.max(0,Math.min(100,(cur.hp/cur.max)*100))+'%'; hptext.textContent=`HP ${Math.max(0,Math.round(cur.hp))}/${cur.max}`;
-  resmini.textContent=cur.resType!=='None'?`${cur.resType} ${Math.round(cur.res)}/${cur.resMax}`:''; ultmini.textContent=`ULT ${Math.min(100,Math.round(cur.ult))}%`;
-  badges.innerHTML=statusBadges(cur);
-  // abilities
-  const myTurn=(S.turn===side)&&!(side==='right'&&S.p2==='cpu'); panel.style.opacity=myTurn?'1':'0.6';
-  abil.innerHTML='';
-  const dis=myTurn?'':'pointer-events-none opacity-60';
-  // Basic
-  const bA=document.createElement('button');
-  bA.className=`relative aspect-square rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 ${dis}`;
-  bA.innerHTML=`<div class="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 rounded ${isL?'bg-indigo-600':'bg-rose-600'}">A</div><div class="grid place-items-center h-full"><svg viewBox="0 0 24 24" class="w-8 h-8" fill="currentColor"><path d="M7 14l-4.5 4.5a2 2 0 102.8 2.8L9.8 16.8 7 14zm6.1-1.7l2.6 2.6L22 6.6 17.4 2l-7.3 6.3 3 3zM3.7 21.4a.99.99 0 11-1.4-1.4l2.3-2.3 1.4 1.4-2.3 2.3z"/></svg></div>`;
-  bA.onclick=()=>basic(side); abil.appendChild(bA);
-  // QWER
-  (cur.data.spells||[]).slice(0,4).forEach((sp,i)=>{
-    const cd=cur.cds[i]||0, cost=scost(sp,i,cur.resType);
-    const needsUlt=(i===3), ultReady=cur.ult>=BAL.ULT_REQ;
-    const disabled=!myTurn || cd>0 || (needsUlt?!ultReady:(cur.resType!=='None' && cur.res<cost));
-    const b=document.createElement('button');
-    b.className=`relative aspect-square rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 overflow-hidden ${disabled?'pointer-events-none opacity-50':''}`;
-    b.dataset.idx=i; b.dataset.side=side;
-    b.innerHTML=`<div class="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 rounded ${isL?'bg-indigo-600':'bg-rose-600'}">${['Q','W','E','R'][i]}</div>${needsUlt?`<div class="absolute top-1 right-1 text-[10px] px-1 py-0.5 rounded bg-black/60">ULT</div>`:(cost?`<div class="absolute top-1 right-1 text-[10px] px-1 py-0.5 rounded bg-black/60">${cost}</div>`:'')}<img class="w-full h-full object-cover" src="${imgSpell(S.version,sp.image.full)}" alt="${sp.name}">${cd>0?`<div class="absolute inset-0 bg-black/60 grid place-items-center text-sm font-semibold">${cd}</div>`:''}`;
-    b.onclick=onAbility;
-    holdInspect(b,sp,cur);
-    abil.appendChild(b);
+function openChampionModal(champ) {
+  // Populate champ info in modal and show it
+  modalChampName.textContent = champ.name;
+  modalRoleElem.textContent = `${champ.roles.join('/')} – ${champ.element}`;
+  // Radar chart:
+  const statData = champ.stats;
+  if(window.modalChart) {
+    window.modalChart.destroy();
+  }
+  window.modalChart = new Chart(statRadarCanvas.getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Attack','Defense','Magic','Speed','Control'],
+      datasets: [{
+        label: champ.name + " Stats",
+        data: [statData.attack, statData.defense, statData.magic, statData.speed, statData.control],
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: '#ffffff',
+        borderWidth: 1,
+        pointBackgroundColor: '#ffffff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { r: { beginAtZero: true, max: 100, ticks: { display: false } } },
+      plugins: { legend: { display: false } }
+    }
   });
-  // bench
-  const pill=(ch,isActive,side,idx)=> ch?`<button class="bench w-20 rounded-md border ${isActive?'border-indigo-500':'border-white/10'} bg-white/5 p-1 ${dis}" data-side="${side}" data-slot="${idx}">
-    <img class="w-full h-10 object-cover rounded" src="${imgChamp(S.version,ch.data.image.full)}" alt="">
-    <div class="mt-1 h-1.5 bg-slate-800 rounded overflow-hidden"><div style="width:${Math.max(0,Math.min(100,(ch.hp/ch.max)*100))}%;" class="h-full ${ch.hp/ch.max>.5?'bg-green-500':ch.hp/ch.max>.2?'bg-yellow-400':'bg-rose-500'}"></div></div>
-  </button>`:'';
-  bench.innerHTML=team(side).map((c,i)=>pill(c,i===(side==='left'?S.li:S.ri),side,i)).join('');
-  bench.querySelectorAll('.bench').forEach(b=>b.addEventListener('click',()=>trySwitch(side,+b.dataset.slot)));
-}
-function renderAll(){
-  renderHUD('left'); renderHUD('right');
-  $('#turnBadge').textContent=`Turn: ${S.turn==='left'?'P1':(S.p2==='cpu'?'CPU':'P2')}`;
-  $('#turnBadge').className='ml-auto opacity-70 px-1.5 py-0.5 rounded text-[11px] '+(S.turn==='left'?'bg-indigo-600':'bg-rose-600');
-  $('#potionLeftL').textContent=S.items.left.potion; $('#etherLeftL').textContent=S.items.left.ether;
-  $('#potionLeftR').textContent=S.items.right.potion; $('#etherLeftR').textContent=S.items.right.ether;
-  E.fieldName.textContent=S.field.name; E.fieldTurns.textContent=S.field.turns;
-}
-
-// ---------- combat calc (no AOE) ----------
-function abDmg(att,def,idx,sp){
-  const isHeal=RE_HEAL.test((sp.tooltip||'')+' '+(sp.description||'')); if(isHeal) return{heal:true, elem:spellElem(sp,att.elem)};
-  if(Math.random()<BAL.MISS) return{miss:true, elem:spellElem(sp,att.elem)};
-  const type=dmgType(sp,att.data); const elem=spellElem(sp,att.elem);
-  let base=abBase(idx); if(idx===3) base*=1.4;
-  base*=(type==='magic'?att.roleMods.magic:att.roleMods.physical);
-  let mult=eff(elem,def.elem);
-  mult*=fieldMult(elem);
-  if(def.status.shield>0) base*=(1-BAL.SHIELD_REDUCE);
-  let crit=false; if(Math.random()<BAL.CRIT){crit=true;base*=BAL.CRITM;}
-  const dmg=Math.max(20,Math.round(base*mult));
-  const applyBurn=RE_BURN.test((sp.tooltip||'')+' '+(sp.description||'')) || elem==='Fire';
-  const applyShield=RE_SHIELD.test((sp.tooltip||'')+' '+(sp.description||'')) && !isHeal;
-  return{dmg,crit,mult,elem,applyBurn,applyShield};
-}
-function basicDmg(att,def){
-  if(Math.random()<BAL.MISS) return{miss:true};
-  let base=BAL.BASIC_ATK, t=att.tags||[];
-  if(t.includes('Marksman')||t.includes('Fighter')||t.includes('Assassin')) base*=1.1;
-  if(t.includes('Mage')) base*=.9; if(t.includes('Tank')) base*=.95;
-  let mult=eff('Physical',def.elem)*fieldMult('Physical'); let crit=false; if(Math.random()<BAL.CRIT){crit=true;base*=BAL.CRITM;}
-  if(def.status.shield>0) base*=(1-BAL.SHIELD_REDUCE);
-  const dmg=Math.max(18,Math.round(base*mult)); return{dmg,crit,mult};
-}
-
-// ---------- float damage text ----------
-function floatText(side,txt,kind='d'){const host=side==='left'?$('#leftIcon'):$('#rightIcon'); const n=document.createElement('div'); const r=host.getBoundingClientRect(); n.style.position='fixed'; n.style.left=(r.left+r.width/2-16)+'px'; n.style.top=(r.top-8)+'px'; n.innerHTML=`<span class="px-2 py-0.5 rounded ${kind==='h'?'bg-emerald-600/80':'bg-black/70'} text-white text-lg font-extrabold">${txt}</span>`; document.body.appendChild(n); n.classList.add('animate-float'); setTimeout(()=>n.remove(),760);}
-
-// ---------- turn processing & status ticks ----------
-function startTurnTicks(side){
-  const me=active(side); if(!me) return;
-  // Burn tick
-  if(me.status.burn>0 && me.hp>0){
-    const dot=Math.max(5,Math.round(me.max*BAL.BURN_PCT));
-    me.hp=Math.max(0,me.hp-dot); me.status.burn--; floatText(side,`-${dot}`); logLine(`${me.data.name} suffers burn damage!`);
+  // Skills list
+  modalSkillsDiv.innerHTML = '';
+  for(let key in champ.skills) {
+    const skill = champ.skills[key];
+    const skillEl = document.createElement('div');
+    skillEl.innerHTML = `<strong>${key} – ${skill.name}</strong> (${skill.cost} mana): ${skill.desc}`;
+    modalSkillsDiv.appendChild(skillEl);
   }
-  // Shield decay
-  if(me.status.shield>0) me.status.shield--;
+  championModal.classList.remove('hidden');
+  championModal.classList.add('flex');
 }
-function endTurn(){
-  const w=winner(); if(w) return endScreen(w);
-  // field countdown
-  S.field.turns--; if(S.field.turns<=0){ const next=FIELDS[Math.floor(Math.random()*FIELDS.length)]; S.field={name:next.name, turns:next.turns, boost:next.boost}; logLine(`The field shifted to ${S.field.name}!`); }
-  const next=S.turn==='left'?'right':'left';
-  // regen & cooldown on incoming actor
-  const actor=active(next); if(actor){const C=BAL.RES[actor.resType]||{regen:0}; actor.res=clamp(actor.res+(C.regen||0),0,actor.resMax); actor.cds=actor.cds.map(c=>Math.max(0,c-1));}
-  S.turn=next; startTurnTicks(next); renderAll();
-  if(S.turn==='right'&&S.p2==='cpu') setTimeout(cpuAct,TURN_DELAY_MS);
+function closeChampionModal() {
+  championModal.classList.add('hidden');
+  championModal.classList.remove('flex');
 }
-function winner(){const L=S.left.filter(Boolean).every(s=>s.hp<=0), R=S.right.filter(Boolean).every(s=>s.hp<=0); if(L) return 'right'; if(R) return 'left'; return null;}
-function endScreen(win){$('#endOverlay').classList.remove('hidden'); const p1=(win==='left'); $('#endTitle').textContent=p1?'VICTORY':'DEFEAT'; $('#endTitle').className='text-5xl sm:text-6xl font-extrabold '+(p1?'text-emerald-400':'text-rose-400'); const id=active(win)?.data?.id; if(id) $('#endArt').style.backgroundImage=`url('${splash(id)}')`; $('#endSubtitle').textContent=p1?'You defeated the opponent!':'Your team has fallen.';}
-
-// ---------- actions ----------
-function basic(side){
-  const me=active(side), foeS=foeSide(side), foe=active(foeS); if(!me||!foe) return;
-  flashArena(); $('#arenaWrap').classList.add('animate-hit'); setTimeout(()=>$('#arenaWrap').classList.remove('animate-hit'),320);
-  const r=basicDmg(me,foe);
-  if(r.miss){logLine(`${me.data.name} attacked… missed!`);}
-  else{
-    foe.hp=Math.max(0,foe.hp-r.dmg);
-    grantUlt(me,BAL.ULT_GAIN.basic); grantUlt(foe,BAL.ULT_GAIN.taken);
-    floatText(foeS,`-${r.dmg}${r.crit?'★':''}`);
-    let tag=''; if(r.mult>1.01)tag=' Super effective!'; else if(r.mult<0.99)tag=' Not very effective…';
-    logLine(`${me.data.name} used a basic attack!${tag}`);
-    if(foe.hp<=0){logLine(`${foe.data.name} fainted!`); if(!switchIfDead(foeS)){renderAll(); endTurn(); const w=winner(); if(w) return endScreen(w);}}
+// Utility to log messages to the battle log
+function log(msg) {
+  const entry = document.createElement('div');
+  entry.textContent = "➤ " + msg;
+  logDiv.appendChild(entry);
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+/***** Battle Logic Functions *****/
+function startBattle() {
+  // Prepare teams and UI for battle
+  if (playerTeam.length !== 3) return;
+  // If CPU team not pre-chosen, choose 3 random distinct champs for CPU
+  if (cpuTeam.length !== 3) {
+    cpuTeam = [];
+    // simple random pick distinct
+    const available = champions.slice();
+    // remove player's picks from available to avoid duplicates (optional)
+    // available = available.filter(champ => !playerTeam.includes(champ));
+    while(cpuTeam.length < 3 && available.length > 0) {
+      const randIndex = Math.floor(Math.random() * available.length);
+      const pick = available.splice(randIndex, 1)[0];
+      // avoid picking same as player's maybe:
+      // if (!playerTeam.includes(pick)) {
+        cpuTeam.push(pick);
+      // }
+    }
   }
-  renderAll(); endTurn();
+  playerActiveIndex = 0;
+  cpuActiveIndex = 0;
+  turn = 'P1';  // player starts (could incorporate speed check)
+  gameOver = false;
+  potionCount = 2;
+  etherCount = 2;
+  // Determine field element at start
+  const elements = ["Arcane","Earth","Radiant","Shadow"];
+  fieldElement = elements[Math.floor(Math.random()*elements.length)];
+  fieldTurnsLeft = 5;
+  // Update UI initial state
+  selectionScreen.classList.add('hidden');
+  battleScreen.classList.remove('hidden');
+  // load initial champs
+  loadChampionData();
+  updateFieldTurnUI();
+  updateAbilityButtons();
+  updateItemsUI();
+  logDiv.innerHTML = "";  // clear log
+  log("Battle start! Field is " + fieldElement + ".");
+  // Possibly auto-play background music if provided
+  if(bgMusic.src) { bgMusic.play().catch(()=>{}); }
+  battleActive = true;
 }
-function onAbility(e){const side=e.currentTarget.dataset.side, idx=+e.currentTarget.dataset.idx; if(S.turn!==side) return; if(side==='right'&&S.p2==='cpu') return; actAbility(side,idx);}
-function actAbility(side,idx){
-  const me=active(side), foeS=foeSide(side), foe=active(foeS); if(!me||!foe) return;
-  const sp=(me.data.spells||[])[idx], cost=scost(sp,idx,me.resType);
-  if(idx===3){ if(me.ult<BAL.ULT_REQ){logLine(`${me.data.name}'s Ultimate is not ready.`); return;} }
-  else if(me.resType!=='None' && me.res<cost){logLine(`${me.data.name} lacks ${me.resType}!`); return;}
-  if(idx!==3 && me.resType!=='None') me.res=Math.max(0,me.res-cost);
-  const r=abDmg(me,foe,idx,sp);
-  flashArena(); $('#arenaWrap').classList.add('animate-hit'); setTimeout(()=>$('#arenaWrap').classList.remove('animate-hit'),320);
-  if(r.heal){const heal=Math.round(me.max*.22); me.hp=Math.min(me.max,me.hp+heal); if(idx===3) spendUlt(me); else grantUlt(me, idx===0?BAL.ULT_GAIN.Q:idx===1?BAL.ULT_GAIN.W:BAL.ULT_GAIN.E); floatText(side,'+'+heal,'h'); logLine(`${me.data.name} used ${sp.name}. +${heal} HP`);}
-  else if(r.miss){logLine(`${me.data.name} used ${sp.name}… missed!`);}
-  else{
-    foe.hp=Math.max(0,foe.hp-r.dmg);
-    if(idx===3) spendUlt(me); else grantUlt(me, idx===0?BAL.ULT_GAIN.Q:idx===1?BAL.ULT_GAIN.W:BAL.ULT_GAIN.E);
-    grantUlt(foe,BAL.ULT_GAIN.taken);
-    // status application
-    if(r.applyBurn){foe.status.burn=Math.max(foe.status.burn, BAL.STATUS_TURNS); logLine(`${foe.data.name} is burning!`);}
-    if(r.applyShield){me.status.shield=Math.max(me.status.shield, BAL.STATUS_TURNS); logLine(`${me.data.name} gains a shield!`);}
-    let tag=''; if(r.mult>1.01)tag=' Super effective!'; else if(r.mult<0.99)tag=' Not very effective…'; if(r.crit)tag+=' Crit!';
-    floatText(foeS,`-${r.dmg}${r.crit?'★':''}`); logLine(`${me.data.name} used ${sp.name}!${tag}`);
-    if(foe.hp<=0){logLine(`${foe.data.name} fainted!`); if(!switchIfDead(foeS)){renderAll(); endTurn(); const w=winner(); if(w) return endScreen(w);}}
+function loadChampionData() {
+  // Load current active champion info into UI for both player and cpu
+  const playerChamp = playerTeam[playerActiveIndex];
+  const cpuChamp = cpuTeam[cpuActiveIndex];
+  // Portraits
+  const pImgName = playerChamp.name.replace(/[^a-zA-Z0-9]/g,"");
+  const cImgName = cpuChamp.name.replace(/[^a-zA-Z0-9]/g,"");
+  playerPortrait.src = `https://ddragon.leagueoflegends.com/cdn/15.16.1/img/champion/${pImgName}.png`;
+  cpuPortrait.src = `https://ddragon.leagueoflegends.com/cdn/15.16.1/img/champion/${cImgName}.png`;
+  playerNameEl.textContent = playerChamp.name;
+  cpuNameEl.textContent = cpuChamp.name;
+  playerRoleEl.textContent = `${playerChamp.roles.join('/')} · ${playerChamp.element}`;
+  cpuRoleEl.textContent = `${cpuChamp.roles.join('/')} · ${cpuChamp.element}`;
+  // Initialize HP and Mana
+  playerChamp.currentHP = playerChamp.currentHP ?? (200 + playerChamp.stats.defense); // base HP perhaps derived from defense
+  playerChamp.maxHP = playerChamp.currentHP;
+  playerChamp.currentMP = playerChamp.currentMP ?? 100;
+  playerChamp.maxMP = playerChamp.currentMP;
+  cpuChamp.currentHP = cpuChamp.currentHP ?? (200 + cpuChamp.stats.defense);
+  cpuChamp.maxHP = cpuChamp.currentHP;
+  cpuChamp.currentMP = cpuChamp.currentMP ?? 100;
+  cpuChamp.maxMP = cpuChamp.currentMP;
+  updateHPMPUI();
+}
+function updateHPMPUI() {
+  // Update health/mana bars and text for current active champs
+  const pChamp = playerTeam[playerActiveIndex];
+  const cChamp = cpuTeam[cpuActiveIndex];
+  // Clamp values (just in case)
+  if(pChamp.currentHP < 0) pChamp.currentHP = 0;
+  if(cChamp.currentHP < 0) cChamp.currentHP = 0;
+  if(pChamp.currentMP < 0) pChamp.currentMP = 0;
+  if(cChamp.currentMP < 0) cChamp.currentMP = 0;
+  playerHPBar.style.width = (pChamp.currentHP / pChamp.maxHP * 100) + "%";
+  cpuHPBar.style.width = (cChamp.currentHP / cChamp.maxHP * 100) + "%";
+  playerManaBar.style.width = (pChamp.currentMP / pChamp.maxMP * 100) + "%";
+  cpuManaBar.style.width = (cChamp.currentMP / cChamp.maxMP * 100) + "%";
+  playerHPMPText.textContent = `HP ${pChamp.currentHP}/${pChamp.maxHP}  MP ${pChamp.currentMP}/${pChamp.maxMP}`;
+  cpuHPMPText.textContent = `HP ${cChamp.currentHP}/${cChamp.maxHP}  MP ${cChamp.currentMP}/${cChamp.maxMP}`;
+}
+function updateFieldTurnUI() {
+  fieldText.textContent = `Field: ${fieldElement} (${fieldTurnsLeft} turns left)`;
+  turnText.textContent = turn === 'P1' ? "Your Turn" : "Enemy Turn";
+}
+function updateAbilityButtons() {
+  // Create or update ability buttons for player's current champ
+  const champ = playerTeam[playerActiveIndex];
+  abilityButtonsDiv.innerHTML = '';
+  const abilities = champ.skills;
+  for(let key of ["A","Q","W","E","R"]) {
+    const skill = abilities[key];
+    const btn = document.createElement('button');
+    btn.className = `ability-btn relative w-12 h-12 text-xs rounded-full border-2 ${key==='A'?'border-gray-500':'border-blue-500'} flex items-center justify-center`;
+    btn.title = `${skill.name} (${skill.cost} MP): ${skill.desc}`;
+    btn.textContent = key;
+    // Show mana cost as tiny text in corner
+    if(skill.cost > 0) {
+      const costLabel = document.createElement('span');
+      costLabel.textContent = skill.cost;
+      costLabel.className = "absolute bottom-0 right-0 text-[10px] text-blue-200";
+      btn.appendChild(costLabel);
+    }
+    // Click event for ability
+    btn.addEventListener('click', () => {
+      if(turn !== 'P1' || gameOver) return;
+      // Check mana
+      if(skill.cost > champ.currentMP) {
+        log("Not enough mana for " + skill.name + "!");
+        return;
+      }
+      executePlayerAction(key);
+    });
+    abilityButtonsDiv.appendChild(btn);
   }
-  me.cds[idx]=[2,3,3,4][idx]||3; renderAll(); endTurn();
+}
+function updateItemsUI() {
+  // Update item counts and disable if none or if conditions
+  potionCountSpan.textContent = `x${potionCount}`;
+  etherCountSpan.textContent = `x${etherCount}`;
+  usePotionBtn.disabled = (potionCount <= 0 || turn !== 'P1' || gameOver);
+  useEtherBtn.disabled = (etherCount <= 0 || turn !== 'P1' || gameOver);
+  switchBtn.disabled = (turn !== 'P1' || gameOver);
+}
+function executePlayerAction(actionKey) {
+  const champ = playerTeam[playerActiveIndex];
+  const enemy = cpuTeam[cpuActiveIndex];
+  if(gameOver) return;
+  // Determine action type
+  if(actionKey === 'usePotion') {
+    // Use potion on player champ
+    potionCount--;
+    const healAmt = Math.min(champ.maxHP - champ.currentHP, 100);
+    champ.currentHP += healAmt;
+    log(`${champ.name} used a Potion and healed ${healAmt} HP.`);
+    updateHPMPUI();
+    // Play healing sound perhaps
+  } else if(actionKey === 'useEther') {
+    etherCount--;
+    const restoreAmt = Math.min(champ.maxMP - champ.currentMP, 50);
+    champ.currentMP += restoreAmt;
+    log(`${champ.name} used an Ether and restored ${restoreAmt} MP.`);
+    updateHPMPUI();
+  } else if(actionKey === 'switch') {
+    // Switch to next champion in team (if available)
+    playerActiveIndex = (playerActiveIndex + 1) % playerTeam.length;
+    const newChamp = playerTeam[playerActiveIndex];
+    log(`You switched to ${newChamp.name}!`);
+    // Reload UI with new champion
+    loadChampionData();
+    updateAbilityButtons();
+  } else {
+    // It is a skill use (attack)
+    const skill = champ.skills[actionKey];
+    // Deduct mana
+    if(skill.cost > 0) {
+      champ.currentMP -= skill.cost;
+    }
+    // Calculate base damage
+    let baseDmg;
+    if(actionKey === 'A') {
+      baseDmg = 20 + champ.stats.attack * 0.5; // some base for basic attack
+    } else {
+      baseDmg = 30 + champ.stats.magic * 0.4; // base for spells
+      if(actionKey === 'R') baseDmg += 20; // ult slightly stronger
+    }
+    // Elemental multiplier
+    let dmgMultiplier = 1;
+    // Simple type chart: Arcane > Earth, Earth > Radiant, Radiant > Shadow, Shadow > Arcane
+    const strongAgainst = {
+      "Arcane": "Earth",
+      "Earth": "Radiant",
+      "Radiant": "Shadow",
+      "Shadow": "Arcane"
+    };
+    if(strongAgainst[champ.element] === enemy.element) {
+      dmgMultiplier = 2.0;
+    } else if(strongAgainst[enemy.element] === champ.element) {
+      dmgMultiplier = 0.5;
+    }
+    // Field effect: if field matches champ element, maybe boost damage
+    if(champ.element === fieldElement) {
+      dmgMultiplier *= 1.2; // slight boost
+    }
+    // Final damage calc with defense factored
+    const offenseStat = (actionKey === 'A') ? champ.stats.attack : champ.stats.magic;
+    const defenseStat = enemy.stats.defense;
+    let damage = baseDmg * (offenseStat / (defenseStat || 50)) * dmgMultiplier;
+    damage = Math.round(damage);
+    enemy.currentHP -= damage;
+    log(`${champ.name} used ${skill.name} on ${enemy.name}, dealing ${damage} damage!`);
+    // Visual feedback: shake enemy panel and flash
+    cpuPanel.classList.add('shake');
+    setTimeout(() => cpuPanel.classList.remove('shake'), 500);
+    cpuPanel.classList.add('hit-flash');
+    setTimeout(() => cpuPanel.classList.remove('hit-flash'), 300);
+    // Play attack sound via soundEffect if enabled (if we had different sounds per ability, we'd assign source accordingly)
+    if(soundToggle.getAttribute('aria-pressed') === 'false') {
+      soundEffect.src = ""; // could set to specific sound file
+      // soundEffect.play(); (assuming a sound file is set)
+    }
+    updateHPMPUI();
+    // Check if enemy died
+    if(enemy.currentHP <= 0) {
+      log(`${enemy.name} is defeated!`);
+      // if CPU champ dies, maybe switch to next if available
+      if(cpuActiveIndex < cpuTeam.length - 1) {
+        cpuActiveIndex++;
+        const nextChamp = cpuTeam[cpuActiveIndex];
+        log(`Enemy sends out ${nextChamp.name}!`);
+        loadChampionData(); // load new CPU champ
+      } else {
+        // All enemy champs defeated
+        endBattle(true);
+        return;
+      }
+    }
+  }
+  // After player's action, update UI
+  updateHPMPUI();
+  updateItemsUI();
+  // End player turn, now CPU turn
+  turn = 'P2';
+  updateFieldTurnUI();
+  // If field duration ends, rotate field element
+  fieldTurnsLeft--;
+  if(fieldTurnsLeft <= 0) {
+    // rotate field to next element for fun
+    const order = ["Arcane","Earth","Radiant","Shadow"];
+    fieldElement = order[(order.indexOf(fieldElement)+1) % order.length];
+    fieldTurnsLeft = 5;
+    log(`The field changes to ${fieldElement}!`);
+  }
+  // Disable player controls during CPU turn
+  abilityButtonsDiv.classList.add('opacity-50', 'pointer-events-none');
+  // Execute CPU action after a short delay for pacing
+  setTimeout(cpuAction, 800);
+}
+function cpuAction() {
+  if(gameOver) return;
+  const enemyChamp = cpuTeam[cpuActiveIndex];
+  const playerChamp = playerTeam[playerActiveIndex];
+  // Simple AI: if low HP and has potion, 1/2 chance to use it, else if enough mana for R then sometimes use R, else random ability
+  if(enemyChamp.currentHP < 50 && potionCount > 0 && Math.random() < 0.5) {
+    // CPU uses potion on itself if it had (we could track CPU potions too; assume CPU has 2 of each as well)
+    // For simplicity, mirror player's count for CPU
+    potionCount--;
+    const healAmt = Math.min(enemyChamp.maxHP - enemyChamp.currentHP, 100);
+    enemyChamp.currentHP += healAmt;
+    log(`${enemyChamp.name} (CPU) used a Potion and healed ${healAmt} HP.`);
+  } else {
+    // Choose an ability to use
+    let possibleMoves = ["A","Q","W","E","R"];
+    // Filter moves CPU can pay mana for
+    possibleMoves = possibleMoves.filter(m => enemyChamp.skills[m] && enemyChamp.skills[m].cost <= enemyChamp.currentMP);
+    if(possibleMoves.length === 0) {
+      possibleMoves = ["A"]; // if out of mana, will basic attack
+    }
+    // Prefer R if available (burst), else random
+    let move = "A";
+    if(possibleMoves.includes("R") && Math.random() < 0.7) {
+      move = "R";
+    } else {
+      move = possibleMoves[Math.floor(Math.random()*possibleMoves.length)];
+    }
+    const skill = enemyChamp.skills[move];
+    // Deduct mana for CPU
+    if(skill.cost > 0) {
+      enemyChamp.currentMP -= skill.cost;
+    }
+    // Calculate damage similar to player
+    let baseDmg;
+    if(move === 'A') {
+      baseDmg = 20 + enemyChamp.stats.attack * 0.5;
+    } else {
+      baseDmg = 30 + enemyChamp.stats.magic * 0.4;
+      if(move === 'R') baseDmg += 20;
+    }
+    let dmgMultiplier = 1;
+    const strongAgainst = {
+      "Arcane": "Earth",
+      "Earth": "Radiant",
+      "Radiant": "Shadow",
+      "Shadow": "Arcane"
+    };
+    if(strongAgainst[enemyChamp.element] === playerChamp.element) {
+      dmgMultiplier = 2.0;
+    } else if(strongAgainst[playerChamp.element] === enemyChamp.element) {
+      dmgMultiplier = 0.5;
+    }
+    if(enemyChamp.element === fieldElement) {
+      dmgMultiplier *= 1.2;
+    }
+    const offenseStat = (move === 'A') ? enemyChamp.stats.attack : enemyChamp.stats.magic;
+    const defenseStat = playerChamp.stats.defense;
+    let damage = baseDmg * (offenseStat / (defenseStat||50)) * dmgMultiplier;
+    damage = Math.round(damage);
+    playerChamp.currentHP -= damage;
+    log(`${enemyChamp.name} used ${skill.name} on ${playerChamp.name}, dealing ${damage} damage!`);
+    // Visual feedback: shake player panel
+    playerPanel.classList.add('shake');
+    setTimeout(() => playerPanel.classList.remove('shake'), 500);
+    playerPanel.classList.add('hit-flash');
+    setTimeout(() => playerPanel.classList.remove('hit-flash'), 300);
+    // Play sound effect if on
+    if(soundToggle.getAttribute('aria-pressed') === 'false') {
+      soundEffect.src = ""; // set CPU attack sound if any
+      // soundEffect.play();
+    }
+  }
+  // Update UI after CPU action
+  updateHPMPUI();
+  // Check if player champ died
+  if(playerTeam[playerActiveIndex].currentHP <= 0) {
+    const defeatedChamp = playerTeam[playerActiveIndex];
+    log(`${defeatedChamp.name} has been defeated!`);
+    if(playerActiveIndex < playerTeam.length - 1) {
+      // switch to next alive champion automatically
+      playerActiveIndex++;
+      const nextChamp = playerTeam[playerActiveIndex];
+      log(`${nextChamp.name} enters the battle!`);
+      loadChampionData();
+      updateAbilityButtons();
+    } else {
+      // All player champs defeated
+      endBattle(false);
+      return;
+    }
+  }
+  // Switch back to player turn
+  turn = 'P1';
+  // Possibly decrement field turns, and update field if needed (we did in player action to avoid double decrement per round).
+  updateFieldTurnUI();
+  updateItemsUI();
+  // Re-enable player controls
+  abilityButtonsDiv.classList.remove('opacity-50', 'pointer-events-none');
+}
+function endBattle(playerWon) {
+  gameOver = true;
+  battleActive = false;
+  // Stop background music if any
+  if(bgMusic.src) { bgMusic.pause(); bgMusic.currentTime = 0; }
+  // Show end screen overlay
+  endMessage.textContent = playerWon ? "Victory" : "Defeat";
+  endMessage.style.color = playerWon ? "#ffd700" : "#ff4f4f"; // gold for victory, red for defeat
+  endScreen.classList.remove('hidden');
+  // Optionally, set a background image for end screen (using winner champ's splash art)
+  let splashChampion = playerWon ? playerTeam[playerActiveIndex] : cpuTeam[cpuActiveIndex];
+  if(splashChampion) {
+    let splashName = splashChampion.name.replace(/[^a-zA-Z0-9]/g,"");
+    endScreen.style.background = `rgba(0,0,0,0.8) url('https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${splashName}_0.jpg') center/cover`;
+  }
+}
+function resetGame() {
+  // Reset to selection screen for a new game
+  battleScreen.classList.add('hidden');
+  selectionScreen.classList.remove('hidden');
+  endScreen.classList.add('hidden');
+  playerTeam = [];
+  cpuTeam = [];
+  updateStartButton();
+  renderChampionGrid();
+  // Reset any persistent data
+  logDiv.innerHTML = "";
 }
 
-// switching & items
-function trySwitch(side,slot){
-  const t=team(side); const cur=(side==='left'?S.li:S.ri);
-  if(slot===cur) return; if(!t[slot]||t[slot].hp<=0) return; if(S.turn!==side) return;
-  if(side==='left') S.li=slot; else S.ri=slot;
-  // Swap penalty: -10% ult on the incoming unit
-  const inc=active(side); inc.ult=Math.max(0,inc.ult-10);
-  logLine(`${side==='left'?'P1':'P2'} switched to ${inc.data.name}! (Turn consumed, ULT -10%)`);
-  renderAll(); endTurn();
-}
-$('#btnSwap').onclick=()=>{const t=team('left'); const cur=S.li; const alt=[0,1,2].find(i=>i!==cur && t[i] && t[i].hp>0); if(alt!=null) trySwitch('left',alt)};
-$('#itemPotion').onclick=()=>usePotion('left'); $('#itemEther').onclick=()=>useEther('left');
-function usePotion(side){if(S.turn!==side)return; const bag=S.items[side]; if(bag.potion<=0)return logLine('No potions left.'); const me=active(side); const heal=Math.round(me.max*.4); me.hp=Math.min(me.max,me.hp+heal); bag.potion--; logLine(`${side==='left'?'P1':'P2'} used Potion! +${heal}`); renderAll(); endTurn();}
-function useEther(side){if(S.turn!==side)return; const bag=S.items[side]; if(bag.ether<=0)return logLine('No ethers left.'); const me=active(side); if(me.resType==='None')return logLine('No resource to restore.'); const gain=Math.round(me.resMax*.4); me.res=Math.min(me.resMax,me.res+gain); bag.ether--; logLine(`${side==='left'?'P1':'P2'} used Ether! +${gain} ${me.resType}`); renderAll(); endTurn();}
-
-// CPU
-function cpuAct(){
-  if(S.turn!=='right'||S.p2!=='cpu')return;
-  const me=active('right'); if(!me){endTurn();return;}
-  if(me.hp<me.max*.35 && S.items.right.potion>0){S.items.right.potion--; const heal=Math.round(me.max*.4); me.hp=Math.min(me.max,me.hp+heal); logLine('CPU used Potion! +'+heal); renderAll(); return endTurn();}
-  const ready=[0,1,2,3].filter(i=>me.cds[i]===0 && ((i===3 && me.ult>=BAL.ULT_REQ) || (i!==3 && (me.resType==='None'||me.res>=scost(me.data.spells[i],i,me.resType)))));
-  if(ready.includes(3)) return actAbility('right',3);
-  if(ready.length>0) return actAbility('right',ready[0]);
-  basic('right');
-}
-
-// inspect overlay
-function holdInspect(btn,sp,ch){let t=null,open=false; const start=()=>{t=setTimeout(()=>{open=true; openInspect(sp,ch);},420)}; const clear=()=>{if(t){clearTimeout(t);t=null}}; btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:true}); ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>btn.addEventListener(ev,()=>{if(!open)clear();},{passive:true}))}
-function openInspect(sp,ch){$('#insName').textContent=sp.name; $('#insChamp').textContent=ch.data.name; $('#insDesc').innerHTML=clean(sp.tooltip); $('#insElem').textContent=spellElem(sp,ch.elem); $('#insDmgType').textContent=dmgType(sp,ch.data); const cd=Array.isArray(sp.cooldown)&&sp.cooldown.length?sp.cooldown[0]:2; $('#insCD').textContent=cd; const c=scost(sp,0,ch.resType)||0; $('#insCost').textContent=(c?c:0)+(ch.resType!=='None'?' '+ch.resType:''); $('#inspectOverlay').classList.remove('hidden');}
-$('#insClose').onclick=()=>$('#inspectOverlay').classList.add('hidden'); $('#inspectOverlay').addEventListener('click',e=>{if(e.target.id==='inspectOverlay')$('#inspectOverlay').classList.add('hidden')});
-
-// ---------- start / nav ----------
-function showSelect(){ $('#selectScreen').classList.remove('hidden'); $('#battleScreen').classList.add('hidden');}
-function showBattle(){ $('#selectScreen').classList.add('hidden'); $('#battleScreen').classList.remove('hidden');}
-$('#backToSelect').onclick=showSelect; $('#resetBtn').onclick=showSelect;
-$('#btnTryAgain').onclick=()=>{ $('#endOverlay').classList.add('hidden'); showSelect(); };
-$('#btnResetBattle').onclick=()=>{ $('#endOverlay').classList.add('hidden'); showSelect(); };
-function startBattle(){
-  S.li=0; S.ri=0; S.turn='left';
-  S.items.left={potion:2,ether:2}; S.items.right={potion:2,ether:2};
-  // randomize a field to start
-  const startF=FIELDS[Math.floor(Math.random()*FIELDS.length)];
-  S.field={name:startF.name, turns:startF.turns, boost:startF.boost};
-  // start‑turn statuses for P1
-  startTurnTicks('left'); renderAll(); showBattle(); logLine(`Battle start! Field: ${S.field.name}. P1 to move.`);
-}
-E.startTop.onclick=startBattle;
-
-// share
-$('#shareBtn')?.addEventListener('click',async()=>{const L=S.left.map(c=>c?.data?.id||'').join(','); const R=S.right.map(c=>c?.data?.id||'').join(','); const url=new URL(location.href); url.search=new URLSearchParams({l:L,r:R,mode:S.p2}).toString(); try{await navigator.clipboard.writeText(url.toString()); alert('Link copied!');}catch{prompt('Copy link',url.toString());}});
-
-// search / clear / random / p2
-E.search.oninput=(e)=>renderRoster(e.target.value);
-$('#clearPicks').onclick=()=>{S.left=[null,null,null]; S.right=[null,null,null]; drawPicks();};
-$('#randomBoth').onclick=()=>{randomFill('left'); randomFill('right');};
-E.p2ModeSelect.onchange=e=>S.p2=e.target.value;
-
-// ---------- bootstrap ----------
-(async function init(){
-  try{
-    S.version=(await J(VERS))[0];
-    const short=await J(ddata(S.version,'champion.json')); S.champs=short.data;
-    S.list=Object.values(S.champs).map(c=>({id:c.id,name:c.name,tags:c.tags,image:c.image}));
-    renderRoster(); drawPicks();
-  }catch(e){console.error(e); alert('Failed to load champion data.');}
-})();
-})();
+/***** Event Listeners *****/
+// Start battle button
+startBtn.addEventListener('click', startBattle);
+// Filters
+roleFilter.addEventListener('change', renderChampionGrid);
+elementFilter.addEventListener('change', renderChampionGrid);
+// Ability usage and item usage
+usePotionBtn.addEventListener('click', () => {
+  if(turn === 'P1') {
+    executePlayerAction('usePotion');
+    endTurnAndContinue();
+  }
+});
+useEtherBtn.addEventListener('click', () => {
+  if(turn === 'P1') {
+    executePlayerAction('useEther');
+    endTurnAndContinue();
+  }
+});
+switchBtn.addEventListener('click', () => {
+  if(turn === 'P1') {
+    executePlayerAction('switch');
+    endTurnAndContinue();
+  }
+});
+// End screen buttons
+tryAgainBtn.addEventListener('click', () => {
+  // Hide end screen and restart battle with same teams
+  endScreen.classList.add('hidden');
+  // Reset health/mana for another round with same champs
+  playerTeam.forEach(ch => { ch.currentHP = ch.maxHP; ch.currentMP = ch.maxMP; });
+  cpuTeam.forEach(ch => { ch.currentHP = ch.maxHP; ch.currentMP = ch.maxMP; });
+  playerActiveIndex = 0;
+  cpuActiveIndex = 0;
+  gameOver = false;
+  fieldTurnsLeft = 5;
+  // Possibly randomize field again
+  const elements = ["Arcane","Earth","Radiant","Shadow"];
+  fieldElement = elements[Math.floor(Math.random()*elements.length)];
+  selectionScreen.classList.add('hidden');
+  battleScreen.classList.remove('hidden');
+  loadChampionData();
+  updateAbilityButtons();
+  updateItemsUI();
+  turn = 'P1';
+  updateFieldTurnUI();
+  logDiv.innerHTML = "";
+  log("Battle restarted! Field is " + fieldElement + ".");
+  if(bgMusic.src) { bgMusic.play().catch(()=>{}); }
+});
+resetBtn.addEventListener('click', () => {
+  endScreen.classList.add('hidden');
+  resetGame();
+});
+// Champion modal close
+modalCloseBtn.addEventListener('click', closeChampionModal);
+championModal.addEventListener('click', (e) => {
+  if(e.target === championModal) { // clicking outside content
+    closeChampionModal();
+  }
+});
+// Sound toggles
+musicToggle.addEventListener('click', () => {
+  const isOn = musicToggle.getAttribute('aria-pressed') === 'false';
+  // Toggle state
+  musicToggle.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+  musicToggle.textContent = isOn ? '🔇' : '🎵';
+  if(isOn) {
+    // Turn music off
+    bgMusic.pause();
+  } else {
+    // Turn music on (if src is set, play it)
+    bgMusic.play().catch(()=>{});
+  }
+});
+soundToggle.addEventListener('click', () => {
+  const isOn = soundToggle.getAttribute('aria-pressed') === 'false';
+  soundToggle.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+  soundToggle.textContent = isOn ? '🔇' : '🔈';
+  // We interpret aria-pressed true as "muted" for SFX
+  // If turning sound off, just mute the soundEffect element
+  soundEffect.muted = isOn;
+});
+// Start by rendering champion grid
+renderChampionGrid();
+// Initially, background music and sound effect src can be set if available
+// Example: bgMusic.src = "path/to/music.mp3"; 
 </script>
 </body>
 </html>
