@@ -1414,11 +1414,45 @@ if (atkSide === 'A') {
       spark.remove(); ball.remove();
     }
 
-    const TRAINERS = [
-  { key:'brock', name:'Brock', candidates:[74,95,76,112,111,141,139] },
-  { key:'misty', name:'Misty', candidates:[120,121,130,131,91,134] },
-  // ... rest of Gen 1 & 2 gyms, elite four, Gary, Ash as per plan
+   const TRAINERS = [
+  // ————— Gen 1 (Kanto) Gyms —————
+  { key:'brock',   name:'Brock',   candidates:[74,95,76,112,111,141,139] },        // Geodude, Onix, Golem, Rhydon, Rhyhorn, Kabutops, Omastar
+  { key:'misty',   name:'Misty',   candidates:[120,121,130,131,91,134] },          // Staryu, Starmie, Gyarados, Lapras, Cloyster, Vaporeon
+  { key:'lt-surge',name:'Lt. Surge', candidates:[25,26,125,135,82] },              // Pikachu, Raichu, Electabuzz, Jolteon, Magneton
+  { key:'erika',   name:'Erika',   candidates:[114,71,45,3,103] },                 // Tangela, Victreebel, Vileplume, Venusaur, Exeggutor
+  { key:'koga',    name:'Koga',    candidates:[49,89,110,42,169] },                // Venomoth, Muk, Weezing, Golbat, Crobat
+  { key:'sabrina', name:'Sabrina',  candidates:[64,65,122,97,124] },               // Kadabra, Alakazam, Mr. Mime, Hypno, Jynx
+  { key:'blaine',  name:'Blaine',   candidates:[58,59,38,78,126,6] },              // Growlithe, Arcanine, Ninetales, Rapidash, Magmar, Charizard
+  { key:'giovanni',name:'Giovanni', candidates:[51,31,34,53,76,112,115] },         // Dugtrio, Nidoqueen, Nidoking, Persian, Golem, Rhydon, Kangaskhan
+
+  // ————— Gen 1 (Kanto) Elite Four —————
+  { key:'lorelei', name:'Lorelei',  candidates:[87,91,80,124,131] },               // Dewgong, Cloyster, Slowbro, Jynx, Lapras
+  { key:'bruno',   name:'Bruno',    candidates:[95,106,107,68] },                  // Onix, Hitmonlee, Hitmonchan, Machamp
+  { key:'agatha',  name:'Agatha',   candidates:[94,93,24,42] },                    // Gengar, Haunter, Arbok, Golbat
+  { key:'lance-k1',name:'Lance (Kanto)', candidates:[130,149,148,142,6] },         // Gyarados, Dragonite, Dragonair, Aerodactyl, Charizard
+
+  // ————— Gen 1 Rivals / Protagonist —————
+  { key:'gary',    name:'Gary (Blue, Final)', candidates:[18,65,112,103,59,130,6,3,9] }, // Pidgeot, Alakazam, Rhydon, Exeggutor, Arcanine, Gyarados, Charizard/Venusaur/Blastoise
+  { key:'ash-k1',  name:'Ash (Gen 1)', candidates:[25,6,1,7,18,99,89,128,143] },   // Pikachu, Charizard, Bulbasaur, Squirtle, Pidgeot, Kingler, Muk, Tauros, Snorlax
+
+  // ————— Gen 2 (Johto) Gyms —————
+  { key:'falkner', name:'Falkner',  candidates:[17,18,164,227] },                  // Pidgeotto, Pidgeot, Noctowl, Skarmory
+  { key:'bugsy',   name:'Bugsy',    candidates:[123,15,12,214] },                  // Scyther, Beedrill, Butterfree, Heracross
+  { key:'whitney', name:'Whitney',  candidates:[35,241,40,143] },                  // Clefairy, Miltank, Wigglytuff, Snorlax
+  { key:'morty',   name:'Morty',    candidates:[92,93,94,200] },                   // Gastly, Haunter, Gengar, Misdreavus
+  { key:'chuck',   name:'Chuck',    candidates:[57,62,237,68] },                   // Primeape, Poliwrath, Hitmontop, Machamp
+  { key:'jasmine', name:'Jasmine',  candidates:[81,82,208,227] },                  // Magnemite, Magneton, Steelix, Skarmory
+  { key:'pryce',   name:'Pryce',    candidates:[86,87,221,91,131] },               // Seel, Dewgong, Piloswine, Cloyster, Lapras
+  { key:'clair',   name:'Clair',    candidates:[148,230,130,149] },                // Dragonair, Kingdra, Gyarados, Dragonite
+
+  // ————— Gen 2 (Johto) Elite Four —————
+  { key:'will',    name:'Will (Johto)', candidates:[178,80,124,103] },             // Xatu, Slowbro, Jynx, Exeggutor
+  { key:'koga-j',  name:'Koga (Johto E4)', candidates:[168,49,89,169,205] },       // Ariados, Venomoth, Muk, Crobat, Forretress
+  { key:'bruno-j', name:'Bruno (Johto)', candidates:[237,106,107,68,208] },        // Hitmontop, Hitmonlee, Hitmonchan, Machamp, Steelix
+  { key:'karen',   name:'Karen',    candidates:[197,229,45,94,198] },              // Umbreon, Houndoom, Vileplume, Gengar, Murkrow
+  { key:'lance-j', name:'Lance (Johto Champ)', candidates:[149,149,149,130,142,6] } // Dragonite×3, Gyarados, Aerodactyl, Charizard
 ];
+
 
 state.selectedTrainer = null;
 
