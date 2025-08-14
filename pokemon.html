@@ -12,10 +12,16 @@
 :root{--bg:#0b1220;--panel:#0f172a;--border:#1f2a44;--text:#e5e7eb}
 body{background:linear-gradient(#020617,#0b1220 28%,#0f172a);color:var(--text)}
 .card{background:rgba(15,23,42,.9);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:1rem}
-.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:.75rem;padding:.55rem 1rem;font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:.75rem;padding:.55rem 1rem;font-weight:700;line-height:1.05}
 .btn-primary{background:linear-gradient(180deg,#10b981,#059669);color:#fff}
 .btn-secondary{background:linear-gradient(180deg,#334155,#475569);color:#e5e7eb}
 .btn-ghost{background:transparent;color:#cbd5e1;padding:.5rem .75rem;border:1px solid #334155}
+.btn-sm{ padding:.3rem .55rem; font-size:12px; border-radius:.6rem }
+.btn-chip{
+  padding:.28rem .5rem; font-size:11px; font-weight:700;
+  border-radius:999px; border:1px solid #334155; background:#0b1220; color:#cbd5e1;
+}
+.btn-chip:hover{ border-color:#10b981; color:#e5ffe9 }
 .type-badge{font-size:10px;font-weight:900;padding:.125rem .5rem;border-radius:999px;color:#fff}
 .grid-auto-fit{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:.75rem}
 .pixel{image-rendering:pixelated}
@@ -24,6 +30,11 @@ body{background:linear-gradient(#020617,#0b1220 28%,#0f172a);color:var(--text)}
 @keyframes caret{0%,70%{opacity:1}85%{opacity:.1}100%{opacity:1}}
 .stage-wrap{position:relative;border:1px solid #1f2a44;border-radius:.75rem;overflow:hidden}
 .stage{width:100%;display:block}
+.team-actions{ display:flex; flex-wrap:wrap; gap:.35rem; justify-content:center; }
+.move-tag{ display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .45rem; border-radius:.6rem; background:#0f172a; border:1px solid #1f2a44; font-size:11px }
+.move-tag .type-badge{ transform:translateY(-.5px) }
+.team-card{ padding:.6rem }
+.team-card img{ width:56px; height:56px }
 </style>
 </head>
 <body class="min-h-screen font-ui">
@@ -33,7 +44,7 @@ body{background:linear-gradient(#020617,#0b1220 28%,#0f172a);color:var(--text)}
       <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt class="w-6 h-6 pixel">
       <h1 class="text-lg font-extrabold leading-none">Jimmy’s Pokémon Stadium</h1>
     </div>
-    <div class="pl-9 text-[12px] text-slate-400">Gen‑1 battle layout • Lv.50 • Status • All Pokémon via PokéAPI • Canvas renderer</div>
+    <div class="pl-9 text-[12px] text-slate-400">Gen‑1 layout • Lv.50 • Gens I–III • Status • Canvas renderer</div>
   </div>
 </header>
 
@@ -99,23 +110,21 @@ body{background:linear-gradient(#020617,#0b1220 28%,#0f172a);color:var(--text)}
 
     <div class="flex items-center gap-2 flex-wrap text-[11px]">
       <span class="text-slate-400 uppercase tracking-wider">Gen</span>
-      <button class="btn-ghost" data-gen="all">All</button>
-      <button class="btn-ghost" data-gen="1">I</button><button class="btn-ghost" data-gen="2">II</button><button class="btn-ghost" data-gen="3">III</button>
-      <button class="btn-ghost" data-gen="4">IV</button><button class="btn-ghost" data-gen="5">V</button><button class="btn-ghost" data-gen="6">VI</button>
-      <button class="btn-ghost" data-gen="7">VII</button><button class="btn-ghost" data-gen="8">VIII</button><button class="btn-ghost" data-gen="9">IX</button>
+      <button class="btn-chip" data-gen="all">All</button>
+      <button class="btn-chip" data-gen="1">I</button><button class="btn-chip" data-gen="2">II</button><button class="btn-chip" data-gen="3">III</button>
     </div>
     <div class="flex items-center gap-2 flex-wrap text-[11px]">
       <span class="text-slate-400 uppercase tracking-wider">Type</span>
-      <button class="btn-ghost" data-type="all">All</button>
-      <button class="btn-ghost" data-type="normal">Normal</button><button class="btn-ghost" data-type="fire">Fire</button>
-      <button class="btn-ghost" data-type="water">Water</button><button class="btn-ghost" data-type="electric">Electric</button>
-      <button class="btn-ghost" data-type="grass">Grass</button><button class="btn-ghost" data-type="ice">Ice</button>
-      <button class="btn-ghost" data-type="fighting">Fighting</button><button class="btn-ghost" data-type="poison">Poison</button>
-      <button class="btn-ghost" data-type="ground">Ground</button><button class="btn-ghost" data-type="flying">Flying</button>
-      <button class="btn-ghost" data-type="psychic">Psychic</button><button class="btn-ghost" data-type="bug">Bug</button>
-      <button class="btn-ghost" data-type="rock">Rock</button><button class="btn-ghost" data-type="ghost">Ghost</button>
-      <button class="btn-ghost" data-type="dragon">Dragon</button><button class="btn-ghost" data-type="dark">Dark</button>
-      <button class="btn-ghost" data-type="steel">Steel</button><button class="btn-ghost" data-type="fairy">Fairy</button>
+      <button class="btn-chip" data-type="all">All</button>
+      <button class="btn-chip" data-type="normal">Normal</button><button class="btn-chip" data-type="fire">Fire</button>
+      <button class="btn-chip" data-type="water">Water</button><button class="btn-chip" data-type="electric">Electric</button>
+      <button class="btn-chip" data-type="grass">Grass</button><button class="btn-chip" data-type="ice">Ice</button>
+      <button class="btn-chip" data-type="fighting">Fighting</button><button class="btn-chip" data-type="poison">Poison</button>
+      <button class="btn-chip" data-type="ground">Ground</button><button class="btn-chip" data-type="flying">Flying</button>
+      <button class="btn-chip" data-type="psychic">Psychic</button><button class="btn-chip" data-type="bug">Bug</button>
+      <button class="btn-chip" data-type="rock">Rock</button><button class="btn-chip" data-type="ghost">Ghost</button>
+      <button class="btn-chip" data-type="dragon">Dragon</button><button class="btn-chip" data-type="dark">Dark</button>
+      <button class="btn-chip" data-type="steel">Steel</button><button class="btn-chip" data-type="fairy">Fairy</button>
     </div>
 
     <div class="card p-3">
@@ -174,25 +183,52 @@ body{background:linear-gradient(#020617,#0b1220 28%,#0f172a);color:var(--text)}
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const cap=s=>s? s.charAt(0).toUpperCase()+s.slice(1) : s;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const LV=50, MAX_ID=1010;
+
+// Gen I–III only
+const LV = 50, MAX_ID = 386; // gens 1-3
+
+// Move generation filter (I–III only)
+const GEN_MOVE_ALLOWED = new Set(['generation-i', 'generation-ii', 'generation-iii']);
+
 const TYPE_COLORS={normal:'#A8A77A',fire:'#EE8130',water:'#6390F0',electric:'#F7D02C',grass:'#7AC74C',ice:'#96D9D6',fighting:'#C22E28',poison:'#A33EA1',ground:'#E2BF65',flying:'#A98FF3',psychic:'#F95587',bug:'#A6B91A',rock:'#B6A136',ghost:'#735797',dragon:'#6F35FC',dark:'#705746',steel:'#B7B7CE',fairy:'#D685AD'};
 const typeColor=t=>TYPE_COLORS[t]||'#64748b';
-const GEN_RANGES={1:[1,151],2:[152,251],3:[252,386],4:[387,493],5:[494,649],6:[650,721],7:[722,809],8:[810,898],9:[899,1010]};
+const GEN_RANGES={1:[1,151],2:[152,251],3:[252,386]};
 const spriteURL=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+
 /* robust fetch with retries */
 async function fetchJSON(url,{tries=5,baseDelay=300}={}){let e;for(let i=0;i<tries;i++){try{const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}catch(err){e=err;await sleep(baseDelay*Math.pow(2,i)+Math.random()*120)}}throw e}
 /* concurrency limiter */
 function pLimit(n){let a=0,q=[];const next=()=>{a--;if(q.length)q.shift()()};return fn=>new Promise((res,rej)=>{const run=async()=>{a++;try{res(await fn())}catch(e){rej(e)}finally{next()}};a<n?run():q.push(run)})}
 
+/* Safe, small-footprint storage shim (avoids QuotaExceeded) */
+const store = (function(){
+  try { const t="__t"; localStorage.setItem(t,"1"); localStorage.removeItem(t); return localStorage; }
+  catch(e){ try{ const t="__t"; sessionStorage.setItem(t,"1"); sessionStorage.removeItem(t); return sessionStorage; }
+  catch(e2){ return null; } }
+})();
+function cacheGet(key){ if(!store) return null; try{ return store.getItem(key);}catch(e){ return null; } }
+function cacheSet(key,val){
+  if(!store) return;
+  try{ store.setItem(key,val); }
+  catch(e){
+    try{
+      const keys=[]; for(let i=0;i<store.length;i++) keys.push(store.key(i));
+      let ev=0; for(const k of keys){ if(k.indexOf('mv:')===0){ store.removeItem(k); if(++ev>=25) break; } }
+      store.setItem(key,val);
+    }catch(e2){ /* give up */ }
+  }
+}
+
 /* Type chart */
 const chart={normal:{rock:.5,ghost:0},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},ice:{water:.5,ice:.5,grass:2,ground:2,flying:2,dragon:2},fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:.5,flying:.5,psychic:.5,bug:.5,fairy:.5,ghost:0},poison:{grass:2,fairy:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0},ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:.5,flying:0,bug:.5},flying:{grass:2,fighting:2,bug:2,electric:.5,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},bug:{grass:2,psychic:2,dark:2,fire:.5,fighting:.5,poison:.5,flying:.5,ghost:.5,steel:.5,fairy:.5},rock:{fire:2,ice:2,flying:2,bug:2,fighting:.5,ground:.5,steel:.5},ghost:{ghost:2,psychic:2,normal:0,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{ghost:2,psychic:2,fighting:.5,dark:.5,fairy:.5},steel:{rock:2,ice:2,fairy:2,fire:.5,water:.5,electric:.5,steel:.5}};
-const eff=(atk,defs)=>defs.reduce((m,t)=>m*(chart[atk]?.[t]??1),1);
+const eff=(atk,defs)=>defs.reduce((m,t)=>m*(chart[atk]&&chart[atk][t]!=null?chart[atk][t]:1),1);
 
 /* Specials & priorities */
 const RECHARGE=new Set(['hyper-beam','giga-impact']);
 const SEMI_INV={'fly':{tag:'fly',msg:'flew up high!'},'dig':{tag:'dig',msg:'dug underground!'}};
 const SEMI_HITS={fly:{hits:new Set(['gust','twister','thunder','hurricane']),bonus:2},dig:{hits:new Set(['earthquake','magnitude']),bonus:2}};
-const PRI_P1=new Set(['quick-attack','aqua-jet','bullet-punch','ice-shard','shadow-sneak','sucker-punch']); const PRI_P2=new Set(['extreme-speed']);
+const PRI_P1=new Set(['quick-attack','aqua-jet','bullet-punch','ice-shard','shadow-sneak','sucker-punch']);
+const PRI_P2=new Set(['extreme-speed']);
 const spec={ selfKO:new Set(['self-destruct','explosion']), drain50:new Set(['absorb','mega-drain','giga-drain','drain-punch','leech-life']), recoil33:new Set(['double-edge','flare-blitz','brave-bird','volt-tackle','wild-charge','wood-hammer']), recoil25:new Set(['take-down','submission']), fixed50:new Set(['seismic-toss','night-shade']), fixed40:new Set(['dragon-rage']), fixed20:new Set(['sonic-boom']), protect:new Set(['protect','detect']), sub:new Set(['substitute']), leech:new Set(['leech-seed']), destiny:new Set(['destiny-bond']) };
 const AIL_MAP={paralysis:'par',burn:'brn',poison:'psn','bad-poison':'psn',freeze:'frz',sleep:'slp'};
 const PAR_SPEED=.5, RESIDUAL_FRACTION=16;
@@ -314,23 +350,29 @@ async function init(){
   setupCanvas();
 }
 
-/* Load names list */
+/* Load names list (Gen 1–3) */
 async function loadAll(){
   const r=await fetchJSON(`https://pokeapi.co/api/v2/pokemon?limit=${MAX_ID}`);
   S.all=r.results.map(u=>({id:Number(u.url.split('/').filter(Boolean).pop()), name:cap(u.name)})).filter(p=>p.id>=1&&p.id<=MAX_ID);
   renderGrid();
 }
 
-/* Pokémon detail + caching */
+/* Pokémon detail: memory-only cache (no localStorage) */
+const detailMem = new Map();
 async function getPokemonDetail(id){
-  const k='poke:'+id; const c=localStorage.getItem(k); if(c) return JSON.parse(c);
+  if (detailMem.has(id)) return detailMem.get(id);
   const p=await fetchJSON(`https://pokeapi.co/api/v2/pokemon/${id}`);
-  const out={ id, name:cap(p.name), types:p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name), sprites:p.sprites, stats:p.stats, moves:p.moves };
-  localStorage.setItem(k, JSON.stringify(out));
+  const out={ id, name:cap(p.name),
+    types:p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name),
+    sprites:{ front_default:p.sprites.front_default, back_default:p.sprites.back_default||p.sprites.front_default },
+    stats:p.stats.map(s=>({ name:s.stat.name, base_stat:s.base_stat })),
+    moves:p.moves
+  };
+  detailMem.set(id, out);
   return out;
 }
 
-/* Move pool assembly */
+/* Move pool assembly (Gen I–III only, slim cached) */
 async function assembleMovePool(movesArr){
   const pick=new Map();
   for(const m of movesArr){
@@ -340,7 +382,7 @@ async function assembleMovePool(movesArr){
       if(method==='level-up' && v.level_learned_at<=50){
         if(!pick.has(k)) pick.set(k,{name:k,flags:new Set(),level:0});
         pick.get(k).flags.add('level-up');
-        pick.get(k).level=Math.max(pick.get(k).level,v.level_learned_at||1);
+        pick.get(k).level=Math.max(pick.get(k).level, v.level_learned_at||1);
       }
       if(method==='machine'){
         if(!pick.has(k)) pick.set(k,{name:k,flags:new Set(),level:null});
@@ -348,40 +390,54 @@ async function assembleMovePool(movesArr){
       }
     }
   }
-  const limit=pLimit(8), tasks=[], results=[];
+
+  const limit=pLimit(8);
+  const out=[];
+
+  const readSlim=(name)=>{ const raw=cacheGet('mv:'+name); if(!raw) return null; try{return JSON.parse(raw)}catch(_){return null} };
+  const writeSlim=(name,mv)=>{
+    const slim={ name:mv.name, type:mv.type&&mv.type.name, damage_class:mv.damage_class&&mv.damage_class.name,
+      power:mv.power, accuracy:mv.accuracy, priority:mv.priority,
+      generation: mv.generation && mv.generation.name,
+      meta:{ ailment:mv.meta&&mv.meta.ailment&&mv.meta.ailment.name, ailment_chance:mv.meta&&mv.meta.ailment_chance },
+      stat_changes:Array.isArray(mv.stat_changes)?mv.stat_changes.map(s=>({stat:s.stat&&s.stat.name, change:s.change})) : [],
+      target: mv.target && mv.target.name
+    };
+    cacheSet('mv:'+name, JSON.stringify(slim)); return slim;
+  };
+
+  const tasks=[];
   for(const {name} of pick.values()){
-    const cached=S.moveCache.get(name) || JSON.parse(localStorage.getItem('mv:'+name)||'null');
-    if(cached){ results.push({ok:true,name,data:cached}); continue; }
-    tasks.push(limit(async()=>{
-      try{
-        const mv=await fetchJSON(`https://pokeapi.co/api/v2/move/${name}`,{tries:5,baseDelay:350});
-        S.moveCache.set(name,mv); localStorage.setItem('mv:'+name,JSON.stringify(mv));
-        results.push({ok:true,name,data:mv});
-      }catch(e){
-        results.push({ok:false,name});
-      }
-    }));
+    const cached=readSlim(name);
+    if(cached){ out.push(cached); continue; }
+    tasks.push(limit(async()=>{ const mv=await fetchJSON(`https://pokeapi.co/api/v2/move/${name}`,{tries:5,baseDelay:350}); out.push(writeSlim(name,mv)); }));
   }
   if(tasks.length) await Promise.allSettled(tasks);
-  const out=[];
+
+  // Convert to UI format (filter to Gen I–III)
+  const AIL = { paralysis:'par', burn:'brn', poison:'psn', 'bad-poison':'psn', freeze:'frz', sleep:'slp' };
+  const cooked=[];
   for(const base of pick.values()){
-    const mv=S.moveCache.get(base.name) || (results.find(r=>r.ok&&r.name===base.name) ? results.find(r=>r.ok&&r.name===base.name).data : null);
-    if(!mv) continue;
-    const type=mv.type && mv.type.name; if(!TYPE_COLORS[type]) continue;
-    const cat=mv.damage_class && mv.damage_class.name || 'status';
-    const power=mv.power!=null?mv.power:null;
-    const acc=mv.accuracy!=null?mv.accuracy:100;
-    const pr=mv.priority!=null?mv.priority:0;
-    const ailRaw=(mv.meta && mv.meta.ailment && mv.meta.ailment.name) || 'none';
-    const AIL={paralysis:'par', burn:'brn', poison:'psn', 'bad-poison':'psn', freeze:'frz', sleep:'slp'};
-    const ail=AIL[ailRaw] || (ailRaw==='none'?null:ailRaw);
-    const ailC=(mv.meta && (mv.meta.ailment_chance!=null ? mv.meta.ailment_chance : mv.effect_chance)) || 0;
-    const sc=Array.isArray(mv.stat_changes)?mv.stat_changes:[];
-    const target=(mv.target && mv.target.name) || 'selected-pokemon';
-    const healing=(mv.meta && mv.meta.healing) || 0;
-    out.push({key:base.name,display:base.name.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),type,category:cat,power,accuracy:acc,method:[...base.flags][0],level:base.level||null,ailment_code:ail,ailment_chance:ailC,stat_changes:sc,target,healing,priority:pr});
+    const slim=out.find(x=>x && x.name===base.name); if(!slim) continue;
+    if(!GEN_MOVE_ALLOWED.has(slim.generation)) continue;                // <-- gen filter
+    if(!TYPE_COLORS[slim.type]) continue;
+    const disp=slim.name.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    const ail=AIL[(slim.meta && slim.meta.ailment) || 'none'] || null;
+    const ailC=(slim.meta && (slim.meta.ailment_chance!=null ? slim.meta.ailment_chance : 0)) || 0;
+
+    cooked.push({
+      key:slim.name, display:disp, type:slim.type,
+      category:slim.damage_class || 'status',
+      power:slim.power!=null?slim.power:null,
+      accuracy:slim.accuracy!=null?slim.accuracy:100,
+      priority:slim.priority!=null?slim.priority:0,
+      ailment_code:ail, ailment_chance:ailC,
+      stat_changes:slim.stat_changes||[],
+      target:slim.target||'selected-pokemon',
+      healing:0, method:[...(base.flags||new Set())][0], level:base.level||null
+    });
   }
-  return out.length?out:[{key:'tackle',display:'Tackle',type:'normal',category:'physical',power:40,accuracy:100,method:'level-up',level:1,priority:0}];
+  return cooked.length?cooked:[{key:'tackle',display:'Tackle',type:'normal',category:'physical',power:40,accuracy:100,priority:0,method:'level-up',level:1}];
 }
 
 /* ===== Builder ===== */
@@ -396,16 +452,27 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function nameFor(id){const p=S.all.find(x=>x.id===id);return p?p.name:`#${id}`}
 function renderTeams(){
   const slot=(teamKey,p)=>`
-  <div class="card p-2 flex flex-col items-center">
-    <img src="${spriteURL(p.id)}" class="w-16 h-16 pixel" alt="${p.name}">
+  <div class="card team-card flex flex-col items-center">
+    <img src="${spriteURL(p.id)}" class="pixel" alt="${p.name}">
     <div class="text-xs mt-1 text-center">${p.name}</div>
-    <div class="mt-2 flex items-center gap-2">
-      <button class="btn-ghost text-xs" data-mv>Edit Moves</button>
-      <button class="btn-ghost text-xs text-rose-400" data-remove>Remove</button>
+
+    <div class="mt-2 team-actions">
+      <button class="btn-chip" data-mv>Edit moves</button>
+      <button class="btn-chip" data-remove>Remove</button>
     </div>
-    <div class="mt-2 flex flex-wrap gap-1 justify-center">${(p.moves||[]).map(m=>`<span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span><span class="text-[11px]">${m.display}</span>`).join(' ')||'<span class="text-[10px] text-slate-400">No moves chosen</span>'}</div>
+
+    <div class="mt-2 flex flex-wrap gap-1 justify-center">${
+      (p.moves||[]).length
+        ? p.moves.map(m=>`
+            <span class="move-tag">
+              <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
+              <span>${m.display}</span>
+            </span>
+          `).join('')
+        : '<span class="text-[10px] text-slate-400">No moves chosen</span>'
+    }</div>
   </div>`;
-  const filler=`<div class="rounded-2xl border border-dashed border-slate-700 h-24 flex items-center justify-center text-slate-500 text-xs">Empty</div>`;
+  const filler=`<div class="rounded-2xl border border-dashed border-slate-700 h-20 flex items-center justify-center text-slate-500 text-xs">Empty</div>`;
   const mount=function(el,key){
     el.innerHTML='';
     const t=S[key];
@@ -473,7 +540,7 @@ function closePicker(commit){
   $('#picker').classList.add('hidden');
 }
 $('#donePick').addEventListener('click',function(){ closePicker(true); });
-$('#picker').addEventListener('click',function(e){ if(e.target && e.target.hasAttribute('data-close')) closePicker(false); });
+$('#picker').addEventListener('click',function(e){ if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-close')) closePicker(false); });
 $('#search').addEventListener('input',function(e){ filterGrid(e.target.value.toLowerCase()); });
 
 function renderGrid(){
@@ -516,7 +583,7 @@ async function showPreview(id){
     nameEl.textContent=cap(p.name); imgEl.src=spriteURL(id);
     const types=p.types||[]; S.typesById.set(id,types);
     typesEl.innerHTML=types.map(function(t){return '<span class="type-badge" style="background:'+typeColor(t)+'">'+t.toUpperCase()+'</span>';}).join(' ');
-    const get=function(k){const s=p.stats?.find(function(s2){return s2.stat && s2.stat.name===k;}); return s? s.base_stat : 50;};
+    const get=function(k){const s=p.stats&&p.stats.find(function(s2){return s2.name===k;}); return s? s.base_stat : 50;};
     const base={hp:get('hp'),atk:get('attack'),def:get('defense'),spa:get('special-attack'),spd:get('special-defense'),spe:get('speed')};
     const lv50=deriveLv50(base); statsEl.textContent='HP '+lv50.maxHP+' • Atk '+lv50.atk+' • Def '+lv50.def+' • SpA '+lv50.spa+' • SpD '+lv50.spd+' • Spe '+lv50.spe;
   }catch(e){ nameEl.textContent='#'+String(id).padStart(3,'0'); typesEl.textContent='Failed to load'; }
@@ -621,7 +688,7 @@ async function startBattle(){
   const all=[...S.teamA,...S.teamB];
   const details=await Promise.all(all.map(async function(p){
     const d=await getPokemonDetail(p.id);
-    const gs=function(k){return d.stats.find(function(s){return s.stat && s.stat.name===k;}).base_stat;};
+    const gs=function(k){const obj=d.stats.find(function(s){return s.name===k;}); return obj?obj.base_stat:50;};
     const base={hp:gs('hp'),atk:gs('attack'),def:gs('defense'),spa:gs('special-attack'),spd:gs('special-defense'),spe:gs('speed')};
     const derived=deriveLv50(base);
     const types=d.types; S.typesById.set(p.id,types);
@@ -766,7 +833,7 @@ async function act(side, atk, def, move){
   }
 
   // Accuracy & semi‑inv auto-miss
-  const autoMiss = def.volatile && def.volatile.semiInv && !(SEMI_HITS[def.volatile.semiInv]?.hits.has(key));
+  const autoMiss = def.volatile && def.volatile.semiInv && !(SEMI_HITS[def.volatile.semiInv] && SEMI_HITS[def.volatile.semiInv].hits && SEMI_HITS[def.volatile.semiInv].hits.has(key));
   const acc = (move.accuracy==null?100:move.accuracy);
   if(autoMiss || Math.random()*100>acc){ log(atk.name+"'s "+move.display+' missed!'); await sleep(250); return; }
 
@@ -778,11 +845,11 @@ async function act(side, atk, def, move){
     requestRender(); return;
   }
 
-  // Damage
+  // Multi-hit heuristics
   let hits=1, effBonus=1;
   if(def.volatile && def.volatile.semiInv){
     const t=def.volatile.semiInv; const counters=SEMI_HITS[t];
-    if(counters && counters.hits.has(key)) effBonus=counters.bonus||1;
+    if(counters && counters.hits && counters.hits.has(key)) effBonus=counters.bonus||1;
   }
   if(['double-slap','fury-attack','fury-swipes','bullet-seed','icicle-spear','pin-missile','rock-blast','arm-thrust'].indexOf(key)>=0){
     const r=Math.random(); hits=r<0.35?2:r<0.70?3:r<0.85?4:5;
@@ -803,7 +870,6 @@ async function act(side, atk, def, move){
     const before=def.volatile.subHP; def.volatile.subHP=Math.max(0,def.volatile.subHP-total);
     log('The Substitute took '+Math.min(before,total)+' damage.'); if(def.volatile.subHP<=0){ delete def.volatile.subHP; log('The Substitute broke!'); }
   }else{
-    // Protect check
     if(def.volatile && def.volatile.protect){ log(def.name+' protected itself!'); delete def.volatile.protect; await sleep(200); return; }
     def.hp=Math.max(0, def.hp-total);
     log(atk.name+' dealt '+total+(hits>1?' ('+hits+' hits)':'')+' to '+def.name+'.'+(crit?' Critical hit!':''));
@@ -876,9 +942,9 @@ async function applyStatusMove(atk,def,move,side){
     const tgt = (move.target && move.target.indexOf('user')>=0) ? atk : def;
     for(const sc of move.stat_changes){
       const statMap={'attack':'atk','defense':'def','special-attack':'spa','special-defense':'spd','speed':'spe'};
-      const k=statMap[sc.stat && sc.stat.name]; if(!k) continue;
+      const k=statMap[sc.stat]; if(!k) continue;
       tgt.stages[k]=Math.max(-6,Math.min(6,tgt.stages[k]+sc.change));
-      const dir=sc.change>0?'rose':'fell'; log(tgt.name+"'s "+(sc.stat && sc.stat.name ? sc.stat.name.replace('-',' ') : 'stat')+' '+dir+'!');
+      const dir=sc.change>0?'rose':'fell'; log(tgt.name+"'s "+sc.stat.replace('-',' ')+' '+dir+'!');
       done=true;
     }
     await sleep(140);
@@ -913,7 +979,7 @@ async function performSwitch(side,toIndex){
   requestRender(); await sleep(250);
 }
 
-/* Misc UI */
+/* Toast */
 let toastTimer; function toast(msg){
   clearTimeout(toastTimer);
   let t=$('#toast');
@@ -925,7 +991,7 @@ let toastTimer; function toast(msg){
   t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(function(){t.style.opacity='0';},1600);
 }
 
-/* Boot helpers */
+/* Shared derive (dupe for clarity where used) */
 function deriveLv50(base){ const hp=Math.floor(((2*base.hp)*LV)/100)+LV+10; const atk=Math.floor(((2*base.atk)*LV)/100)+5; const def=Math.floor(((2*base.def)*LV)/100)+5; const spa=Math.floor(((2*base.spa)*LV)/100)+5; const spd=Math.floor(((2*base.spd)*LV)/100)+5; const spe=Math.floor(((2*base.spe)*LV)/100)+5; return {maxHP:hp,atk:atk,def:def,spa:spa,spd:spd,spe:spe}; }
 </script>
 </body>
