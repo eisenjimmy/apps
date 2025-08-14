@@ -1163,7 +1163,7 @@
       if(state.autoPlay) autoLoop();
     }
 
-    async function takeOneAction(side, atk, def, move){
+    async function takeOneAction(side, atk, def, move) {
   const atkSide = side, defSide = side === 'A' ? 'B' : 'A';
   if (atk.hp <= 0 || def.hp <= 0) return false;
 
@@ -1191,6 +1191,48 @@
       return false;
     }
   }
+
+  // Handle accuracy/miss before damage
+  if (Math.random() * 100 > (move.accuracy ?? 100)) {
+    log(`${atk.name}'s ${move.display} missed!`);
+    await impactMiss(defSide);
+    await sleep(P(300));
+    return false;
+  }
+
+  // Damage calculation and hit logic
+  let dmg = calculateDamage(atk, def, move);
+  def.hp = Math.max(0, def.hp - dmg);
+  if (atkSide === 'A') state.stats.dmgA += dmg; else state.stats.dmgB += dmg;
+  await impactHit(defSide, move.type);
+  setHPBars();
+  log(`${atk.name} dealt ${dmg} damage to ${def.name}.`);
+  await sleep(P(300));
+
+  // If defender faints
+  if (def.hp <= 0) {
+    await faintSprite(defSide);
+    if (atkSide === 'A') state.stats.koA++; else state.stats.koB++;
+    if (!battleAlive()) return true;
+  }
+
+  // Self-KO moves handling (only after hit)
+  const moveKey = (move.key || '').toLowerCase();
+  if (SELF_KO_MOVES.has(moveKey)) {
+    log(`${atk.name} fainted due to ${move.display || move.name}!`);
+    atk.hp = 0;
+    setHPBars();
+    await faintSprite(atkSide);
+    if (atkSide === 'A') state.stats.koB++; else state.stats.koA++;
+    if (!battleAlive()) return true;
+    setActiveDisplays();
+    setBanner(`${(atkSide === 'A' ? currA() : currB()).name} was sent out!`, 'info');
+    await sleep(P(320));
+    return true;
+  }
+
+  return false;
+}
 
   setBanner(`${atk.name} used ${move.display}!`, atkSide === 'A' ? 'your' : 'rival');
 
