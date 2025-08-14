@@ -1146,7 +1146,13 @@
         setActiveDisplays(); setBanner(`${(atkSide==='A'?currB():currA()).name} was sent out!`,'info'); await sleep(P(320));
         return true;
       }
-
+if (atkSide === 'A') {
+  const nextIdx = state.teamB.findIndex(p => p.hp > 0);
+  if (nextIdx !== -1) state.bIdx = nextIdx;
+} else {
+  const nextIdx = state.teamA.findIndex(p => p.hp > 0);
+  if (nextIdx !== -1) state.aIdx = nextIdx;
+}
       // Post-move: recharge?
       if(RECHARGE_MOVES.has((move.key||'').toLowerCase())){
         atk.volatile.recharge = 1;
