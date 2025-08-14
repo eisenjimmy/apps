@@ -1164,33 +1164,168 @@
     }
 
     async function takeOneAction(side, atk, def, move){
-      const atkSide=side, defSide=side==='A'?'B':'A';
-      if(atk.hp<=0 || def.hp<=0) return false;
+  const atkSide = side, defSide = side === 'A' ? 'B' : 'A';
+  if (atk.hp <= 0 || def.hp <= 0) return false;
 
-      setBanner(`${atk.name} is preparing to move…`, atkSide==='A'?'your':'rival');
-      if(handlePreMoveStatus(atk)){ setHPBars(); await sleep(P(420)); return false; }
+  setBanner(`${atk.name} is preparing to move…`, atkSide === 'A' ? 'your' : 'rival');
+  if (handlePreMoveStatus(atk)) { setHPBars(); await sleep(P(420)); return false; }
 
-      // If finishing a two-turn move
-      if(atk.volatile?.charging){
-        move = atk.volatile.charging.move;
-        delete atk.volatile.charging;
-        delete atk.volatile.semiInv;
-        const atkImg = (atkSide==='A') ? $('#spriteA') : $('#spriteB');
-        atkImg.classList.remove('semi-inv');
-      } else {
-        // Start charging if semi-inv move
-        const k=(move.key||'').toLowerCase();
-        if(SEMI_INV_MOVES[k]){
-          const tag=SEMI_INV_MOVES[k].tag;
-          setBanner(`${atk.name} ${SEMI_INV_MOVES[k].phase1Msg}`, atkSide==='A'?'your':'rival');
-          atk.volatile.charging={move,tag};
-          atk.volatile.semiInv=tag;
-          const atkImg = (atkSide==='A') ? $('#spriteA') : $('#spriteB');
-          atkImg.classList.add('semi-inv');
-          await sleep(P(400));
-          return false;
-        }
-      }
+  // If finishing a two-turn move
+  if (atk.volatile?.charging) {
+    move = atk.volatile.charging.move;
+    delete atk.volatile.charging;
+    delete atk.volatile.semiInv;
+    const atkImg = (atkSide === 'A') ? $('#spriteA') : $('#spriteB');
+    atkImg.classList.remove('semi-inv');
+  } else {
+    // Start charging if semi-inv move
+    const k = (move.key || '').toLowerCase();
+    if (SEMI_INV_MOVES[k]) {
+      const tag = SEMI_INV_MOVES[k].tag;
+      setBanner(`${atk.name} ${SEMI_INV_MOVES[k].phase1Msg}`, atkSide === 'A' ? 'your' : 'rival');
+      atk.volatile.charging = { move, tag };
+      atk.volatile.semiInv = tag;
+      const atkImg = (atkSide === 'A') ? $('#spriteA') : $('#spriteB');
+      atkImg.classList.add('semi-inv');
+      await sleep(P(400));
+      return false;
+    }
+  }
+
+  setBanner(`${atk.name} used ${move.display}!`, atkSide === 'A' ? 'your' : 'rival');
+
+  // Status/Heal moves (unchanged)
+  if (move.category === 'status' && (!move.power || move.power === 0) &&
+     (move.ailment_code || (move.stat_changes && move.stat_changes.length) || move.healing || true)) {
+    if (Math.random() * 100 > (move.accuracy ?? 100)) {
+      log(`${atk.name}'s ${move.display} missed!`);
+      await impactMiss(defSide);
+      await sleep(P(300));
+    } else {
+      await animateAttack(atkSide, defSide, move);
+      const acted = await applyStatusMove(atk, def, atkSide, defSide, move);
+      if (!acted) log('But it failed!');
+      await sleep(P(320));
+    }
+    return false;
+  }
+
+  // Damaging path with semi-inv target logic
+  let autoMiss = false, effBonus = 1.0;
+  if (def.volatile?.semiInv) {
+    const tag = def.volatile.semiInv;
+    const k = (move.key || '').toLowerCase();
+    const counters = SEMI_INV_COUNTERS[tag];
+    if (!counters || !counters.hits.has(k)) autoMiss = true;
+    else effBonus = counters.bonus || 1.0;
+  }
+
+  await animateAttack(atkSide, defSide, move);
+
+  // MISS: no damage, no self-KO
+  if (autoMiss || Math.random() * 100 > (move.accuracy ?? 100)) {
+    await impactMiss(defSide);
+    log(`${atk.name}'s ${move.display} missed!`);
+    setBanner(`${atk.name}'s ${move.display} missed!`, 'info');
+    await sleep(P(300));
+    return false;
+  }
+
+  // HIT: compute and apply damage
+  let dmg = computeDamage(atk, def, move);
+  if (effBonus !== 1.0) dmg = Math.floor(dmg * effBonus);
+  const crit = Math.random() < 0.1;
+  if (crit) {
+    dmg = Math.floor(dmg * 1.75);
+    log('Critical hit!');
+    await screenShake();
+  }
+
+  def.hp = Math.max(0, def.hp - dmg);
+  if (atkSide === 'A') state.stats.dmgA += dmg; else state.stats.dmgB += dmg;
+  await impactHit(defSide, move.type);
+  setHPBars();
+  log(`${atk.name} dealt ${dmg} damage to ${def.name}.`);
+  await sleep(P(300));
+
+  // Apply on-hit status if defender still standing
+  if (def.hp > 0 && move.ailment_code) {
+    const applied = tryApplyStatus(def, move.ailment_code, move.ailment_chance || 0);
+    if (applied) {
+      log(`${def.name} is now ${applied.toUpperCase()}!`);
+      state.stats.statusCounts[applied] = (state.stats.statusCounts[applied] || 0) + 1;
+      setBanner(`${def.name} is ${applied.toUpperCase()}!`, 'info');
+      setHPBars();
+      await sleep(P(220));
+    }
+  }
+
+  // Determine if defender fainted
+  let defFainted = def.hp <= 0;
+
+  // ===============================
+  // SELF-KO handling (on hit only)
+  // ===============================
+  const moveKeyLower = (move.key || '').toLowerCase();
+  let atkSelfKO = false;
+  if (SELF_KO_MOVES.has(moveKeyLower)) {
+    atkSelfKO = true;
+    log(`${atk.name} fainted due to ${move.display}!`);
+    atk.hp = 0;
+    setHPBars();
+    await faintSprite(atkSide);
+
+    // Count KO for the opponent's side
+    if (atkSide === 'A') state.stats.koB++; else state.stats.koA++;
+  }
+
+  // Handle defender faint AFTER self-KO resolution (so both can faint)
+  if (defFainted) {
+    log(`${def.name} fainted!`);
+    if (atkSide === 'A') state.stats.koA++; else state.stats.koB++;
+    await faintSprite(defSide);
+    await sleep(P(250));
+
+    // Move to next defender
+    if (atkSide === 'A') {
+      const next = state.rosterB.findIndex((x,i)=> i > state.bIdx && x.hp > 0);
+      if (next !== -1) state.bIdx = next;
+    } else {
+      const next = state.rosterA.findIndex((x,i)=> i > state.aIdx && x.hp > 0);
+      if (next !== -1) state.aIdx = next;
+    }
+  }
+
+  // If attacker self-KO'd, move to next attacker
+  if (atkSelfKO) {
+    if (atkSide === 'A') {
+      const next = state.rosterA.findIndex((x,i)=> i > state.aIdx && x.hp > 0);
+      if (next !== -1) state.aIdx = next;
+    } else {
+      const next = state.rosterB.findIndex((x,i)=> i > state.bIdx && x.hp > 0);
+      if (next !== -1) state.bIdx = next;
+    }
+  }
+
+  // End conditions
+  if (!battleAlive()) return true;
+
+  // If either fainted, update displays, announce send-out, and end this action
+  if (defFainted || atkSelfKO) {
+    setActiveDisplays();
+    setBanner(`${(atkSide === 'A' ? currB() : currA()).name} was sent out!`, 'info');
+    await sleep(P(320));
+    return true; // end turn on faint
+  }
+
+  // Post-move: recharge? (unchanged)
+  if (RECHARGE_MOVES.has((move.key || '').toLowerCase())) {
+    atk.volatile.recharge = 1;
+  }
+
+  return false;
+}
+
 
       setBanner(`${atk.name} used ${move.display}!`, atkSide==='A'?'your':'rival');
 
