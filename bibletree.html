@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Bible Family Tree — Mobile</title>
+  <title>Jesus’s Family Tree — Mobile</title>
+  <link rel="icon" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%237c3aed"/><stop offset="100%" stop-color="%233b82f6"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="%2310222e"/><g fill="url(%23g)"><rect x="28" y="10" width="8" height="44" rx="2"/><rect x="14" y="24" width="36" height="8" rx="2"/></g></svg>' />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body { height: 100%; }
@@ -11,28 +12,22 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Scroll-snap carousel for siblings (single screen, no zoom/pan) */
     .snap-x-mandatory { scroll-snap-type: x mandatory; }
     .snap-center { scroll-snap-align: center; }
 
-    /* 2-line clamp for card descriptions */
     .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    /* Touch ripple (tap feedback) */
     .ripple { position: relative; overflow: hidden; touch-action: manipulation; }
     .ripple:after { content:""; position:absolute; width:0; height:0; left:var(--x,50%); top:var(--y,50%);
       background:rgba(255,255,255,.25); border-radius:9999px; transform:translate(-50%,-50%);
       transition:width .35s ease, height .35s ease, opacity .5s ease; pointer-events:none; }
     .ripple:active:after { width:200px; height:200px; opacity:0; }
 
-    /* Gradients for cards */
     .cardM { background: linear-gradient(135deg, #1c2a4a, #0f172a); }
     .cardF { background: linear-gradient(135deg, #2a1c4a, #0f172a); }
 
-    /* Tab underline */
     .tab-active { box-shadow: inset 0 -2px 0 0 rgba(99,102,241,1); color: #c7d2fe; }
 
-    /* Prevent iOS focus zoom on inputs */
     input, textarea, select { font-size: 16px; }
   </style>
 </head>
@@ -44,10 +39,10 @@
     <header class="shrink-0 px-4 pt-4 pb-3 bg-gradient-to-b from-slate-900 to-slate-800/60 backdrop-blur">
       <div class="flex items-center gap-3">
         <div class="size-9 rounded-xl bg-indigo-500 grid place-items-center shadow-md shadow-indigo-900/40">
-          <span class="text-sm font-bold">FT</span>
+          <span class="text-sm font-bold">JT</span>
         </div>
         <div class="flex-1">
-          <h1 class="text-lg font-semibold leading-tight">Bible Family Tree</h1>
+          <h1 class="text-lg font-semibold leading-tight">Jesus’s Family Tree</h1>
           <p class="text-xs text-slate-300">Swipe siblings • Go up/down • Tap for details • View list by book</p>
         </div>
         <button id="infoBtn" class="ripple text-xs px-3 py-2 rounded-lg bg-slate-700/60">About</button>
@@ -73,32 +68,33 @@
     <div id="crumbs" class="shrink-0 px-4 py-2 flex items-center gap-2 overflow-x-auto hide-scrollbar"></div>
 
     <!-- Main area: Tree view -->
-    <main id="viewTree" class="grow relative">
-      <div class="absolute inset-0 flex flex-col">
-        <!-- Sibling carousel -->
-        <div id="lane" class="grow px-4 pt-2 pb-44 overflow-x-auto hide-scrollbar snap-x-mandatory flex items-center gap-4"></div>
+    <main id="viewTree" class="grow relative overflow-hidden">
+      <div class="flex flex-col h-full">
+        <!-- Sticky lane under breadcrumbs/header -->
+        <div id="laneWrap" class="sticky top-0 z-10 px-4 pt-1 pb-3 bg-gradient-to-b from-slate-900/95 to-slate-900/30 backdrop-blur">
+          <div id="lane" class="px-0 overflow-x-auto hide-scrollbar snap-x-mandatory flex items-center gap-4"></div>
+        </div>
 
-        <!-- Contemporaries panel (under card) -->
-        <div id="coPanel" class="shrink-0 fixed inset-x-0 bottom-28 px-4">
-          <div class="mx-auto max-w-md rounded-2xl bg-slate-900/95 border border-slate-700 shadow-[0_12px_40px_rgba(0,0,0,0.35)] p-3">
+        <!-- Scrollable contemporaries/content area -->
+        <div class="flex-1 overflow-y-auto px-4 pb-40">
+          <div id="coPanel" class="mx-auto max-w-md rounded-xl bg-slate-900/95 border border-slate-700 shadow-[0_8px_28px_rgba(0,0,0,0.35)] p-2 mt-2">
             <div class="flex items-center justify-between gap-2">
-              <div class="text-xs font-semibold text-slate-200">Contemporaries</div>
-              <div id="coSpan" class="text-[11px] text-slate-400"></div>
+              <div class="text-[11px] font-semibold text-slate-200">Contemporaries</div>
+              <div id="coSpan" class="text-[10px] text-slate-400"></div>
             </div>
-            <div class="mt-2 flex items-center gap-2 text-[11px]">
+            <div class="mt-1 flex items-center gap-2 text-[10px]">
               <span class="text-slate-400">Filter:</span>
               <div class="inline-flex rounded-lg ring-1 ring-slate-700 overflow-hidden">
-                <button id="filterAll" class="px-2.5 py-1 bg-slate-800 tab-active">All</button>
-                <button id="filter1" class="px-2.5 py-1 bg-slate-800">±1 gen</button>
-                <button id="filter2" class="px-2.5 py-1 bg-slate-800">±2 gen</button>
+                <button id="filterAll" class="px-2 py-0.5 bg-slate-800 tab-active">All</button>
+                <button id="filter1" class="px-2 py-0.5 bg-slate-800">±1 gen</button>
+                <button id="filter2" class="px-2 py-0.5 bg-slate-800">±2 gen</button>
               </div>
-              <div class="ml-auto text-slate-400">0% <span class="mx-1">—</span> 100%</div>
             </div>
-            <div id="coList" class="mt-2 space-y-2 max-h-44 overflow-y-auto pr-1 hide-scrollbar"></div>
+            <div id="coList" class="mt-1 space-y-1.5 max-h-[60vh] overflow-y-auto pr-1 hide-scrollbar"></div>
           </div>
         </div>
 
-        <!-- Bottom bar: up/down + meta -->
+        <!-- Bottom bar: up/down + meta (still fixed) -->
         <div class="shrink-0 fixed inset-x-0 bottom-0 p-3">
           <div class="mx-auto max-w-md">
             <div class="rounded-2xl bg-slate-900/95 border border-slate-700 shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-2">
@@ -180,7 +176,6 @@
       { id:"mary", name:"Mary", gender:"f", blurb:"Mother of Jesus.", parents:["jesus_ancestor"], children:["jesus"], book:"Matthew/Luke", born:3745, died:3805 },
       { id:"joseph_nz", name:"Joseph (of Nazareth)", gender:"m", blurb:"Legal father of Jesus; descendant of David.", parents:["jesus_ancestor"], children:["jesus"], book:"Matthew/Luke", born:3735, died:3795 },
       { id:"jesus", name:"Jesus", gender:"m", blurb:"Central figure of the New Testament; believed by Christians to be the Messiah.", parents:["mary","joseph_nz"], children:[], book:"Gospels", born:3760, died:3793 },
-      // Additional NT contemporaries (standalone for timeline context)
       { id:"johnb", name:"John the Baptist", gender:"m", blurb:"Prophet who prepared the way for Jesus.", parents:[], children:[], book:"Gospels", born:3759, died:3792 },
       { id:"peter", name:"Peter", gender:"m", blurb:"Apostle; fisherman called by Jesus.", parents:[], children:[], book:"Gospels/Acts", born:3745, died:3815 },
       { id:"paul", name:"Paul", gender:"m", blurb:"Apostle to the Gentiles; wrote many epistles.", parents:[], children:[], book:"Acts/Epistles", born:3775, died:3845 },
@@ -193,22 +188,15 @@
     const parentsOf = (id) => (byId[id]?.parents || []).map(p => byId[p]).filter(Boolean);
     function siblingsOfParents(parents) { const set = new Map(); parents.forEach(p => childrenOf(p.id).forEach(c => set.set(c.id, c))); return [...set.values()]; }
 
-    // ------- Generation depths (for filters) -------
-    const depth = computeDepth();
-    function computeDepth(){
-      const d = {}; const roots = NODES.filter(n => !n.parents || n.parents.length===0 || n.id==='adam' || n.id==='eve');
-      const q = []; roots.forEach(r => { d[r.id]=0; q.push(r.id); });
-      while (q.length){ const cur = q.shift(); const node = byId[cur]; const base = d[cur]; (node.children||[]).forEach(ch=>{ if (d[ch]==null){ d[ch]=base+1; q.push(ch); } }); }
-      return d; // nodes with no edges may be undefined
-    }
-
-    function genDiff(a,b){ const da=depth[a], db=depth[b]; if (da==null || db==null) return Infinity; return Math.abs(da-db); }
+    // Generation depth for filters
+    const depth = (()=>{ const d={}; const roots=NODES.filter(n=>!n.parents||n.parents.length===0||n.id==='adam'||n.id==='eve'); const q=[]; roots.forEach(r=>{d[r.id]=0;q.push(r.id);}); while(q.length){ const cur=q.shift(); const node=byId[cur]; const base=d[cur]; (node.children||[]).forEach(ch=>{ if(d[ch]==null){ d[ch]=base+1; q.push(ch); } }); } return d; })();
+    const genDiff=(a,b)=>{ const da=depth[a], db=depth[b]; if(da==null||db==null) return Infinity; return Math.abs(da-db); };
 
     // ------- State -------
-    let focusId = 'adam';
-    let lane = [];        // current siblings lane
-    let path = ['adam'];
-    let filterRadius = Infinity; // All by default; set to 1 or 2 for ±gen
+    let focusId = 'jesus';
+    let lane = [];
+    let path = ['jesus'];
+    let filterRadius = Infinity;
 
     // ------- DOM -------
     const laneEl = document.getElementById('lane');
@@ -258,10 +246,10 @@
           <div class="flex-1">
             <h3 class="text-lg font-semibold leading-snug">${n.name}</h3>
             <p class="mt-1 text-[13px] text-slate-200 clamp-2">${n.blurb}</p>
-            <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-              ${parentsOf(n.id).length ? `<span class='px-2 py-1 rounded-full bg-slate-800/70'>Parents: ${parentsOf(n.id).map(p=>p.name).join(', ')}</span>`: ''}
-              ${hasKids ? `<span class='px-2 py-1 rounded-full bg-emerald-700/50 ring-1 ring-emerald-600/60'>Has children: ${hasKids}</span>` : `<span class='px-2 py-1 rounded-full bg-slate-700/60'>No children</span>`}
-              ${n.born!=null && n.died!=null ? `<span class='px-2 py-1 rounded-full bg-slate-800/70'>${n.born}–${n.died}</span>`:''}
+            <div class="mt-1.5 flex flex-wrap items-center gap-2 text-[10px]">
+              ${parentsOf(n.id).length ? `<span class='px-2 py-0.5 rounded-full bg-slate-800/70'>Parents: ${parentsOf(n.id).map(p=>p.name).join(', ')}</span>`: ''}
+              ${hasKids ? `<span class='px-2 py-0.5 rounded-full bg-emerald-700/50 ring-1 ring-emerald-600/60'>Has children: ${hasKids}</span>` : `<span class='px-2 py-0.5 rounded-full bg-slate-700/60'>No children</span>`}
+              ${n.born!=null && n.died!=null ? `<span class='px-2 py-0.5 rounded-full bg-slate-800/70'>${n.born}–${n.died}</span>`:''}
             </div>
           </div>
         </div>`;
@@ -312,14 +300,12 @@
 
     function jumpToPathIndex(idx) { const targetId = path[idx]; setFocus(targetId); path = path.slice(0, idx+1); renderCrumbs(); }
 
-    // ------- Contemporaries (relative progress bars + filters) -------
+    // ------- Contemporaries -------
     function contemporariesOf(id){
       const f = byId[id]; if (!f || f.born==null || f.died==null) return [];
       const span = f.died - f.born; if (span <= 0) return [];
       let list = NODES.filter(n => n.id!==id && n.born!=null && n.died!=null && Math.max(n.born, f.born) < Math.min(n.died, f.died));
-      if (filterRadius !== Infinity) {
-        list = list.filter(n => genDiff(n.id, id) <= filterRadius);
-      }
+      if (filterRadius !== Infinity) list = list.filter(n => genDiff(n.id, id) <= filterRadius);
       list.sort((a,b)=> (a.born - b.born) || (a.died - b.died));
       return list.map(n => {
         const start = Math.max(0, (n.born - f.born)/span);
@@ -327,8 +313,7 @@
         return { node:n, start, end };
       });
     }
-
-    function percent(x){ return Math.round(x*100); }
+    const percent = (x)=> Math.round(x*100);
 
     function renderContemporaries(){
       const f = byId[focusId];
@@ -336,32 +321,22 @@
       const coList = document.getElementById('coList');
       const coSpan = document.getElementById('coSpan');
       if (!f || !coList) return;
-      // span label
-      if (f.born==null || f.died==null){
-        coSpan.textContent = '';
-        coList.innerHTML = `<div class='text-[11px] text-slate-400'>No timeline data for ${f.name}</div>`;
-        return;
-      }
-      coSpan.textContent = `${f.born}–${f.died} (focus = 100%)`;
-      if (!co.length){
-        coList.innerHTML = `<div class='text-[11px] text-slate-400'>No contemporaries under current filter</div>`;
-        return;
-      }
+      if (f.born==null || f.died==null){ coSpan.textContent=''; coList.innerHTML = `<div class='text-[11px] text-slate-400'>No timeline data for ${f.name}</div>`; return; }
+      coSpan.textContent = `${f.born}–${f.died}`;
+      if (!co.length){ coList.innerHTML = `<div class='text-[11px] text-slate-400'>No contemporaries under current filter</div>`; return; }
       coList.innerHTML = '';
       co.forEach(({node,start,end})=>{
-        const row = document.createElement('div');
-        row.className = 'rounded-xl bg-slate-800/70 ring-1 ring-slate-700 p-2';
-        const top = document.createElement('div'); top.className='text-[12px] mb-1 flex items-center justify-between gap-2'; top.innerHTML = `<span>${node.name}</span><span class='text-[11px] text-slate-400'>${node.born}–${node.died}</span>`;
-        const barWrap = document.createElement('div'); barWrap.className='relative h-3 rounded-full bg-slate-700 overflow-hidden';
+        const row = document.createElement('div'); row.className = 'rounded-xl bg-slate-800/70 ring-1 ring-slate-700 p-2';
+        const top = document.createElement('div'); top.className='text-[12px] mb-1 flex items-center justify-between gap-2'; top.innerHTML = `<span>${node.name}</span><span class='text-[10px] text-slate-400'>${node.born}–${node.died}</span>`;
+        const barWrap = document.createElement('div'); barWrap.className='relative h-2 rounded-full bg-slate-700 overflow-hidden';
         const fill = document.createElement('div'); fill.className='absolute top-0 bottom-0 bg-emerald-500/80'; fill.style.left = `${percent(start)}%`; fill.style.width = `${percent(end-start)}%`;
-        const label = document.createElement('div'); label.className='absolute -top-5 right-0 text-[10px] text-slate-300'; label.textContent = `${percent(start)}%–${percent(end)}%`;
+        const label = document.createElement('div'); label.className='absolute -top-4 right-0 text-[9px] text-slate-300'; label.textContent = `${percent(start)}%–${percent(end)}%`;
         barWrap.appendChild(fill); barWrap.appendChild(label);
         row.appendChild(top); row.appendChild(barWrap);
         row.addEventListener('click', ()=>{ setFocus(node.id); document.getElementById(`card-${node.id}`)?.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'}); });
         coList.appendChild(row);
       });
 
-      // update filter tab states
       [filterAll, filter1, filter2].forEach(btn=>btn.classList.remove('tab-active'));
       if (filterRadius===Infinity) filterAll.classList.add('tab-active');
       else if (filterRadius===1) filter1.classList.add('tab-active');
@@ -386,8 +361,8 @@
     upBtn.addEventListener('click', goUp);
     downBtn.addEventListener('click', goDown);
     focusBtn.addEventListener('click', ()=> openSheet(byId[focusId]));
-    document.getElementById('homeBtn').addEventListener('click', ()=> setFocus('adam'));
-    document.getElementById('infoBtn').addEventListener('click', ()=> openSheet({name:'About', blurb:'Mobile-first: no pinch/zoom or double-tap zoom. Navigate by swiping siblings and using ↑ / ↓. Buttons disable when unavailable. List view groups figures by Bible books. Contemporaries panel shows overlaps relative to focused lifespan (0–100%), with optional generation-radius filters.', parents:[]}));
+    document.getElementById('homeBtn').addEventListener('click', ()=> setFocus('jesus'));
+    document.getElementById('infoBtn').addEventListener('click', ()=> openSheet({name:'About', blurb:'Mobile-first, Jesus-centered. No pinch/zoom. Swipe siblings, use ↑ / ↓ for generations. List view by books. Contemporaries show overlaps vs. focused lifespan (0–100%) with generation filters. Minimal dating UI and tighter layout to avoid overlap with breadcrumbs.', parents:[]}));
 
     filterAll.addEventListener('click', ()=>{ filterRadius = Infinity; renderContemporaries(); });
     filter1.addEventListener('click', ()=>{ filterRadius = 1; renderContemporaries(); });
@@ -436,7 +411,7 @@
 
     // ------- Init -------
     buildList();
-    setFocus('adam');
+    setFocus('jesus');
   </script>
 </body>
 </html>
