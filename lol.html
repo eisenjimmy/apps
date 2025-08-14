@@ -1,54 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Jimmy’s LoL Duel</title>
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="%230b1220"/><path fill="%23a855f7" d="M24 92 44 36h12L36 92zM70 92l20-56h12L82 92z"/><circle cx="64" cy="34" r="6" fill="%235a7cff"/></svg>'/>
 <meta name="theme-color" content="#0b1220"/>
-<meta name="description" content="Jimmy’s LoL Duel — mobile-first LoL-stadium battle with CPU, elements, items, effects, and radar charts for champ selection."/>
+<meta name="description" content="Jimmy’s LoL Duel — Pokémon‑style 3v3 LoL duel with roster pick, elements, CPU, items, flashy move animations, and victory screen."/>
 <meta property="og:title" content="Jimmy’s LoL Duel"/>
 <meta property="og:image" content="https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg"/>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config={theme:{extend:{
-  fontFamily:{ui:['ui-sans-serif','system-ui','-apple-system','Segoe UI','Roboto','Ubuntu','Cantarell','Noto Sans','Helvetica Neue','Arial',"Apple Color Emoji","Segoe UI Emoji"]},
-  keyframes:{
-    hit:{'0%':{transform:'translateX(0)'},'20%':{transform:'translateX(-6px)'},'40%':{transform:'translateX(6px)'},'60%':{transform:'translateX(-3px)'},'80%':{transform:'translateX(3px)'},'100%':{transform:'translateX(0)'}},
-    float:{'0%':{transform:'translateY(0)',opacity:1},'100%':{transform:'translateY(-24px)',opacity:0}},
-    blink:{'0%,100%':{opacity:1},'50%':{opacity:.1}},
-    titlepop:{'0%':{transform:'scale(.9)',opacity:0},'100%':{transform:'scale(1)',opacity:1}},
-    shakeS:{'0%,100%':{transform:'translate(0,0)'},'20%':{transform:'translate(2px,-2px)'},'40%':{transform:'translate(-2px,2px)'},'60%':{transform:'translate(2px,1px)'},'80%':{transform:'translate(-1px,-2px)'}},
-    shakeM:{'0%,100%':{transform:'translate(0,0)'},'20%':{transform:'translate(4px,-4px)'},'40%':{transform:'translate(-4px,4px)'},'60%':{transform:'translate(3px,2px)'},'80%':{transform:'translate(-3px,-3px)'}}
-  },
-  animation:{hit:'hit .3s',float:'float .7s forwards',blink:'blink 1s steps(2,start) infinite',titlepop:'titlepop .45s',shakeS:'shakeS .25s linear',shakeM:'shakeM .35s linear'}
-}}}
+tailwind.config = {
+  theme: {
+    extend: {
+      keyframes:{
+        hit:{'0%':{transform:'translateX(0) scale(1)'},'20%':{transform:'translateX(-6px) scale(1.02)'},'40%':{transform:'translateX(6px) scale(1.02)'},'60%':{transform:'translateX(-3px)'},'80%':{transform:'translateX(3px)'},'100%':{transform:'translateX(0) scale(1)'}},
+        flash:{'0%':{opacity:0},'30%':{opacity:.5},'100%':{opacity:0}},
+        float:{'0%':{transform:'translateY(0)',opacity:1},'100%':{transform:'translateY(-24px)',opacity:0}},
+        blink:{'0%,100%':{opacity:1},'50%':{opacity:.1}},
+        vignette:{'0%':{opacity:0},'10%':{opacity:.75},'100%':{opacity:.75}}
+      },
+      animation:{
+        hit:'hit .3s ease-in-out',
+        flash:'flash .5s ease-out',
+        float:'float .7s ease-out forwards',
+        blink:'blink 1s steps(2,start) infinite',
+        vignette:'vignette .18s ease-out forwards'
+      }
+    }
+  }
+}
 </script>
 <style>
-.tap-none{-webkit-tap-highlight-color:transparent}
-@media (prefers-reduced-motion: reduce){
-  .animate-hit,.animate-float,.animate-blink,.animate-titlepop,.animate-shakeS,.animate-shakeM{animation:none!important}
-}
+  .tap-none{-webkit-tap-highlight-color:transparent}
+  /* Always animate (no reduced-motion fallback) per request */
+  canvas.radar{width:100%;height:140px}
 </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-ui">
+<body class="bg-slate-950 text-slate-100 antialiased">
 <header class="sticky top-0 z-40 backdrop-blur bg-slate-950/75 border-b border-white/10">
   <div class="mx-auto max-w-6xl px-3 sm:px-4 py-3 flex items-center gap-2">
-    <div class="size-8 rounded-md bg-indigo-500/20 grid place-items-center"><svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 6 .9-4.5 4.3L17.8 20 12 16.9 6.2 20l1.3-6.8L3 8.9 9 8z"/></svg></div>
+    <div class="size-8 rounded-md bg-indigo-500/20 grid place-items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6 6 .9-4.5 4.3L17.8 20 12 16.9 6.2 20l1.3-6.8L3 8.9 9 8z"/></svg>
+    </div>
     <div class="flex-1 min-w-0">
       <h1 class="text-lg font-semibold truncate">Jimmy’s LoL Duel</h1>
-      <p class="text-xs text-slate-400 truncate">Mobile 3v3 • Elements • CPU • Items</p>
+      <p class="text-xs text-slate-400 truncate">Roster pick • 3v3 • Elements • CPU/Human P2 • Items</p>
     </div>
-    <div id="hdrControls" class="hidden sm:flex items-center gap-2 text-xs">
+    <div class="hidden sm:flex items-center gap-2 text-xs">
       <label class="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 flex items-center gap-2">
-        <span>P2:</span>
-        <select id="p2Mode" class="bg-transparent outline-none">
-          <option value="cpu" selected>CPU</option><option value="human">Human</option>
+        <span>P2</span>
+        <select id="hdrP2Mode" class="bg-transparent outline-none">
+          <option value="cpu" selected>CPU</option>
+          <option value="human">Human</option>
         </select>
-      </label>
-      <label class="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 flex items-center gap-2">
-        <span>Difficulty</span><input id="diffRange" type="range" min="0" max="2" step="1" value="1" class="w-24 accent-indigo-500">
-        <span id="diffLabel" class="font-medium">Standard</span>
       </label>
       <button id="shareBtn" class="rounded-lg px-3 py-2 bg-white/10 hover:bg-white/15">Share</button>
     </div>
@@ -57,153 +64,175 @@ tailwind.config={theme:{extend:{
 
 <main class="mx-auto max-w-6xl px-3 sm:px-4 py-4 md:py-8">
 
-  <!-- =================== SELECTION STAGE =================== -->
-  <section id="selectStage" class="space-y-4 md:space-y-6">
-    <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-semibold">Pick Teams (3 champions each)</h2>
-        <div class="hidden sm:flex items-center gap-2 text-xs">
-          <button id="randLeft" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15">Randomize P1</button>
-          <button id="randRight" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15">Randomize P2/CPU</button>
-        </div>
-      </div>
-
-      <datalist id="championsList"></datalist>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-        <!-- P1 picker -->
-        <div>
-          <h3 class="text-xs text-slate-300 mb-2">Player 1</h3>
-          <div class="grid grid-cols-3 gap-2">
-            <div><input id="leftSearch0" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs" placeholder="Champion 1…" list="championsList"><div id="leftCard0" class="mt-2"></div></div>
-            <div><input id="leftSearch1" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs" placeholder="Champion 2…" list="championsList"><div id="leftCard1" class="mt-2"></div></div>
-            <div><input id="leftSearch2" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs" placeholder="Champion 3…" list="championsList"><div id="leftCard2" class="mt-2"></div></div>
+  <!-- ===================== ROSTER SELECT ===================== -->
+  <section id="selectScreen" class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 md:gap-6">
+    <!-- Roster + picks -->
+    <div class="space-y-3">
+      <div class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-sm font-semibold">Pick Your Teams (tap to select, max 3 each)</h2>
+          <div class="text-xs flex items-center gap-2">
+            <span>P2:</span>
+            <select id="p2ModeSelect" class="rounded bg-slate-900/70 border border-white/10 px-2 py-1.5">
+              <option value="cpu" selected>CPU</option>
+              <option value="human">Human</option>
+            </select>
+            <button id="randomBoth" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15">Randomize Both</button>
           </div>
         </div>
-        <!-- P2 picker -->
-        <div>
-          <h3 class="text-xs text-slate-300 mb-2">Player 2 / CPU</h3>
-          <div class="grid grid-cols-3 gap-2">
-            <div><input id="rightSearch0" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs" placeholder="Champion 1…" list="championsList"><div id="rightCard0" class="mt-2"></div></div>
-            <div><input id="rightSearch1" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs" placeholder="Champion 2…" list="championsList"><div id="rightCard1" class="mt-2"></div></div>
-            <div><input id="rightSearch2" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-xs" placeholder="Champion 3…" list="championsList"><div id="rightCard2" class="mt-2"></div></div>
+
+        <!-- Picks row -->
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-lg border border-white/10 bg-white/5 p-2">
+            <div class="text-xs font-semibold mb-2">Player 1 Picks</div>
+            <div id="leftPicks" class="flex gap-2"></div>
+          </div>
+          <div class="rounded-lg border border-white/10 bg-white/5 p-2">
+            <div class="text-xs font-semibold mb-2">Player 2 / CPU Picks</div>
+            <div id="rightPicks" class="flex gap-2 justify-end"></div>
           </div>
         </div>
-      </div>
 
-      <div class="mt-4 flex flex-wrap gap-2">
-        <button id="startBtn" class="rounded-lg px-4 py-2 font-semibold bg-indigo-600 hover:bg-indigo-500">Start Battle</button>
-        <button id="randomBoth" class="rounded-lg px-4 py-2 bg-white/10 hover:bg-white/15">Randomize Both</button>
-        <div class="ml-auto flex items-center gap-2 text-xs">
-          <span class="hidden sm:inline">P2 Mode:</span>
-          <select id="selP2Mode" class="rounded-md bg-slate-900/70 border border-white/10 px-2 py-1.5 text-xs">
-            <option value="cpu" selected>CPU</option><option value="human">Human</option>
-          </select>
-          <span>Difficulty</span>
-          <select id="selDiff" class="rounded-md bg-slate-900/70 border border-white/10 px-2 py-1.5 text-xs">
-            <option value="casual">Casual</option><option value="standard" selected>Standard</option><option value="tryhard">Tryhard</option>
-          </select>
+        <!-- Roster grid -->
+        <div class="mt-3">
+          <input id="rosterSearch" placeholder="Search champions…" class="w-full rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-sm">
+          <div id="roster" class="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2"></div>
+        </div>
+
+        <div class="mt-3 flex items-center gap-2">
+          <button id="startBattle" class="rounded-lg px-4 py-2 font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed" disabled>Start Battle</button>
+          <button id="clearPicks" class="rounded-lg px-4 py-2 bg-white/10 hover:bg-white/15">Clear Picks</button>
         </div>
       </div>
+      <p class="text-xs text-slate-400">Tip: Tap a card to add to the active side (left by default). Use the **P1/P2** toggles on each card to choose which side to add to.</p>
     </div>
 
-    <p class="text-xs text-slate-400">Tip: Tap a chosen champion card to open **Details** with a radar chart.</p>
+    <!-- Preview panel -->
+    <aside class="rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-3 md:p-4">
+      <div class="flex items-center gap-3">
+        <img id="pvIcon" class="size-12 rounded-md ring-1 ring-white/10 object-cover" alt="">
+        <div class="min-w-0">
+          <div id="pvName" class="text-sm font-semibold truncate">Select a champion</div>
+          <div id="pvTags" class="text-xs text-slate-300">—</div>
+        </div>
+        <div id="pvElem" class="ml-auto text-xs px-2 py-1 rounded bg-white/10">—</div>
+      </div>
+      <canvas id="pvRadar" width="320" height="220" class="mt-3 w-full rounded-lg bg-slate-950 border border-white/10"></canvas>
+      <div id="pvSpells" class="mt-3 grid grid-cols-2 gap-2 text-sm"></div>
+    </aside>
   </section>
 
-  <!-- =================== BATTLE STAGE =================== -->
-  <section id="battleStage" class="hidden">
-    <!-- Field banner -->
-    <div class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs flex items-center gap-2">
-      <span class="opacity-70">Field:</span><span id="fieldName" class="font-semibold">—</span>
-      <span class="opacity-70">⏳</span><span id="fieldTurns">—</span>
-      <span class="ml-auto opacity-70" id="turnBadge">Turn: —</span>
+  <!-- ===================== BATTLE ===================== -->
+  <section id="battleScreen" class="hidden">
+    <div class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs flex items-center gap-2 mb-3">
+      <span class="opacity-70">Field:</span><span id="fieldName">Calm</span>
+      <span class="opacity-70">⏳</span><span id="fieldTurns">5</span>
+      <span class="ml-auto opacity-70" id="turnBadge">Turn: P1</span>
+      <button id="backToSelect" class="ml-2 rounded-md px-2 py-1 bg-white/10 hover:bg-white/15">Change Teams</button>
     </div>
 
-    <!-- Arena rows (non-overlapping) -->
-    <div id="arenaShake" class="mt-3 space-y-4">
-      <!-- Enemy row (top-right) -->
-      <div class="flex justify-end">
-        <div class="flex items-center gap-3">
-          <img id="rightIcon" class="size-20 sm:size-24 md:size-28 rounded-full ring-2 ring-white/15 object-cover" alt=""/>
-          <div class="rounded-xl border border-white/10 bg-white/5 p-2 min-w-[200px] max-w-[70vw]">
-            <div class="text-sm font-semibold truncate" id="rightName">—</div>
-            <div class="text-[10px] text-slate-300" id="rightTags"></div>
-            <div class="mt-1 h-2 bg-slate-800 rounded overflow-hidden"><div id="rightHpBar" class="h-full bg-rose-500 transition-all"></div></div>
-            <div class="mt-1 text-[11px] text-slate-300"><span id="rightHpText">HP —/—</span> <span class="ml-2" id="rightResMini"></span></div>
-            <div class="mt-1 text-[10px] flex gap-1 flex-wrap" id="rightBadges"></div>
+    <!-- HUD rows -->
+    <div id="arenaWrap" class="rounded-2xl border border-white/10 overflow-hidden bg-slate-900">
+      <div class="p-3 sm:p-4 bg-[radial-gradient(ellipse_at_center,_rgba(22,22,32,.6),_rgba(2,6,23,.95))] relative">
+        <!-- flash layer -->
+        <div id="arenaFlash" class="pointer-events-none absolute inset-0"></div>
+
+        <!-- Enemy row (top-right alignment) -->
+        <div class="flex justify-end mb-6">
+          <div class="flex items-center gap-3 max-w-xl">
+            <img id="rightIcon" class="size-20 sm:size-24 rounded-full ring-2 ring-white/20 object-cover" alt="">
+            <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-2">
+              <div class="flex items-center gap-2">
+                <div class="min-w-0">
+                  <div id="rightName" class="text-sm font-semibold truncate">—</div>
+                  <div id="rightTags" class="text-[10px] text-slate-300 truncate">—</div>
+                </div>
+                <div id="rightBadges" class="ml-auto text-[10px] flex gap-1"></div>
+              </div>
+              <div class="mt-1 h-2 w-full bg-slate-800 rounded overflow-hidden">
+                <div id="rightHpBar" class="h-full bg-rose-500 transition-all"></div>
+              </div>
+              <div class="mt-1 text-[11px] text-slate-300"><span id="rightHpText">HP —/—</span> · <span id="rightResMini"></span></div>
+            </div>
           </div>
         </div>
-      </div>
-      <!-- Player row (bottom-left) -->
-      <div class="flex justify-start">
-        <div class="flex items-center gap-3">
-          <img id="leftIcon" class="size-20 sm:size-24 md:size-28 rounded-full ring-2 ring-white/15 object-cover" alt=""/>
-          <div class="rounded-xl border border-white/10 bg-white/5 p-2 min-w-[200px] max-w-[70vw]">
-            <div class="text-sm font-semibold truncate" id="leftName">—</div>
-            <div class="text-[10px] text-slate-300" id="leftTags"></div>
-            <div class="mt-1 h-2 bg-slate-800 rounded overflow-hidden"><div id="leftHpBar" class="h-full bg-green-500 transition-all"></div></div>
-            <div class="mt-1 text-[11px] text-slate-300"><span id="leftHpText">HP —/—</span> <span class="ml-2" id="leftResMini"></span></div>
-            <div class="mt-1 text-[10px] flex gap-1 flex-wrap" id="leftBadges"></div>
+
+        <!-- Player row (bottom-left alignment) -->
+        <div class="flex justify-start">
+          <div class="flex items-center gap-3 max-w-xl">
+            <img id="leftIcon" class="size-20 sm:size-24 rounded-full ring-2 ring-white/20 object-cover" alt="">
+            <div class="flex-1 rounded-xl border border-white/10 bg-white/5 p-2">
+              <div class="flex items-center gap-2">
+                <div class="min-w-0">
+                  <div id="leftName" class="text-sm font-semibold truncate">—</div>
+                  <div id="leftTags" class="text-[10px] text-slate-300 truncate">—</div>
+                </div>
+                <div id="leftBadges" class="ml-auto text-[10px] flex gap-1"></div>
+              </div>
+              <div class="mt-1 h-2 w-full bg-slate-800 rounded overflow-hidden">
+                <div id="leftHpBar" class="h-full bg-green-500 transition-all"></div>
+              </div>
+              <div class="mt-1 text-[11px] text-slate-300"><span id="leftHpText">HP —/—</span> · <span id="leftResMini"></span></div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Controls -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="rounded-xl bg-white/5 border border-white/10 p-2">
+      <div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div id="leftPanel" class="rounded-xl bg-white/5 border border-white/10 p-2 transition shadow-[0_0_0_0_rgba(0,0,0,0)]">
           <div class="flex items-center justify-between mb-1">
             <div class="text-xs font-semibold">Abilities (hold to inspect)</div>
-            <div class="text-[11px]" id="p2ModeBadge">CPU</div>
+            <div id="p2ModeBadge" class="text-[11px]">CPU</div>
           </div>
-          <div class="grid grid-cols-5 gap-1.5 sm:gap-2" id="leftAbilities"></div>
+          <div id="leftAbilities" class="grid grid-cols-5 gap-1.5 sm:gap-2"></div>
           <div class="mt-3 flex items-center gap-2">
             <div class="text-xs font-semibold">Items</div>
             <button id="itemPotion" class="rounded-md px-2 py-1.5 text-xs bg-emerald-600/70 hover:bg-emerald-600">Potion (x<span id="potionLeftL">2</span>)</button>
             <button id="itemEther"  class="rounded-md px-2 py-1.5 text-xs bg-sky-600/70 hover:bg-sky-600">Ether (x<span id="etherLeftL">2</span>)</button>
+            <button id="btnSwap"   class="ml-auto rounded-md px-2 py-1.5 text-xs bg-white/10 hover:bg-white/15">Switch</button>
           </div>
-          <div class="mt-2 flex gap-2" id="leftBench"></div>
+          <div id="leftBench" class="mt-2 flex gap-2"></div>
         </div>
 
-        <div class="rounded-xl bg-white/5 border border-white/10 p-2">
+        <div id="rightPanel" class="rounded-xl bg-white/5 border border-white/10 p-2 opacity-60">
           <div class="flex items-center justify-between mb-1">
             <div class="text-xs font-semibold">Opponent</div>
-            <div class="text-[11px]" id="oppItemsInfo">Items: Potion x<span id="potionLeftR">2</span>, Ether x<span id="etherLeftR">2</span></div>
+            <div id="oppItemsInfo" class="text-[11px]">Items: Potion x<span id="potionLeftR">2</span>, Ether x<span id="etherLeftR">2</span></div>
           </div>
           <details id="rightAbilitiesWrap" class="group">
-            <summary id="rightAbilitiesSummary" class="cursor-pointer text-xs text-slate-300 flex items-center gap-2 select-none">
+            <summary class="cursor-pointer text-xs text-slate-300 flex items-center gap-2 select-none">
               <span id="rightAbilitiesLabel">Enemy Skills (CPU)</span>
               <span class="ml-auto text-slate-500 transition group-open:rotate-90">▸</span>
             </summary>
-            <div class="mt-2 grid grid-cols-5 gap-1.5 sm:gap-2 opacity-70" id="rightAbilities"></div>
+            <div id="rightAbilities" class="mt-2 grid grid-cols-5 gap-1.5 sm:gap-2 opacity-70"></div>
           </details>
-          <div class="mt-2 flex gap-2 justify-end" id="rightBench"></div>
+          <div id="rightBench" class="mt-2 flex gap-2 justify-end"></div>
         </div>
       </div>
-    </div>
 
-    <!-- Live feed -->
-    <div class="mt-3 bg-slate-900/90 border border-white/10 rounded-lg">
-      <div class="px-3 sm:px-4 py-3 font-mono text-sm flex items-center gap-2">
-        <span class="animate-blink">▶</span>
-        <div id="liveMsg" class="truncate" aria-live="polite">Welcome to Jimmy’s LoL Duel!</div>
-        <div class="ml-auto flex items-center gap-2">
-          <button id="resetBtn" class="tap-none rounded-lg px-2.5 py-1.5 text-xs bg-white/10 hover:bg-white/15">Reset</button>
-          <button id="swapBtn" class="tap-none rounded-lg px-2.5 py-1.5 text-xs bg-white/10 hover:bg-white/15">Swap Sides</button>
+      <!-- Live feed -->
+      <div class="bg-slate-900/90 border-t border-white/10">
+        <div class="px-3 sm:px-4 py-3 font-mono text-sm flex items-center gap-2">
+          <span class="animate-blink">▶</span>
+          <div id="liveMsg" class="truncate" aria-live="polite">Welcome to Jimmy’s LoL Duel!</div>
+          <div class="ml-auto flex items-center gap-2">
+            <button id="resetBtn" class="tap-none rounded-lg px-2.5 py-1.5 text-xs bg-white/10 hover:bg-white/15">Reset</button>
+          </div>
         </div>
+        <details class="px-3 sm:px-4 pb-4">
+          <summary class="cursor-pointer text-xs text-slate-300">Battle Log</summary>
+          <div id="log" aria-live="polite" class="mt-2 space-y-2 max-h-56 overflow-auto text-sm"></div>
+        </details>
       </div>
-      <details class="px-3 sm:px-4 pb-4">
-        <summary class="cursor-pointer text-xs text-slate-300">Battle Log</summary>
-        <div id="log" aria-live="polite" class="mt-2 space-y-2 max-h-56 overflow-auto text-sm"></div>
-      </details>
     </div>
   </section>
 
   <footer class="mt-6 text-xs text-slate-400">
-    Uses Riot’s Data Dragon. Fan‑made demo.
+    Riot Data Dragon assets. Fan‑made demo.
   </footer>
 </main>
 
-<!-- =================== MODALS =================== -->
 <!-- Inspect overlay -->
 <div id="inspectOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-[60]">
   <div class="absolute inset-0 grid place-items-center p-4">
@@ -218,33 +247,7 @@ tailwind.config={theme:{extend:{
         <div><span class="text-slate-400">Cost:</span> <span id="insCost"></span></div>
         <div><span class="text-slate-400">Cooldown:</span> <span id="insCD"></span></div>
       </div>
-      <div class="mt-3 text-xs text-slate-400" id="insHints"></div>
       <div class="mt-4 text-right"><button id="insClose" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm">Close</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- Champ details (selection) -->
-<div id="champDetails" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-[60]">
-  <div class="absolute inset-0 grid place-items-center p-4">
-    <div class="max-w-2xl w-full rounded-xl border border-white/10 bg-slate-900 p-4">
-      <div class="flex items-center gap-3">
-        <img id="detIcon" class="size-14 rounded-lg ring-1 ring-white/10 object-cover" alt="">
-        <div class="min-w-0">
-          <div id="detName" class="text-lg font-semibold truncate"></div>
-          <div id="detTags" class="text-xs text-slate-300"></div>
-        </div>
-        <div class="ml-auto text-xs px-2 py-1 rounded bg-white/10" id="detElem"></div>
-      </div>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <canvas id="detRadar" width="360" height="280" class="w-full rounded-lg bg-slate-950 border border-white/10"></canvas>
-        </div>
-        <div class="text-sm space-y-2" id="detInfo"></div>
-      </div>
-      <div class="mt-4 text-right">
-        <button id="detClose" class="rounded-md px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm">Close</button>
-      </div>
     </div>
   </div>
 </div>
@@ -258,251 +261,311 @@ tailwind.config={theme:{extend:{
     <div id="endSubtitle" class="mt-2 text-slate-300"></div>
     <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
       <button id="btnTryAgain" class="rounded-lg px-5 py-3 bg-indigo-600 hover:bg-indigo-500 font-semibold">Try Again</button>
-      <button id="btnResetBattle" class="rounded-lg px-5 py-3 bg-white/10 hover:bg-white/15">Reset Battle</button>
+      <button id="btnResetBattle" class="rounded-lg px-5 py-3 bg-white/10 hover:bg-white/15">Back to Select</button>
     </div>
   </div>
 </div>
 
 <script>
 ;(()=>{
-// ---------- tiny helpers ----------
+/* -------------------- helpers -------------------- */
 const $=(s,e=document)=>e.querySelector(s);
-const live=(m)=>{$('#liveMsg')&&($('#liveMsg').textContent=m);};
+const $$=(s,e=document)=>[...e.querySelectorAll(s)];
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const live=(m)=>{$('#liveMsg').textContent=m;};
+function flashArena(){const f=$('#arenaFlash'); f.className='pointer-events-none absolute inset-0 bg-white/60 animate-flash'; setTimeout(()=>f.className='pointer-events-none absolute inset-0',520);}
 
-// ---------- state ----------
-const state={version:null, champions:{}, champArray:[],
-  leftTeam:[null,null,null], rightTeam:[null,null,null],
-  leftIdx:0,rightIdx:0, turn:'left', p2Mode:'cpu', difficulty:'standard',
-  items:{left:{potion:2,ether:2}, right:{potion:2,ether:2}},
-  field:{name:'Calm',turns:5}, aiTimer:null, gameOver:false, finishing:false
-};
-
-// pacing & balance (same numbers as previous good build)
-const TURN_DELAY_MS=1000, SLOWMO_MS=1100;
-const BALANCE={BASE_HP:240,ROLE_HP_BONUS:{Tank:80,Fighter:40},BASE_DMG:[70,90,80,130],BASIC_ATK:55,AOE_FACTOR:.75,SHIELD_REDUCE:.30,WEAKEN_FACTOR:.80,BURN_PCT:.10,CRIT_CHANCE:.10,CRIT_MULTI:1.75,MISS_CHANCE:.07,RES:{Mana:{max:100,regen:15,costs:[20,25,25,45]},Energy:{max:100,regen:22,costs:[20,25,25,40]},None:{max:0,regen:0,costs:[0,0,0,0]}}};
-const DIFF={casual:{preferR:.40,mistake:.20,aiDelay:700,itemUse:.5},standard:{preferR:.20,mistake:.06,aiDelay:600,itemUse:.7},tryhard:{preferR:.05,mistake:0,aiDelay:520,itemUse:1}};
+/* -------------------- config & balance -------------------- */
+const TURN_DELAY_MS=900;
+const BALANCE={BASE_HP:240,ROLE_HP_BONUS:{Tank:80,Fighter:40},BASE_DMG:[70,90,80,130],BASIC_ATK:55,AOE_FACTOR:.75,SHIELD_REDUCE:.30,WEAKEN_FACTOR:.80,BURN_PCT:.10,CRIT_CHANCE:.1,CRIT_MULTI:1.75,MISS_CHANCE:.07,RES:{Mana:{max:100,regen:15,costs:[20,25,25,45]},Energy:{max:100,regen:22,costs:[20,25,25,40]},None:{max:0,regen:0,costs:[0,0,0,0]}}};
 const EFF={Fire:{Wind:1.2,Earth:.5,Water:.5},Water:{Fire:2,Earth:1.2,Electric:.5},Electric:{Water:2,Wind:1.5,Earth:.5},Wind:{Earth:2,Fire:.8},Earth:{Electric:2,Wind:.5,Fire:1.2},Arcane:{Dark:1.2,Light:.8},Dark:{Light:2,Arcane:.8},Light:{Dark:2,Arcane:1.2},Physical:{}};
-const FIELDS=[{name:'Calm',boost:{},nerf:{}},{name:'Storm',boost:{Electric:1.2},nerf:{}},{name:'Drought',boost:{Fire:1.2},nerf:{Water:.8}},{name:'Rain',boost:{Water:1.2},nerf:{Fire:.8}},{name:'Tailwind',boost:{Wind:1.2},nerf:{}},{name:'Quake',boost:{Earth:1.2},nerf:{}},{name:'Radiance',boost:{Light:1.2},nerf:{Dark:.85}},{name:'Eclipse',boost:{Dark:1.2},nerf:{Light:.85}},{name:'Arcane Surge',boost:{Arcane:1.15},nerf:{}}];
+const FIELDS=[{name:'Calm',boost:{},nerf:{}},{name:'Storm',boost:{Electric:1.2},nerf:{}},{name:'Drought',boost:{Fire:1.2},nerf:{Water:.85}},{name:'Rain',boost:{Water:1.2},nerf:{Fire:.85}}];
 
-// ddragon helpers
+/* -------------------- data dragon -------------------- */
 const DDRAGON_VERSIONS='https://ddragon.leagueoflegends.com/api/versions.json';
-const cdnData=(v,p)=>`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/${p}`;
+const ddata=(v,p)=>`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/${p}`;
 const imgChamp=(v,f)=>`https://ddragon.leagueoflegends.com/cdn/${v}/img/champion/${f}`;
 const imgSpell=(v,f)=>`https://ddragon.leagueoflegends.com/cdn/${v}/img/spell/${f}`;
 const splash=(id)=>`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_0.jpg`;
-async function getJSON(u){const r=await fetch(u,{cache:'no-store'});if(!r.ok) throw 'HTTP '+r.status;return r.json();}
+async function getJSON(u){const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.json();}
 
-// elements & spell parsing
-const RE_MAGIC=/(magic damage|magical|ap)/i, RE_PHYS=/(physical damage|ad|attack damage)/i, RE_DEFENSE=/(shield|barrier)/i, RE_AOE=/(area of effect|nearby enemies|all enemies|in an area|cone|around)/i, RE_HEAL=/(heal|restor(es|e))/i, RE_BURN=/(burn|ignite|damage over time|bleed|poison)/i, RE_SLOW=/(slow|slows|reduces movement|reduce attack speed)/i, RE_CC=/(stun|silence|root|taunt|knock|blind|fear|charm|suppres|disarm|cripple)/i;
-function detectDamageType(sp,ch){const t=((sp.tooltip||'')+' '+(sp.description||'')).toLowerCase();if(RE_MAGIC.test(t))return'magic';if(RE_PHYS.test(t))return'physical';return ch.tags?.includes('Mage')?'magic':'physical'}
-function classifySpell(sp){const t=(sp.tooltip||'')+' '+(sp.description||'');return{isHeal:RE_HEAL.test(t),isShield:RE_DEFENSE.test(t),isAOE:RE_AOE.test(t),isBurn:RE_BURN.test(t),isSlow:RE_SLOW.test(t),isCC:RE_CC.test(t)}}
-function champElement(f){const t=f.tags||[];if(t.includes('Mage'))return'Arcane';if(t.includes('Marksman'))return'Wind';if(t.includes('Tank'))return'Earth';if(t.includes('Fighter'))return'Earth';if(t.includes('Assassin'))return'Dark';if(t.includes('Support'))return'Light';return'Physical'}
-function spellElement(sp,fb){const s=((sp.tooltip||'')+' '+(sp.description||'')).toLowerCase();if(/\b(fire|flame|ignite|burn)\b/.test(s))return'Fire';if(/\b(water|frost|ice|tide)\b/.test(s))return'Water';if(/\b(lightning|electric|shock|storm|thunder)\b/.test(s))return'Electric';if(/\b(wind|gale|gust)\b/.test(s))return'Wind';if(/\b(earth|stone|rock|ground|quake)\b/.test(s))return'Earth';if(/\b(holy|light|bless)\b/.test(s))return'Light';if(/\b(shadow|dark)\b/.test(s))return'Dark';return fb||'Physical'}
+/* -------------------- parsing -------------------- */
+const RE_MAGIC=/(magic damage|magical|ap)/i, RE_PHYS=/(physical damage|ad|attack damage)/i, RE_DEFENSE=/(shield|barrier)/i, RE_AOE=/(area of effect|all enemies|nearby enemies|cone|around)/i, RE_HEAL=/(heal|restore)/i, RE_BURN=/(burn|ignite|bleed|poison|damage over time)/i, RE_SLOW=/(slow|reduces movement|attack speed)/i, RE_CC=/(stun|silence|root|taunt|knock|charm|fear)/i;
+function detectDamageType(sp,ch){const t=((sp.tooltip||'')+' '+(sp.description||'')).toLowerCase(); if(RE_MAGIC.test(t))return'magic'; if(RE_PHYS.test(t))return'physical'; return ch.tags?.includes('Mage')?'magic':'physical'}
+function classifySpell(sp){const t=(sp.tooltip||'')+' '+(sp.description||''); return{isHeal:RE_HEAL.test(t),isShield:RE_DEFENSE.test(t),isAOE:RE_AOE.test(t),isBurn:RE_BURN.test(t),isSlow:RE_SLOW.test(t),isCC:RE_CC.test(t)}}
+function champElement(f){const t=f.tags||[]; if(t.includes('Mage'))return'Arcane'; if(t.includes('Marksman'))return'Wind'; if(t.includes('Tank'))return'Earth'; if(t.includes('Fighter'))return'Earth'; if(t.includes('Assassin'))return'Dark'; if(t.includes('Support'))return'Light'; return'Physical'}
+function spellElement(sp,fb){const s=((sp.tooltip||'')+' '+(sp.description||'')).toLowerCase(); if(/\b(fire|ignite|flame|burn)\b/.test(s))return'Fire'; if(/\b(water|ice|frost|tide)\b/.test(s))return'Water'; if(/\b(lightning|electric|storm|thunder)\b/.test(s))return'Electric'; if(/\b(wind|gale|gust)\b/.test(s))return'Wind'; if(/\b(earth|stone|rock|ground|quake)\b/.test(s))return'Earth'; if(/\b(holy|light)\b/.test(s))return'Light'; if(/\b(shadow|dark)\b/.test(s))return'Dark'; return fb||'Physical'}
+function buildSpellVarMap(sp){const m={}; if(sp.cooldownBurn)m.cooldown=sp.cooldownBurn; if(Array.isArray(sp.cooldown)&&sp.cooldown.length)m.cd=sp.cooldown[0]; if(sp.costBurn)m.cost=sp.costBurn; if(sp.rangeBurn)m.range=sp.rangeBurn; if(Array.isArray(sp.effectBurn)){sp.effectBurn.forEach((v,i)=>{if(i>0&&v!=null)m['e'+i]=String(v)});} if(Array.isArray(sp.vars)){sp.vars.forEach(v=>{const c=Array.isArray(v.coeff)?v.coeff[0]:v.coeff; const link=(v.link||'').toLowerCase(); let s=''; if(typeof c==='number'){const k=Math.round(c*100)/100; if(link.includes('spelldamage')||link.includes('ap'))s=`(+${k} AP)`; else if(link.includes('attackdamage')||link.includes('ad'))s=`(+${k} AD)`; else if(link.includes('bonusattackdamage'))s=`(+${k} bonus AD)`; else if(link.includes('maxhealth'))s=`(+${Math.round(k*100)}% max HP)`; else s=`(+${k})`;} if(v.key)m[v.key]=s;});} return m}
+function renderTooltipHTML(sp){const raw=String(sp.tooltip||''); const map=buildSpellVarMap(sp); return raw.replace(/<\/?br\s*\/?>/gi,'<br>').replace(/\{\{\s*([^\}\s]+)\s*\}\}/g,(_,k)=>(k in map?map[k]:'' )).trim()}
 
-function buildSpellVarMap(sp){const m={};if(sp.cooldownBurn)m.cooldown=sp.cooldownBurn;if(Array.isArray(sp.cooldown)&&sp.cooldown.length)m.cd=sp.cooldown[0];if(sp.costBurn)m.cost=sp.costBurn;if(sp.rangeBurn)m.range=sp.rangeBurn;if(Array.isArray(sp.effectBurn)){sp.effectBurn.forEach((v,i)=>{if(i>0&&v!=null)m['e'+i]=String(v)});}if(Array.isArray(sp.vars)){sp.vars.forEach(v=>{const c=Array.isArray(v.coeff)?v.coeff[0]:v.coeff;const link=(v.link||'').toLowerCase();let s='';if(typeof c==='number'){const k=Math.round(c*100)/100;if(link.includes('spelldamage')||link.includes('ap'))s=`(+${k} AP)`;else if(link.includes('attackdamage')||link.includes('ad'))s=`(+${k} AD)`;else if(link.includes('bonusattackdamage'))s=`(+${k} bonus AD)`;else if(link.includes('maxhealth'))s=`(+${Math.round(k*100)}% max HP)`;else s=`(+${k})`;}if(v.key)m[v.key]=s;});}return m}
-function renderTooltipHTML(sp){const raw=String(sp.tooltip||'');const map=buildSpellVarMap(sp);return raw.replace(/<\/?br\s*\/?>/gi,'<br>').replace(/\{\{\s*([^\}\s]+)\s*\}\}/g,(_,k)=>(k in map?map[k]:'')).trim()}
-
-const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const abilityBase=(i)=>BALANCE.BASE_DMG[i]||80;
-function spellCost(sp,i,rt){const conf=BALANCE.RES[rt||'None'];let c=0;if(Array.isArray(sp.cost)&&sp.cost.length)c=Number(sp.cost[0])||0;if(!c&&typeof sp.costBurn==='string'){const m=sp.costBurn.match(/\d+/g);if(m)c=Number(m[0])||0}if(!c)c=conf.costs[i]||0;return c}
-
-// champion state
-function detectResourceType(f){const p=(f.partype||'').toLowerCase();if(p.includes('mana'))return'Mana';if(p.includes('energy'))return'Energy';return'None'}
-function buildChampState(full){
-  const base=BALANCE.BASE_HP+(full.tags||[]).reduce((a,t)=>a+(BALANCE.ROLE_HP_BONUS[t]||0),0);
-  const resType=detectResourceType(full);const conf=BALANCE.RES[resType];
-  return{data:full,tags:full.tags||[],elem:champElement(full),hp:base,max:base,cds:[0,0,0,0],resType,res:conf.max,resMax:conf.max,statuses:{shield:0,shieldFactor:((full.tags||[]).includes('Support')?0.35:BALANCE.SHIELD_REDUCE),weaken:0,burn:0,slow:0,roleMods:{magic:(full.tags||[]).includes('Mage')?1.05:1,physical:(full.tags||[]).some(x=>['Marksman','Fighter','Assassin'].includes(x))?1.05:1}}}
-}
-
-// radar chart (5 axes)
-function drawRadar(canvas, labels, values){const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);const cx=W/2, cy=H/2+10, r=Math.min(W,H)*0.36;const steps=5;ctx.lineWidth=1;ctx.strokeStyle='rgba(148,163,184,.4)';
-  for(let s=1;s<=steps;s++){ctx.beginPath();for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2;const rr=r*s/steps;const x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();}
-  // spokes
-  for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2;const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
-  // values
-  ctx.fillStyle='rgba(99,102,241,.25)';ctx.strokeStyle='rgba(99,102,241,.8)';ctx.beginPath();
-  for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2;const rr=r*(values[i]/10);const x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();
-  // labels
-  ctx.fillStyle='rgba(203,213,225,.85)';ctx.font='12px ui-sans-serif,system-ui';labels.forEach((lb,i)=>{const a=(Math.PI*2/labels.length)*i-Math.PI/2;const x=cx+(r+16)*Math.cos(a),y=cy+(r+16)*Math.sin(a);ctx.textAlign=Math.cos(a)>0.2?'left':(Math.cos(a)<-0.2?'right':'center');ctx.fillText(lb,x,y);});
-}
-
-// selection helpers
-function miniCard(side,slot,full){
-  const node=(side==='left'?[ '#leftCard0','#leftCard1','#leftCard2'][slot]:['#rightCard0','#rightCard1','#rightCard2'][slot]);
-  const el=$(node); if(!el) return;
-  el.innerHTML=`<button class="w-full text-left rounded-lg border border-white/10 bg-white/5 p-2 flex items-center gap-2 hover:bg-white/10" data-side="${side}" data-slot="${slot}" data-id="${full.id}">
-      <img class="size-10 rounded-md ring-1 ring-white/10 object-cover" src="${imgChamp(state.version,full.image.full)}" alt="">
-      <div class="min-w-0"><div class="text-sm font-medium truncate">${full.name}</div><div class="text-[10px] text-slate-400">${(full.tags||[]).join(' • ')}</div></div>
-      <div class="ml-auto text-xs px-2 py-1 rounded bg-white/10">${champElement(full)}</div>
-    </button>`;
-  el.querySelector('button').addEventListener('click',()=>openDetails(full));
-}
-function openDetails(full){
-  $('#detIcon').src=imgChamp(state.version,full.image.full);
-  $('#detName').textContent=full.name; $('#detTags').textContent=(full.tags||[]).join(' • '); $('#detElem').textContent=champElement(full);
-  const stats=full.stats||{};
-  const speed=(full.tags||[]).some(t=>['Assassin','Marksman'].includes(t))?8:(full.tags||[]).includes('Tank')?4:6;
-  const control=(full.info?.difficulty||5); // use difficulty as "control"
-  const vals=[full.info?.attack||5, full.info?.defense||5, full.info?.magic||5, speed, control].map(v=>clamp(v,1,10));
-  drawRadar($('#detRadar'), ['Attack','Defense','Magic','Speed','Control'], vals);
-  // ability thumbnails
-  const passive = full.passive?.name ? `<div><b>Passive:</b> ${full.passive.name}</div>` : '';
-  const spells = (full.spells||[]).map(s=>`<div class="flex items-center gap-2"><img class="size-6" src="${imgSpell(state.version,s.image.full)}" alt=""><div class="text-xs">${s.name}</div></div>`).join('');
-  $('#detInfo').innerHTML = `${passive}<div class="mt-2 grid grid-cols-2 gap-2">${spells}</div>`;
-  $('#champDetails').classList.remove('hidden');
-}
-$('#detClose').addEventListener('click',()=>$('#champDetails').classList.add('hidden'));
-$('#champDetails').addEventListener('click',e=>{if(e.target.id==='champDetails')$('#champDetails').classList.add('hidden')});
-
-// ========== BATTLE ENGINE pieces reused from earlier build (shortened to fit) ==========
-const els={
-  leftIcon:$('#leftIcon'), rightIcon:$('#rightIcon'),
-  leftName:$('#leftName'), rightName:$('#rightName'),
-  leftTags:$('#leftTags'), rightTags:$('#rightTags'),
-  leftHpBar:$('#leftHpBar'), rightHpBar:$('#rightHpBar'),
-  leftHpText:$('#leftHpText'), rightHpText:$('#rightHpText'),
-  leftResMini:$('#leftResMini'), rightResMini:$('#rightResMini'),
-  leftBadges:$('#leftBadges'), rightBadges:$('#rightBadges'),
-  leftAbilities:$('#leftAbilities'), rightAbilities:$('#rightAbilities'),
-  leftBench:$('#leftBench'), rightBench:$('#rightBench'),
-  turnBadge:$('#turnBadge'),
-  p2ModeBadge:$('#p2ModeBadge'),
-  potionLeftL:$('#potionLeftL'), etherLeftL:$('#etherLeftL'),
-  potionLeftR:$('#potionLeftR'), etherLeftR:$('#etherLeftR'),
-  fieldName:$('#fieldName'), fieldTurns:$('#fieldTurns'),
-  log:$('#log')
+/* -------------------- state -------------------- */
+const state={
+  version:null, champions:{}, list:[],
+  leftTeam:[null,null,null], rightTeam:[null,null,null],
+  leftIdx:0,rightIdx:0, turn:'left',
+  p2Mode:'cpu',
+  items:{left:{potion:2,ether:2}, right:{potion:2,ether:2}},
+  field:{name:'Calm',turns:5},
+  gameOver:false
 };
 
+/* -------------------- radar -------------------- */
+function drawRadar(canvas,labels,values){const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);const cx=W/2,cy=H/2+8,r=Math.min(W,H)*.36;const steps=5;ctx.lineWidth=1;ctx.strokeStyle='rgba(148,163,184,.35)';
+  for(let s=1;s<=steps;s++){ctx.beginPath();for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2;const rr=r*s/steps;const x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();}
+  for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2;const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
+  ctx.fillStyle='rgba(99,102,241,.25)';ctx.strokeStyle='rgba(99,102,241,.85)';ctx.beginPath();
+  for(let i=0;i<labels.length;i++){const a=(Math.PI*2/labels.length)*i-Math.PI/2;const rr=r*(values[i]/10);const x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(203,213,225,.85)';ctx.font='12px system-ui';labels.forEach((lb,i)=>{const a=(Math.PI*2/labels.length)*i-Math.PI/2;const x=cx+(r+14)*Math.cos(a),y=cy+(r+14)*Math.sin(a);ctx.textAlign=Math.cos(a)>0.2?'left':(Math.cos(a)<-0.2?'right':'center');ctx.fillText(lb,x,y);});
+}
+
+/* -------------------- selection UI -------------------- */
+function roleElem(tags){if(tags.includes('Mage'))return'Arcane'; if(tags.includes('Marksman'))return'Wind'; if(tags.includes('Tank'))return'Earth'; if(tags.includes('Fighter'))return'Earth'; if(tags.includes('Assassin'))return'Dark'; if(tags.includes('Support'))return'Light'; return'Physical'}
+function renderRoster(filter=''){
+  const R=$('#roster'); R.innerHTML='';
+  const q=filter.trim().toLowerCase();
+  state.list.filter(c=>!q || c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)).forEach(c=>{
+    const el=roleElem(c.tags||[]);
+    const card=document.createElement('div');
+    card.className='group relative rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 p-2 text-xs';
+    card.innerHTML=`
+      <img class="w-full aspect-square object-cover rounded-md ring-1 ring-white/10 mb-2" src="${imgChamp(state.version,c.image.full)}" alt="">
+      <div class="font-medium truncate">${c.name}</div>
+      <div class="text-[10px] text-slate-400 truncate">${(c.tags||[]).join(' • ')}</div>
+      <div class="absolute top-2 right-2 text-[10px] bg-black/50 px-1.5 py-0.5 rounded">${el}</div>
+      <div class="mt-2 grid grid-cols-2 gap-1">
+        <button class="addL rounded bg-indigo-600/80 hover:bg-indigo-600 px-2 py-1">P1</button>
+        <button class="addR rounded bg-rose-600/80 hover:bg-rose-600 px-2 py-1">P2</button>
+      </div>`;
+    card.addEventListener('mouseenter',()=>previewChampion(c));
+    card.addEventListener('focus',()=>previewChampion(c));
+    card.querySelector('.addL').addEventListener('click',()=>addPick('left',c.id));
+    card.querySelector('.addR').addEventListener('click',()=>addPick('right',c.id));
+    R.appendChild(card);
+  });
+}
+function renderPicks(){
+  const slot=(ch,side,idx)=> ch?`<div class="relative">
+      <img class="size-14 rounded ring-2 ${side==='left'?'ring-indigo-500':'ring-rose-500'} object-cover" src="${imgChamp(state.version,ch.data.image.full)}" alt="">
+      <div class="absolute -top-1 -left-1 bg-black/70 rounded text-[10px] px-1">${idx+1}</div>
+    </div>`:`<div class="size-14 rounded border border-dashed border-white/15"></div>`;
+  $('#leftPicks').innerHTML=state.leftTeam.map((x,i)=>slot(x,'left',i)).join('');
+  $('#rightPicks').innerHTML=state.rightTeam.map((x,i)=>slot(x,'right',i)).join('');
+  $('#startBattle').disabled = !(state.leftTeam.every(Boolean) && state.rightTeam.every(Boolean));
+}
+function previewChampion(c){
+  $('#pvIcon').src=imgChamp(state.version,c.image.full);
+  $('#pvName').textContent=c.name; $('#pvTags').textContent=(c.tags||[]).join(' • '); $('#pvElem').textContent=roleElem(c.tags||[]);
+  const info=c.info||{attack:5,defense:5,magic:5,difficulty:5};
+  const speed=(c.tags||[]).some(t=>['Assassin','Marksman'].includes(t))?8:(c.tags||[]).includes('Tank')?4:6;
+  drawRadar($('#pvRadar'),['Attack','Defense','Magic','Speed','Control'],[info.attack||5,info.defense||5,info.magic||5,speed,info.difficulty||5]);
+  // simple spells list thumbs
+  $('#pvSpells').innerHTML='Loading…';
+  fetch(`https://ddragon.leagueoflegends.com/cdn/${state.version}/data/en_US/champion/${c.id}.json`).then(r=>r.json()).then(j=>{
+    const full=j.data[c.id]; $('#pvSpells').innerHTML=(full.spells||[]).map(s=>`<div class="flex items-center gap-2"><img class="size-6" src="${imgSpell(state.version,s.image.full)}" alt=""><div>${s.name}</div></div>`).join('');
+  }).catch(()=>$('#pvSpells').textContent='—');
+}
+async function addPick(side,id){
+  // load full and place into first empty slot
+  const idx=(side==='left'?state.leftTeam:state.rightTeam).findIndex(x=>!x);
+  if(idx===-1) return;
+  const full=(await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${state.version}/data/en_US/champion/${id}.json`)).json()).data[id];
+  const cs=buildChampState(full);
+  if(side==='left') state.leftTeam[idx]=cs; else state.rightTeam[idx]=cs;
+  renderPicks();
+}
+$('#clearPicks').addEventListener('click',()=>{state.leftTeam=[null,null,null]; state.rightTeam=[null,null,null]; renderPicks();});
+$('#randomBoth').addEventListener('click',()=>{randomFill('left'); randomFill('right');});
+function randomFill(side){const arr=state.list.slice().sort(()=>Math.random()-.5).slice(0,3); Promise.all(arr.map(c=>addPick(side,c.id)));}
+
+/* -------------------- battle engine -------------------- */
+function detectResourceType(f){const p=(f.partype||'').toLowerCase(); if(p.includes('mana'))return'Mana'; if(p.includes('energy'))return'Energy'; return'None'}
+function buildChampState(full){
+  const base=BALANCE.BASE_HP+(full.tags||[]).reduce((a,t)=>a+(BALANCE.ROLE_HP_BONUS[t]||0),0);
+  const resType=detectResourceType(full), conf=BALANCE.RES[resType];
+  return {data:full, elem:champElement(full), tags:full.tags||[], hp:base, max:base, cds:[0,0,0,0], resType, res:conf.max, resMax:conf.max, statuses:{shield:0,shieldFactor:((full.tags||[]).includes('Support')?0.35:BALANCE.SHIELD_REDUCE),weaken:0,burn:0,slow:0, roleMods:{magic:(full.tags||[]).includes('Mage')?1.05:1, physical:(full.tags||[]).some(x=>['Marksman','Fighter','Assassin'].includes(x))?1.05:1}}}
+}
+function teamOf(s){return s==='left'?state.leftTeam:state.rightTeam}
+function active(s){return teamOf(s)[s==='left'?state.leftIdx:state.rightIdx]}
+function enemySide(s){return s==='left'?'right':'left'}
+function effMultiplier(a,b){return (EFF[a]&&EFF[a][b])||1}
+function abilityBase(i){return BALANCE.BASE_DMG[i]||80}
+function spellCost(sp,i,rt){const conf=BALANCE.RES[rt||'None']; let c=0; if(Array.isArray(sp.cost)&&sp.cost.length)c=+sp.cost[0]; if(!c&&sp.costBurn){const m=sp.costBurn.match(/\d+/); if(m)c=+m[0];} if(!c)c=conf.costs[i]||0; return c}
+function computeDamage(att,tar,idx,sp){const flags=classifySpell(sp), type=detectDamageType(sp,att.data), elem=spellElement(sp,att.elem); if(flags.isHeal) return{dmg:0,flags,type,elem,mult:1,crit:false,miss:false}; if(Math.random()<BALANCE.MISS_CHANCE) return{dmg:0,flags,type,elem,mult:1,crit:false,miss:true}; let base=abilityBase(idx); if(idx===3) base*=1.4; base*= (type==='magic'?att.statuses.roleMods.magic:att.statuses.roleMods.physical); let mult=effMultiplier(elem,tar.elem); if(att.statuses.weaken>0) base*=BALANCE.WEAKEN_FACTOR; if(tar.tags.includes('Tank')) base*=.9; if(tar.statuses.shield>0) base*=(1-tar.statuses.shieldFactor); let crit=false; if(Math.random()<BALANCE.CRIT_CHANCE){crit=true;base*=BALANCE.CRIT_MULTI;} const dmg=Math.max(20,Math.round(base*mult)); return{dmg,flags,type,elem,mult,crit,miss:false};}
+function basicAttackDamage(att,def){let base=BALANCE.BASIC_ATK; const t=att.tags||[]; if(t.includes('Marksman')||t.includes('Fighter')||t.includes('Assassin')) base*=1.1; if(t.includes('Mage')) base*=0.9; if(t.includes('Tank')) base*=0.95; if(Math.random()<BALANCE.MISS_CHANCE) return{dmg:0,elem:'Physical',type:'physical',mult:1,crit:false,miss:true}; let crit=false; if(Math.random()<BALANCE.CRIT_CHANCE){crit=true;base*=BALANCE.CRIT_MULTI;} let mult=effMultiplier('Physical',def.elem); if(def.tags.includes('Tank')) base*=.9; if(def.statuses.shield>0) base*=(1-def.statuses.shieldFactor); if(att.statuses.weaken>0) base*=BALANCE.WEAKEN_FACTOR; const dmg=Math.max(18,Math.round(base*mult)); return{dmg,elem:'Physical',type:'physical',mult,crit,miss:false};}
+
 function renderHUD(side){
-  const isLeft=side==='left', team=isLeft?state.leftTeam:state.rightTeam, idx=isLeft?state.leftIdx:state.rightIdx, cur=team[idx];
-  const icon=isLeft?els.leftIcon:els.rightIcon, name=isLeft?els.leftName:els.rightName, tags=isLeft?els.leftTags:els.rightTags, hpBar=isLeft?els.leftHpBar:els.rightHpBar, hpText=isLeft?els.leftHpText:els.rightHpText, resMini=isLeft?els.leftResMini:els.rightResMini, badges=isLeft?els.leftBadges:els.rightBadges, bench=isLeft?$('#leftBench'):$('#rightBench'), abilGrid=isLeft?els.leftAbilities:els.rightAbilities;
-  if(!cur){icon.src='';name.textContent='—';tags.textContent='';hpBar.style.width='0%';hpText.textContent='HP —/—';resMini.textContent='';bench.innerHTML='';badges.innerHTML='';abilGrid.innerHTML='';return;}
+  const cur=active(side), isLeft=side==='left';
+  const icon=$(isLeft?'#leftIcon':'#rightIcon'), name=$(isLeft?'#leftName':'#rightName'), tags=$(isLeft?'#leftTags':'#rightTags'), hpbar=$(isLeft?'#leftHpBar':'#rightHpBar'), hptext=$(isLeft?'#leftHpText':'#rightHpText'), resmini=$(isLeft?'#leftResMini':'#rightResMini'), badges=$(isLeft?'#leftBadges':'#rightBadges'), abil=$(isLeft?'#leftAbilities':'#rightAbilities'), bench=$(isLeft?'#leftBench':'#rightBench');
+  if(!cur){icon.src=''; name.textContent='—'; tags.textContent=''; hpbar.style.width='0%'; hptext.textContent='HP —/—'; resmini.textContent=''; badges.innerHTML=''; abil.innerHTML=''; bench.innerHTML=''; return;}
   icon.src=imgChamp(state.version,cur.data.image.full);
   name.textContent=`${cur.data.name} (${cur.elem})`; tags.textContent=(cur.data.tags||[]).join(' / ');
-  const pct=Math.max(0,Math.min(100,(cur.hp/cur.max)*100)); hpBar.style.width=pct+'%';
-  hpText.textContent=`HP ${Math.max(0,Math.round(cur.hp))}/${cur.max}`; resMini.textContent=cur.resType!=='None'?`${cur.resType} ${Math.round(cur.res)}/${cur.resMax}`:'';
-  const st=cur.statuses||{}; badges.innerHTML=`${st.shield>0?`<span class="px-1.5 py-0.5 rounded bg-cyan-600/50 ring-1 ring-cyan-400/40">Shield·${st.shield}</span>`:''}${st.weaken>0?` <span class="px-1.5 py-0.5 rounded bg-amber-600/50 ring-1 ring-amber-400/40">Weaken·${st.weaken}</span>`:''}${st.burn>0?` <span class="px-1.5 py-0.5 rounded bg-red-600/50 ring-1 ring-red-400/40">Burn·${st.burn}</span>`:''}${st.slow>0?` <span class="px-1.5 py-0.5 rounded bg-fuchsia-600/50 ring-1 ring-fuchsia-400/40">Slow·${st.slow}</span>`:''}`;
+  const pct=Math.max(0,Math.min(100,(cur.hp/cur.max)*100)); hpbar.style.width=pct+'%'; hptext.textContent=`HP ${Math.max(0,Math.round(cur.hp))}/${cur.max}`;
+  resmini.textContent=cur.resType!=='None'?`${cur.resType} ${Math.round(cur.res)}/${cur.resMax}`:'';
+  badges.innerHTML='';
+  // abilities row (A + QWER)
+  abil.innerHTML='';
+  const activeTurn = (state.turn===side) && !(side==='right' && state.p2Mode==='cpu');
+  (isLeft?$('#leftPanel'):$('#rightPanel')).style.opacity = activeTurn? '1' : '0.6';
+  (isLeft?$('#leftPanel'):$('#rightPanel')).style.boxShadow = activeTurn? '0 0 0 2px rgba(99,102,241,.5)' : 'none';
+  if(activeTurn){(isLeft?$('#leftPanel'):$('#rightPanel')).classList.add('animate-[shadowPulse_1.2s_ease-in-out_infinite]');} else {(isLeft?$('#leftPanel'):$('#rightPanel')).classList.remove('animate-[shadowPulse_1.2s_ease-in-out_infinite]');}
+  const disableCls=activeTurn?'':'pointer-events-none opacity-60';
 
-  // abilities: 5 per row (A + QWER)
-  abilGrid.innerHTML='';
-  const mkBtn=(inner, badge, extra='')=>`<button class="ability-btn relative rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 overflow-hidden ${extra}" data-side="${side}">${inner}<div class="absolute top-1 left-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${isLeft?'bg-indigo-600':'bg-rose-600'}">${badge}</div></button>`;
-  abilGrid.insertAdjacentHTML('beforeend', mkBtn(`<div class="aspect-square grid place-items-center"><svg viewBox="0 0 24 24" class="w-8 h-8 opacity-90" fill="currentColor"><path d="M7 14l-4.5 4.5a2 2 0 102.8 2.8L9.8 16.8 7 14zm6.1-1.7l2.6 2.6L22 6.6 17.4 2l-7.3 6.3 3 3zM3.7 21.4a.99.99 0 11-1.4-1.4l2.3-2.3 1.4 1.4-2.3 2.3z"/></svg></div>`,'A'));
-  abilGrid.querySelector('.ability-btn:last-child').addEventListener('click',()=>performBasicAttack(side));
+  const btnBasic=document.createElement('button');
+  btnBasic.className=`relative aspect-square rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 ${disableCls}`;
+  btnBasic.innerHTML=`<div class="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 rounded ${isLeft?'bg-indigo-600':'bg-rose-600'}">A</div><div class="w-full h-full grid place-items-center"><svg viewBox="0 0 24 24" class="w-8 h-8" fill="currentColor"><path d="M7 14l-4.5 4.5a2 2 0 102.8 2.8L9.8 16.8 7 14zm6.1-1.7l2.6 2.6L22 6.6 17.4 2l-7.3 6.3 3 3zM3.7 21.4a.99.99 0 11-1.4-1.4l2.3-2.3 1.4 1.4-2.3 2.3z"/></svg></div>`;
+  btnBasic.addEventListener('click',()=>basicAttack(side));
+  abil.appendChild(btnBasic);
 
   (cur.data.spells||[]).slice(0,4).forEach((sp,i)=>{
     const cd=cur.cds[i]||0, cost=spellCost(sp,i,cur.resType);
-    const disabled=cd>0 || winner() || (state.turn!==side) || (side==='right'&&state.p2Mode==='cpu') || (cur.resType!=='None'&&cur.res<cost);
-    const btn=document.createElement('button');
-    btn.className=`relative rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 overflow-hidden ${disabled?'opacity-50':''}`;
-    btn.dataset.side=side; btn.dataset.idx=i;
-    btn.innerHTML=`<div class="aspect-square grid place-items-center"><img class="size-10 sm:size-12 object-cover" src="${imgSpell(state.version,sp.image.full)}" alt="${sp.name}"/></div>
-      <div class="absolute top-1 left-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${isLeft?'bg-indigo-600':'bg-rose-600'}">${['Q','W','E','R'][i]}</div>
-      ${cost?`<div class="absolute top-1 right-1 rounded px-1 py-0.5 text-[10px] bg-black/60">${cost}</div>`:''}
+    const disabled = !activeTurn || cd>0 || (cur.resType!=='None'&&cur.res<cost);
+    const b=document.createElement('button');
+    b.className=`relative aspect-square rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 overflow-hidden ${disabled?'pointer-events-none opacity-50':''}`;
+    b.dataset.idx=i; b.dataset.side=side;
+    b.innerHTML=`<div class="absolute top-1 left-1 text-[10px] px-1.5 py-0.5 rounded ${isLeft?'bg-indigo-600':'bg-rose-600'}">${['Q','W','E','R'][i]}</div>
+      ${cost?`<div class="absolute top-1 right-1 text-[10px] px-1 py-0.5 rounded bg-black/60">${cost}</div>`:''}
+      <img class="w-full h-full object-cover" src="${imgSpell(state.version,sp.image.full)}" alt="${sp.name}">
       ${cd>0?`<div class="absolute inset-0 bg-black/60 grid place-items-center text-sm font-semibold">${cd}</div>`:''}`;
-    btn.addEventListener('click',onAbilityClick);
-    attachHoldToInspect(btn,sp,cur);
-    abilGrid.appendChild(btn);
+    b.addEventListener('click',onAbility);
+    attachHoldToInspect(b,sp,cur);
+    abil.appendChild(b);
   });
 
   // bench
-  const pill=(ch,isActive,side,idx)=>{
-    if(!ch) return ''; const pct=Math.max(0,Math.min(100,(ch.hp/ch.max)*100)), clickable=ch.hp>0&&!isActive;
-    return `<button ${clickable?'':'disabled'} class="bench-btn w-20 rounded-md border ${isActive?'border-indigo-500':'border-white/10'} bg-white/5 p-1 ${clickable?'hover:bg-white/10':''}" data-side="${side}" data-slot="${idx}">
+  const pill=(ch,isActive,side,idx)=> ch?`<button class="bench w-20 rounded-md border ${isActive?'border-indigo-500':'border-white/10'} bg-white/5 p-1 ${disableCls}" data-side="${side}" data-slot="${idx}">
       <img class="w-full h-10 object-cover rounded" src="${imgChamp(state.version,ch.data.image.full)}" alt="">
-      <div class="mt-1 h-1.5 bg-slate-800 rounded overflow-hidden"><div style="width:${pct}%;" class="h-full ${pct>50?'bg-green-500':pct>20?'bg-yellow-400':'bg-rose-500'}"></div></div></button>`;
-  };
-  const benchNode=bench; benchNode.innerHTML=team.map((s,i)=>pill(s,i===idx,side,i)).join('');
-  benchNode.querySelectorAll('.bench-btn').forEach(b=>{
-    b.addEventListener('click',()=>{const side=b.getAttribute('data-side');const slot=+b.getAttribute('data-slot');tryManualSwitch(side,slot);});
-  });
+      <div class="mt-1 h-1.5 bg-slate-800 rounded overflow-hidden"><div style="width:${Math.max(0,Math.min(100,(ch.hp/ch.max)*100))}%;" class="h-full ${ch.hp/ch.max>.5?'bg-green-500':ch.hp/ch.max>.2?'bg-yellow-400':'bg-rose-500'}"></div></div>
+    </button>`:'';
+  bench.innerHTML = teamOf(side).map((c,i)=>pill(c,i===(side==='left'?state.leftIdx:state.rightIdx),side,i)).join('');
+  bench.querySelectorAll('.bench').forEach(b=>b.addEventListener('click',()=>trySwitch(side,+b.dataset.slot)));
 }
 function renderAll(){
   renderHUD('left'); renderHUD('right');
   $('#turnBadge').textContent=`Turn: ${state.turn==='left'?'P1':(state.p2Mode==='cpu'?'CPU':'P2')}`;
-  $('#turnBadge').className='text-[11px] px-1.5 py-0.5 rounded '+(state.turn==='left'?'bg-indigo-600':'bg-rose-600');
-  $('#p2ModeBadge').textContent=state.p2Mode.toUpperCase();
+  $('#turnBadge').className='ml-auto opacity-70 px-1.5 py-0.5 rounded text-[11px] '+(state.turn==='left'?'bg-indigo-600':'bg-rose-600');
   $('#potionLeftL').textContent=state.items.left.potion; $('#etherLeftL').textContent=state.items.left.ether;
   $('#potionLeftR').textContent=state.items.right.potion; $('#etherLeftR').textContent=state.items.right.ether;
-  $('#fieldName').textContent=state.field.name; $('#fieldTurns').textContent=`${state.field.turns} turns left`;
-  // collapse enemy skills if CPU
-  const wrap=$('#rightAbilitiesWrap'); const label=$('#rightAbilitiesLabel');
-  if(wrap && label){if(state.p2Mode==='cpu'){wrap.open=false;label.textContent='Enemy Skills (CPU)';} else {wrap.open=true;label.textContent='Player 2 Skills';}}
 }
-function logLine(m){const row=document.createElement('div');row.className='rounded-lg border border-white/10 bg-white/5 px-3 py-2';row.textContent=m;els.log.prepend(row);while(els.log.children.length>150)els.log.removeChild(els.log.lastChild);live(m);}
 
-// (the rest: damage, performAbility/basicAttack, turn cycle, CPU AI) — unchanged from the previous fixed version
-// --- start of compacted section to keep this file readable ---
-function effMultiplier(a,b){return (EFF[a]&&EFF[a][b])||1}
-function computeDamage(att,tar,idx,sp){const flags=classifySpell(sp), type=detectDamageType(sp,att.data), elem=spellElement(sp,att.elem); if(flags.isHeal) return{dmg:0,flags,type,elem,mult:1,crit:false,miss:false}; if(Math.random()<BALANCE.MISS_CHANCE) return{dmg:0,flags,type,elem,mult:1,crit:false,miss:true}; let base=abilityBase(idx); if(idx===3) base*=1.4; base*= (type==='magic'?att.statuses.roleMods.magic:att.statuses.roleMods.physical); let mult=effMultiplier(elem,tar.elem)*1; if(att.statuses.weaken>0) base*=BALANCE.WEAKEN_FACTOR; if(tar.tags.includes('Tank')) base*=.9; if(tar.statuses.shield>0) base*=(1-tar.statuses.shieldFactor); let crit=false; if(Math.random()<BALANCE.CRIT_CHANCE){crit=true;base*=BALANCE.CRIT_MULTI;} const dmg=Math.max(20,Math.round(base*mult)); return{dmg,flags,type,elem,mult,crit,miss:false};}
-function basicAttackDamage(att,def){let base=BALANCE.BASIC_ATK; const t=att.tags||[]; if(t.includes('Marksman')||t.includes('Fighter')||t.includes('Assassin')) base*=1.10; if(t.includes('Mage')) base*=0.90; if(t.includes('Tank')) base*=0.95; if(Math.random()<BALANCE.MISS_CHANCE) return{dmg:0,elem:'Physical',type:'physical',mult:1,crit:false,miss:true}; let crit=false; if(Math.random()<BALANCE.CRIT_CHANCE){crit=true;base*=BALANCE.CRIT_MULTI;} let mult=effMultiplier('Physical',def.elem); if(def.tags.includes('Tank')) base*=.9; if(def.statuses.shield>0) base*=(1-def.statuses.shieldFactor); if(att.statuses.weaken>0) base*=BALANCE.WEAKEN_FACTOR; const dmg=Math.max(18,Math.round(base*mult)); return{dmg,elem:'Physical',type:'physical',mult,crit,miss:false};}
-function performAbility(side,idx){if(state.gameOver) return; const me=active(side), foeSide=enemySide(side), foe=active(foeSide); if(!me||!foe) return; const sp=(me.data.spells||[])[idx], cost=spellCost(sp,idx,me.resType); if(me.resType!=='None'&&me.res<cost){logLine(`${me.data.name} lacks ${me.resType}!`); renderAll(); return;} if(me.resType!=='None'&&cost>0){me.res=clamp(me.res-cost,0,me.resMax);} const r=computeDamage(me,foe,idx,sp); const {dmg,flags,elem,mult,crit,miss}=r; if(flags.isHeal){[...teamOf(side)].forEach(c=>{if(!c||c.hp<=0)return; const heal=Math.round(c.max*(flags.isAOE ? 0.15 : 0.22)); c.hp=Math.min(c.max,c.hp+heal);}); logLine(`${me.data.name} used ${sp.name}. Team recovers!`);} else { if(miss){logLine(`${me.data.name} used ${sp.name}… but it missed!`);} else if(flags.isAOE){teamOf(foeSide).forEach(t=>{if(!t||t.hp<=0)return; const dd=Math.round(dmg*BALANCE.AOE_FACTOR); t.hp=Math.max(0,t.hp-dd);}); logLine(`${me.data.name} used ${sp.name} — it hit everyone!`);} else {foe.hp=Math.max(0,foe.hp-dmg); let tag=''; if(mult>1.01) tag=" Super effective!"; else if(mult<0.99) tag=" Not very effective…"; if(crit) tag+=" Crit!"; logLine(`${me.data.name} used ${sp.name}!${tag}`);} if(foe.hp<=0){logLine(`${foe.data.name} fainted!`); switchIfDead(foeSide);} } me.cds[idx]=[2,3,3,4][idx]||3; renderAll(); if(maybeEndGame()) return; setTimeout(()=>endTurn(),TURN_DELAY_MS);}
-function onAbilityClick(e){const side=e.currentTarget.dataset.side, idx=+e.currentTarget.dataset.idx; if(winner()) return; if(state.turn!==side) return; if(side==='right'&&state.p2Mode==='cpu') return; performAbility(side,idx);}
-function performBasicAttack(side){if(state.gameOver) return; const me=active(side), foeSide=enemySide(side), foe=active(foeSide); if(!me||!foe) return; const {dmg,mult,crit,miss}=basicAttackDamage(me,foe); if(miss){logLine(`${me.data.name} attacked… but missed!`);} else {foe.hp=Math.max(0,foe.hp-dmg); let tag=''; if(mult>1.01) tag=" Super effective!"; else if(mult<0.99) tag=" Not very effective…"; if(crit) tag+=" Crit!"; logLine(`${me.data.name} used a basic attack!${tag}`);} if(foe.hp<=0){logLine(`${foe.data.name} fainted!`); switchIfDead(foeSide);} renderAll(); if(maybeEndGame()) return; setTimeout(()=>endTurn(),TURN_DELAY_MS);}
-function teamOf(side){return side==='left'?state.leftTeam:state.rightTeam} function enemySide(s){return s==='left'?'right':'left'} function active(s){return teamOf(s)[s==='left'?state.leftIdx:state.rightIdx]}
-function switchIfDead(side){const t=teamOf(side); if(t[(side==='left'?state.leftIdx:state.rightIdx)]?.hp>0)return false; for(let i=0;i<3;i++){if(t[i]&&t[i].hp>0){if(side==='left')state.leftIdx=i; else state.rightIdx=i; logLine(`${side==='left'?'P1':'CPU'} sends in ${t[i].data.name}!`); return true;}}return false;}
+/* ---- actions ---- */
+function logLine(m){const row=document.createElement('div'); row.className='rounded-lg border border-white/10 bg-white/5 px-3 py-2'; row.textContent=m; $('#log').prepend(row); while($('#log').children.length>150)$('#log').lastChild.remove(); live(m);}
 function winner(){const Ldead=state.leftTeam.filter(Boolean).every(s=>s.hp<=0), Rdead=state.rightTeam.filter(Boolean).every(s=>s.hp<=0); if(Ldead) return 'right'; if(Rdead) return 'left'; return null;}
-function maybeEndGame(){const w=winner(); if(w){$('#endOverlay').classList.remove('hidden'); const p1Won=w==='left'; $('#endTitle').textContent=p1Won?'VICTORY':'DEFEAT'; $('#endTitle').className='text-5xl sm:text-6xl font-extrabold '+(p1Won?'text-emerald-400':'text-rose-400'); $('#endSubtitle').textContent=p1Won?'You defeated the opponent!':'Your team has fallen.'; const wa=active(w)?.data?.id; $('#endArt').style.backgroundImage= wa?`url('${splash(wa)}')`:''; } return !!w;}
-function endTurn(){const next=state.turn==='left'?'right':'left'; const actor=active(next); if(actor){ if(actor.statuses?.burn>0){actor.hp=Math.max(0,actor.hp-Math.round(actor.max*BALANCE.BURN_PCT)); actor.statuses.burn--; if(actor.hp<=0){switchIfDead(next);} } const conf=BALANCE.RES[actor.resType||'None']; if(conf.regen) actor.res=clamp(actor.res+conf.regen,0,actor.resMax);} ['left','right'].forEach(s=>{const a=active(s); if(!a)return; a.cds=a.cds.map(c=>Math.max(0,c-1));}); state.turn=next; renderAll(); if(winner())return; clearTimeout(state.aiTimer); if(state.turn==='right'&&state.p2Mode==='cpu'){const d=(DIFF[state.difficulty]||DIFF.standard).aiDelay+TURN_DELAY_MS; state.aiTimer=setTimeout(cpuAct,d);}}
-function usePotion(side){const bag=state.items[side]; if(bag.potion<=0) return logLine('No Potions left.'); const me=active(side); if(!me) return; const heal=Math.round(me.max*.4); me.hp=Math.min(me.max,me.hp+heal); bag.potion--; renderAll(); logLine(`${side==='left'?'P1':'CPU'} used a Potion! +${heal} HP.`); setTimeout(()=>endTurn(),TURN_DELAY_MS);}
-function useEther(side){const bag=state.items[side]; if(bag.ether<=0) return logLine('No Ethers left.'); const me=active(side); if(!me||me.resType==='None') return; const gain=Math.round(me.resMax*.4); me.res=Math.min(me.resMax,me.res+gain); bag.ether--; renderAll(); logLine(`${side==='left'?'P1':'CPU'} used an Ether! +${gain} ${me.resType}.`); setTimeout(()=>endTurn(),TURN_DELAY_MS);}
-function cpuAct(){if(winner()||state.turn!=='right'||state.p2Mode!=='cpu') return; const cfg=DIFF[state.difficulty]||DIFF.standard; const me=active('right'), enemy=active('left'); if(!me||!enemy){setTimeout(()=>endTurn(),TURN_DELAY_MS); return;} if(state.items.right.potion>0 && me.hp<me.max*.35 && Math.random()<cfg.itemUse) return usePotion('right'); if(state.items.right.ether>0 && me.resType!=='None' && me.res<me.resMax*.25 && Math.random()<cfg.itemUse*.7) return useEther('right'); const ready=[0,1,2,3].filter(i=>me.cds[i]===0 && (me.resType==='None'||me.res>=spellCost(me.data.spells[i],i,me.resType))); if(ready.length===0) return performBasicAttack('right'); const pick=ready[0]; performAbility('right',pick);}
-// --- end compacted section ---
+function endScreen(win){$('#endOverlay').classList.remove('hidden'); const p1=win==='left'; $('#endTitle').textContent=p1?'VICTORY':'DEFEAT'; $('#endTitle').className='text-5xl sm:text-6xl font-extrabold '+(p1?'text-emerald-400':'text-rose-400'); const id=active(win)?.data?.id; if(id) $('#endArt').style.backgroundImage=`url('${splash(id)}')`; $('#endSubtitle').textContent=p1?'You defeated the opponent!':'Your team has fallen.';}
 
-// inspect (unchanged)
-function attachHoldToInspect(btn,spell,champ){let t=null,open=false;const start=()=>{t=setTimeout(()=>{open=true;openInspect(spell,champ);},420)};const clear=()=>{if(t){clearTimeout(t);t=null}};btn.addEventListener('mousedown',start);btn.addEventListener('touchstart',start,{passive:true});['mouseleave','mouseup','touchend','touchcancel'].forEach(ev=>btn.addEventListener(ev,()=>{if(!open)clear();},{passive:true}))}
-function openInspect(sp,ch){$('#insName').textContent=sp.name; $('#insChamp').textContent=ch.data.name; $('#insDesc').innerHTML=renderTooltipHTML(sp); const elem=spellElement(sp,ch.elem), type=detectDamageType(sp,ch.data); $('#insElem').textContent=elem; $('#insDmgType').textContent=type; const shownCost=sp.costBurn||spellCost(sp,0,ch.resType)||0; $('#insCost').textContent=(shownCost?shownCost:0)+(ch.resType!=='None'?' '+ch.resType:''); const cd=Array.isArray(sp.cooldown)&&sp.cooldown.length?sp.cooldown[0]:2; $('#insCD').textContent=cd; $('#insHints').textContent=''; $('#inspectOverlay').classList.remove('hidden');}
+function onAbility(e){const side=e.currentTarget.dataset.side, idx=+e.currentTarget.dataset.idx; if(state.turn!==side) return; if(side==='right'&&state.p2Mode==='cpu') return; performAbility(side,idx);}
+function performAbility(side,idx){
+  const me=active(side), foeSide=enemySide(side), foe=active(foeSide); if(!me||!foe) return;
+  const sp=(me.data.spells||[])[idx], cost=spellCost(sp,idx,me.resType);
+  if(me.resType!=='None' && me.res<cost){logLine(`${me.data.name} lacks ${me.resType}!`); return;}
+  if(me.resType!=='None') me.res=clamp(me.res-cost,0,me.resMax);
+  const r=computeDamage(me,foe,idx,sp); flashArena(); $('#arenaWrap').classList.add('animate-hit'); setTimeout(()=>$('#arenaWrap').classList.remove('animate-hit'),320);
+  if(r.flags.isHeal){const heal=Math.round(me.max*(r.flags.isAOE?0.15:0.22)); me.hp=clamp(me.hp+heal,0,me.max); floatText(side,`+${heal}`,'heal'); logLine(`${me.data.name} used ${sp.name}. +${heal} HP`);}
+  else{
+    if(r.miss){logLine(`${me.data.name} used ${sp.name}… but missed!`);}
+    else{
+      if(r.flags.isAOE){teamOf(foeSide).forEach(t=>{if(!t||t.hp<=0)return; const dd=Math.round(r.dmg*BALANCE.AOE_FACTOR); t.hp=Math.max(0,t.hp-dd);}); logLine(`${me.data.name} used ${sp.name} — AOE hit!`);}
+      else{foe.hp=Math.max(0,foe.hp-r.dmg); let tag=''; if(r.mult>1.01)tag=" Super effective!"; else if(r.mult<0.99)tag=" Not very effective…"; if(r.crit)tag+=" Crit!"; floatText(foeSide,`-${r.dmg}${r.crit?'★':''}`,'dmg'); logLine(`${me.data.name} used ${sp.name}!${tag}`);}
+      if(foe.hp<=0){logLine(`${foe.data.name} fainted!`); if(!switchIfDead(foeSide)){renderAll(); endTurn(); const w=winner(); if(w) return endScreen(w);}}
+    }
+  }
+  // cooldown
+  active(side).cds[idx]=[2,3,3,4][idx]||3;
+  renderAll(); endTurn();
+}
+function basicAttack(side){
+  const me=active(side), foeSide=enemySide(side), foe=active(foeSide); if(!me||!foe) return;
+  flashArena(); $('#arenaWrap').classList.add('animate-hit'); setTimeout(()=>$('#arenaWrap').classList.remove('animate-hit'),320);
+  const r=basicAttackDamage(me,foe);
+  if(r.miss){logLine(`${me.data.name} attacked… but missed!`);}
+  else{foe.hp=Math.max(0,foe.hp-r.dmg); floatText(foeSide,`-${r.dmg}${r.crit?'★':''}`,'dmg'); let tag=''; if(r.mult>1.01)tag=' Super effective!'; else if(r.mult<0.99)tag=' Not very effective…'; logLine(`${me.data.name} used a basic attack!${tag}`);}
+  if(foe.hp<=0){logLine(`${foe.data.name} fainted!`); if(!switchIfDead(foeSide)){renderAll(); endTurn(); const w=winner(); if(w) return endScreen(w); return;}}
+  renderAll(); endTurn();
+}
+function floatText(side,txt,kind='dmg'){const host=side==='left'?$('#leftIcon'):$('#rightIcon'); const n=document.createElement('div'); n.className='absolute'; const rect=host.getBoundingClientRect(); const root=document.body; n.style.position='fixed'; n.style.left=(rect.left+rect.width/2-16)+'px'; n.style.top=(rect.top-8)+'px'; n.innerHTML=`<span class="px-2 py-0.5 rounded ${kind==='heal'?'bg-emerald-600/80':'bg-black/70'} text-white text-lg font-extrabold">${txt}</span>`; root.appendChild(n); n.classList.add('animate-float'); setTimeout(()=>n.remove(),760);}
+
+function endTurn(){
+  const w=winner(); if(w) return endScreen(w);
+  const next=state.turn==='left'?'right':'left';
+  // regen and cooldown ticks for the incoming actor
+  const actor=active(next); if(actor){const conf=BALANCE.RES[actor.resType]||{regen:0}; actor.res=clamp(actor.res+(conf.regen||0),0,actor.resMax); actor.cds=actor.cds.map(c=>Math.max(0,c-1));}
+  state.turn=next;
+  renderAll();
+  // CPU action
+  if(state.turn==='right' && state.p2Mode==='cpu'){setTimeout(cpuAct, TURN_DELAY_MS);}
+}
+
+function trySwitch(side,slot){
+  const team=teamOf(side); const curIdx = (side==='left'?state.leftIdx:state.rightIdx);
+  if(slot===curIdx) return;
+  const target=team[slot]; if(!target || target.hp<=0) return;
+  if(state.turn!==side) return;
+  if(side==='left') state.leftIdx=slot; else state.rightIdx=slot;
+  logLine(`${side==='left'?'P1':'P2'} switched to ${target.data.name}! (Turn consumed)`);
+  renderAll(); endTurn();
+}
+function switchIfDead(side){
+  const t=teamOf(side); for(let i=0;i<3;i++){ if(t[i] && t[i].hp>0){ if(side==='left') state.leftIdx=i; else state.rightIdx=i; logLine(`${side==='left'?'P1':'P2'} sends out ${t[i].data.name}!`); return true; } }
+  return false;
+}
+
+function usePotion(side){
+  if(state.turn!==side) return; const bag=state.items[side]; if(bag.potion<=0) return logLine('No potions left.');
+  const me=active(side); const heal=Math.round(me.max*.4); me.hp=clamp(me.hp+heal,0,me.max); bag.potion--; logLine(`${side==='left'?'P1':'P2'} used Potion! +${heal} HP.`); renderAll(); endTurn();
+}
+function useEther(side){
+  if(state.turn!==side) return; const bag=state.items[side]; if(bag.ether<=0) return logLine('No ethers left.');
+  const me=active(side); if(me.resType==='None') return logLine('No resource to restore.'); const gain=Math.round(me.resMax*.4); me.res=clamp(me.res+gain,0,me.resMax); bag.ether--; logLine(`${side==='left'?'P1':'P2'} used Ether! +${gain} ${me.resType}.`); renderAll(); endTurn();
+}
+$('#itemPotion').addEventListener('click',()=>usePotion('left'));
+$('#itemEther').addEventListener('click',()=>useEther('left'));
+$('#btnSwap').addEventListener('click',()=>{ // choose first healthy bench other than current
+  const t=teamOf('left'); const cur=state.leftIdx; const alt=[0,1,2].find(i=>i!==cur && t[i] && t[i].hp>0); if(alt!=null) trySwitch('left',alt);
+});
+
+/* -------------------- CPU -------------------- */
+function cpuAct(){
+  if(state.turn!=='right' || state.p2Mode!=='cpu') return;
+  const me=active('right'), foe=active('left');
+  if(!me || !foe){endTurn(); return;}
+  // simple priority: use ready spell else basic
+  const ready=[0,1,2,3].filter(i=>me.cds[i]===0 && (me.resType==='None' || me.res>=spellCost(me.data.spells[i],i,me.resType)));
+  if(me.hp<me.max*.35 && state.items.right.potion>0){state.items.right.potion--; const heal=Math.round(me.max*.4); me.hp=clamp(me.hp+heal,0,me.max); logLine(`CPU used Potion! +${heal} HP.`); renderAll(); return endTurn();}
+  if(ready.length===0) return basicAttack('right');
+  performAbility('right', ready[0]);
+}
+
+/* -------------------- inspect overlay -------------------- */
+function attachHoldToInspect(btn,sp,ch){let t=null,open=false; const start=()=>{t=setTimeout(()=>{open=true; openInspect(sp,ch);},420)}; const clear=()=>{if(t)clearTimeout(t);}; btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:true}); ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>btn.addEventListener(ev,()=>{if(!open)clear();},{passive:true}));}
+function openInspect(sp,ch){$('#insName').textContent=sp.name; $('#insChamp').textContent=ch.data.name; $('#insDesc').innerHTML=renderTooltipHTML(sp); $('#insElem').textContent=spellElement(sp,ch.elem); $('#insDmgType').textContent=detectDamageType(sp,ch.data); const cd=Array.isArray(sp.cooldown)&&sp.cooldown.length?sp.cooldown[0]:2; $('#insCD').textContent=cd; const cost=spellCost(sp,0,ch.resType)||0; $('#insCost').textContent=(cost?cost:0)+(ch.resType!=='None'?' '+ch.resType:''); $('#inspectOverlay').classList.remove('hidden');}
 $('#insClose').addEventListener('click',()=>$('#inspectOverlay').classList.add('hidden'));
 $('#inspectOverlay').addEventListener('click',e=>{if(e.target.id==='inspectOverlay')$('#inspectOverlay').classList.add('hidden')});
 
-// selection → battle flow
-function findIdByName(n){const f=state.champArray.find(c=>c.name.toLowerCase()===String(n||'').toLowerCase());return f?.id||null;}
-async function loadFull(id){const raw=await getJSON(`https://ddragon.leagueoflegends.com/cdn/${state.version}/data/en_US/champion/${id}.json`); return raw.data[id];}
-async function setSlot(side,slot,id){try{const full=await loadFull(id); const cs=buildChampState(full); if(side==='left') state.leftTeam[slot]=cs; else state.rightTeam[slot]=cs; miniCard(side,slot,full);}catch{}}
-function selectRandom(side){for(let i=0;i<3;i++){const r=state.champArray[Math.floor(Math.random()*state.champArray.length)]; (side==='left'?[ '#leftSearch0','#leftSearch1','#leftSearch2'][i]:['#rightSearch0','#rightSearch1','#rightSearch2'][i]); const inp=$(side==='left'?['#leftSearch0','#leftSearch1','#leftSearch2'][i]:['#rightSearch0','#rightSearch1','#rightSearch2'][i]); inp.value=r.name; setSlot(side,i,r.id);}}
-
-// Start battle
-function startBattle(){
-  // ensure 3 picks each; if any empty, randomize
-  for(let i=0;i<3;i++){if(!state.leftTeam[i]){const r=state.champArray[Math.floor(Math.random()*state.champArray.length)]; setSlot('left',i,r.id);} if(!state.rightTeam[i]){const r=state.champArray[Math.floor(Math.random()*state.champArray.length)]; setSlot('right',i,r.id);}}
+/* -------------------- flow -------------------- */
+function showSelect(){ $('#selectScreen').classList.remove('hidden'); $('#battleScreen').classList.add('hidden'); }
+function showBattle(){ $('#selectScreen').classList.add('hidden'); $('#battleScreen').classList.remove('hidden'); }
+$('#backToSelect').addEventListener('click',showSelect);
+$('#startBattle').addEventListener('click',()=>{
+  // default to first slot active
+  state.leftIdx=0; state.rightIdx=0; state.turn='left';
   state.items.left={potion:2,ether:2}; state.items.right={potion:2,ether:2};
-  state.turn='left'; state.gameOver=false; state.leftIdx=0; state.rightIdx=0;
-  $('#selectStage').classList.add('hidden'); $('#battleStage').classList.remove('hidden');
-  renderAll(); logLine('Battle start! P1 to move.');
-}
+  $('#fieldName').textContent='Calm'; $('#fieldTurns').textContent='5';
+  renderAll(); showBattle(); logLine('Battle start! P1 to move.');
+});
+$('#btnTryAgain').addEventListener('click',()=>{ $('#endOverlay').classList.add('hidden'); showSelect(); });
+$('#btnResetBattle').addEventListener('click',()=>{ $('#endOverlay').classList.add('hidden'); showSelect(); });
 
-// wire events selection
-['#leftSearch0','#leftSearch1','#leftSearch2'].forEach((sel,i)=>$(sel).addEventListener('change',()=>{const id=findIdByName($(sel).value); if(id) setSlot('left',i,id);}));
-['#rightSearch0','#rightSearch1','#rightSearch2'].forEach((sel,i)=>$(sel).addEventListener('change',()=>{const id=findIdByName($(sel).value); if(id) setSlot('right',i,id);}));
-$('#randLeft').addEventListener('click',()=>selectRandom('left'));
-$('#randRight').addEventListener('click',()=>selectRandom('right'));
-$('#randomBoth').addEventListener('click',()=>{selectRandom('left');selectRandom('right');});
-$('#startBtn').addEventListener('click',startBattle);
-$('#btnTryAgain').addEventListener('click',()=>{ $('#endOverlay').classList.add('hidden'); $('#battleStage').classList.add('hidden'); $('#selectStage').classList.remove('hidden');});
-$('#btnResetBattle').addEventListener('click',()=>{location.reload()});
-
-// controls shared
-$('#resetBtn')?.addEventListener('click',()=>{ $('#battleStage').classList.add('hidden'); $('#selectStage').classList.remove('hidden');});
-$('#swapBtn')?.addEventListener('click',()=>{ const LT=[...state.leftTeam], RT=[...state.rightTeam]; const Li=state.leftIdx, Ri=state.rightIdx; state.leftTeam=RT; state.rightTeam=LT; state.leftIdx=Ri; state.rightIdx=Li; state.turn=state.turn==='left'?'right':'left'; renderAll(); logLine('Sides swapped.'); });
-
-// CPU/Mode controls on selection + header
-const modeSel=$('#selP2Mode'), diffSel=$('#selDiff');
-modeSel.addEventListener('change',e=>state.p2Mode=e.target.value);
-diffSel.addEventListener('change',e=>state.difficulty=e.target.value);
-
-// share deep link (kept simple)
-$('#shareBtn')?.addEventListener('click',async()=>{const L=state.leftTeam.map(s=>s?.data?.id||''), R=state.rightTeam.map(s=>s?.data?.id||''); const url=new URL(location.href); url.search=new URLSearchParams({l1:L[0],l2:L[1],l3:L[2],r1:R[0],r2:R[1],r3:R[2],mode:state.p2Mode,diff:state.difficulty}).toString(); try{await navigator.clipboard.writeText(url.toString()); alert('Link copied!');}catch{prompt('Copy link:',url.toString());}});
-
-// bootstrap
+/* -------------------- bootstrap -------------------- */
 (async function init(){
   try{
     state.version=(await getJSON(DDRAGON_VERSIONS))[0];
-    const short=await getJSON(cdnData(state.version,'champion.json')); state.champions=short.data; state.champArray=Object.values(state.champions).sort((a,b)=>a.name.localeCompare(b.name));
-    $('#championsList').innerHTML=state.champArray.map(c=>`<option value="${c.name}" data-id="${c.id}"></option>`).join('');
-    // default: randomize both to make selection quick
-    selectRandom('left'); selectRandom('right');
-  }catch(e){console.error(e);}
+    const short=await getJSON(ddata(state.version,'champion.json')); state.champions=short.data; state.list=Object.values(state.champions).sort((a,b)=>a.name.localeCompare(b.name));
+    renderRoster(); renderPicks();
+    $('#rosterSearch').addEventListener('input',e=>renderRoster(e.target.value));
+    // preview first champ
+    previewChampion(state.list[0]);
+  }catch(e){console.error(e); alert('Failed to load champion data.');}
 })();
 })();
 </script>
 </body>
-</html> 
+</html>
