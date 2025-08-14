@@ -449,17 +449,10 @@
 
     function autoSeedRival(){ if(!state.allPokemon?.length) return; const ids=state.allPokemon.map(p=>p.id); shuffle(ids); state.teamB=ids.slice(0,3).map(id=>({id,name:nameFor(id)})); }
     function nameFor(id){ const p=state.allPokemon.find(x=>x.id===id); return p?p.name:`#${id}`; }
-    function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j]];} return a; }
+    function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
 
     function renderTeams(){
-      // BUGFIX #1: robustly render moves whether stored as strings or objects
-      const moveChips=(p)=>{
-        const raw = Array.isArray(p.moves) ? p.moves : [];
-        const keys = raw.map(m => (typeof m === 'string' ? m : m?.key)).filter(Boolean).slice(0,4);
-        if(!keys.length) return '<span class="text-[10px] text-slate-400">No moves chosen</span>';
-        return keys.map(n=>`<span class="tag">${cleanMoveName(n)}</span>`).join(' ');
-      };
-
+      const moveChips=p=>{ const list=p.moves?.slice(0,4)||[]; if(!list.length) return '<span class="text-[10px] text-slate-400">No moves chosen</span>'; return list.map(n=>`<span class="tag">${cleanMoveName(n)}</span>`).join(' '); };
       const slot=(teamKey,p,idx)=>`
         <div class="card p-2 flex flex-col items-center">
           <img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-16 h-16 pixel"/>
@@ -681,21 +674,8 @@
       const teamArr=state[team==='A'?'teamA':'teamB']; const entry=teamArr.find(x=>x.id===id); state.mvTemp=new Set((entry?.moves||[]).slice(0,4));
       renderMoveList();
     }
-    // BUGFIX #1: normalize commits to store string keys only
-    function closeMovePicker(commit=false){
-      if(commit){
-        const teamArr=state[state.mvContext.team==='A'?'teamA':'teamB'];
-        const entry=teamArr.find(x=>x.id===state.mvContext.id);
-        if(entry){
-          entry.moves = Array.from(state.mvTemp)
-            .map(k => (typeof k === 'string' ? k : k?.key))
-            .filter(Boolean)
-            .slice(0,4);
-        }
-        renderTeams();
-      }
-      $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set();
-    }
+    function closeMovePicker(commit=false){ if(commit){ const teamArr=state[state.mvContext.team==='A'?'teamA':'teamB']; const entry=teamArr.find(x=>x.id===state.mvContext.id); if(entry) entry.moves=Array.from(state.mvTemp).slice(0,4); renderTeams(); }
+      $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set(); }
     document.addEventListener('click',(e)=>{ if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false); });
     $('#mvDone').addEventListener('click',()=>closeMovePicker(true));
     $('#mvClear').addEventListener('click',()=>{ state.mvTemp.clear(); renderMoveList(); });
@@ -975,16 +955,6 @@
       return null;
     }
 
-    // BUGFIX #2 helper: wrap-around next-alive selection
-    function findNextAlive(roster, currentIdx){
-      if (!roster.some(x => x.hp > 0)) return -1;
-      for (let step = 1; step <= roster.length; step++) {
-        const i = (currentIdx + step) % roster.length;
-        if (i !== currentIdx && roster[i].hp > 0) return i;
-      }
-      return -1;
-    }
-
     /* ===== Turn engine ===== */
     async function autoLoop(){
       while(state.autoPlay && battleAlive()){
@@ -1153,16 +1123,8 @@
       if(def.hp<=0){
         log(`${def.name} fainted!`); if(atkSide==='A') state.stats.koA++; else state.stats.koB++;
         await faintSprite(defSide); await sleep(P(250));
-
-        // BUGFIX #2: wrap-around auto switch to next alive Pokémon
-        if(atkSide==='A'){
-          const next= findNextAlive(state.rosterB, state.bIdx);
-          if(next!==-1) state.bIdx = next;
-        } else {
-          const next= findNextAlive(state.rosterA, state.aIdx);
-          if(next!==-1) state.aIdx = next;
-        }
-
+        if(atkSide==='A'){ const next=state.rosterB.findIndex((x,i)=>i>state.bIdx&&x.hp>0); if(next!==-1) state.bIdx=next; }
+        else            { const next=state.rosterA.findIndex((x,i)=>i>state.aIdx&&x.hp>0); if(next!==-1) state.aIdx=next; }
         if(!battleAlive()) return true;
         setActiveDisplays(); setBanner(`${(atkSide==='A'?currB():currA()).name} was sent out!`,'info'); await sleep(P(320));
         return true;
