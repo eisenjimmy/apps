@@ -692,7 +692,7 @@
   state.mvContext = null;
   state.mvTemp = new Set();
 }
-      $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set(); }
+    $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set();
     document.addEventListener('click',(e)=>{ if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false); });
     $('#mvDone').addEventListener('click',()=>closeMovePicker(true));
     $('#mvClear').addEventListener('click',()=>{ state.mvTemp.clear(); renderMoveList(); });
