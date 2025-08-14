@@ -1163,7 +1163,7 @@
       if(state.autoPlay) autoLoop();
     }
 
-    async function takeOneAction(side, atk, def, move){
+async function takeOneAction(side, atk, def, move){
   const atkSide = side;
   const defSide = (side === 'A') ? 'B' : 'A';
   if (atk.hp <= 0 || def.hp <= 0) return false;
@@ -1198,7 +1198,7 @@
     }
   }
 
-  // Announce the selected move now that we're actually acting this turn
+  // Announce the move
   setBanner(`${atk.name} used ${move.display}!`, atkSide === 'A' ? 'your' : 'rival');
 
   // ===== Status / Heal path =====
@@ -1207,10 +1207,9 @@
     (!move.power || move.power === 0) &&
     (move.ailment_code || (move.stat_changes && move.stat_changes.length) || move.healing || true)
   ) {
-    // Accuracy check for status moves
     if (Math.random() * 100 > (move.accuracy ?? 100)) {
       log(`${atk.name}'s ${move.display || move.name} missed!`);
-      // Call without await in case impactMiss is not async
+      // impactMiss is async in your code, but calling without await is fine too.
       impactMiss(defSide);
       await sleep(P(300));
     } else {
@@ -1234,20 +1233,20 @@
 
   await animateAttack(atkSide, defSide, move);
 
-  // Accuracy / auto-miss check (no self-KO on miss)
+  // Accuracy / auto-miss (no self-KO on miss)
   if (autoMiss || Math.random() * 100 > (move.accuracy ?? 100)) {
-    impactMiss(defSide); // not awaited (safe if it's sync)
+    impactMiss(defSide);
     log(`${atk.name}'s ${move.display} missed!`);
     setBanner(`${atk.name}'s ${move.display} missed!`, 'info');
     await sleep(P(300));
     return false;
   }
 
-  // Compute and apply damage
+  // Damage
   let dmg = computeDamage(atk, def, move);
   if (effBonus !== 1.0) dmg = Math.floor(dmg * effBonus);
 
-  // Simple crit (10%)
+  // Crit (10%)
   if (Math.random() < 0.1) {
     dmg = Math.floor(dmg * 1.75);
     log('Critical hit!');
@@ -1261,7 +1260,7 @@
   log(`${atk.name} dealt ${dmg} damage to ${def.name}.`);
   await sleep(P(300));
 
-  // Apply on-hit status if defender survived
+  // On-hit status
   if (def.hp > 0 && move.ailment_code) {
     const applied = tryApplyStatus(def, move.ailment_code, move.ailment_chance || 0);
     if (applied) {
@@ -1273,10 +1272,10 @@
     }
   }
 
-  // Track if defender fainted
-  let defFainted = def.hp <= 0;
+  // Faint checks
+  const defFainted = def.hp <= 0;
 
-  // ===== Self-KO (on hit only) =====
+  // Self-KO (on hit only)
   const moveKeyLower = (move.key || '').toLowerCase();
   let atkSelfKO = false;
   if (SELF_KO_MOVES.has(moveKeyLower)) {
@@ -1285,18 +1284,16 @@
     atk.hp = 0;
     setHPBars();
     await faintSprite(atkSide);
-    // Credit KO to opponent
     if (atkSide === 'A') state.stats.koB++; else state.stats.koA++;
   }
 
-  // Handle defender faint AFTER self-KO (double faint is allowed)
+  // Resolve defender faint (after possible self-KO so doubles can happen)
   if (defFainted) {
     log(`${def.name} fainted!`);
     if (atkSide === 'A') state.stats.koA++; else state.stats.koB++;
     await faintSprite(defSide);
     await sleep(P(250));
 
-    // Bring in next for defender
     if (atkSide === 'A') {
       const next = state.rosterB.findIndex((x,i)=> i > state.bIdx && x.hp > 0);
       if (next !== -1) state.bIdx = next;
@@ -1306,7 +1303,7 @@
     }
   }
 
-  // Bring in next for attacker if it self-KO'd
+  // Next for attacker if it self-KO'd
   if (atkSelfKO) {
     if (atkSide === 'A') {
       const next = state.rosterA.findIndex((x,i)=> i > state.aIdx && x.hp > 0);
@@ -1317,17 +1314,16 @@
     }
   }
 
-  // End of action conditions
   if (!battleAlive()) return true;
 
   if (defFainted || atkSelfKO) {
     setActiveDisplays();
     setBanner(`${(atkSide === 'A' ? currB() : currA()).name} was sent out!`, 'info');
     await sleep(P(320));
-    return true; // end turn on faint
+    return true;
   }
 
-  // Recharge next turn if needed
+  // Recharge moves
   if (RECHARGE_MOVES.has((move.key || '').toLowerCase())) {
     atk.volatile.recharge = 1;
   }
