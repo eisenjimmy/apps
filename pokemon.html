@@ -666,32 +666,74 @@
 
     /* ===== Move editor ===== */
     async function openMovePicker(team,id,name){
-      $('#mvTitle').textContent=`Moves — ${name} (${team==='A'?'You':'Rival'})`;
-      $('#mvPickedCount').textContent=`0 / 4 selected`;
-      $('#mvSearch').value=''; $('#fltLvl').checked=true; $('#fltTM').checked=true;
-      state.mvContext={team,id,name,types:null}; document.body.classList.add('no-scroll'); $('#movePicker').classList.remove('hidden');
-      const pool=await getMovePool(id); const types=state.typesById.get(id)||[]; state.mvContext.types=types;
-      const teamArr=state[team==='A'?'teamA':'teamB']; const entry=teamArr.find(x=>x.id===id); state.mvTemp=new Set((entry?.moves||[]).slice(0,4));
-      renderMoveList();
-    }
-      function closeMovePicker(commit=false){
+  // normalize team to 'A' or 'B'
+  const teamShort = (team === 'A' || team === 'teamA') ? 'A' : 'B';
+
+  $('#mvTitle').textContent=`Moves — ${name} (${teamShort==='A'?'You':'Rival'})`;
+  $('#mvPickedCount').textContent=`0 / 4 selected`;
+  $('#mvSearch').value=''; $('#fltLvl').checked=true; $('#fltTM').checked=true;
+
+  state.mvContext={team:teamShort,id,name,types:null};
+  document.body.classList.add('no-scroll');
+  $('#movePicker').classList.remove('hidden');
+
+  // fetch move pool/types
+  const pool=await getMovePool(id);
+  const types=state.typesById.get(id)||[];
+
+  // the sheet could have been closed while awaiting — guard it
+  if(!state.mvContext || state.mvContext.id!==id) return;
+  state.mvContext.types=types;
+
+  const teamKey = (teamShort==='A') ? 'teamA' : 'teamB';
+  const teamArr = state[teamKey];
+  const entry   = teamArr.find(x=>x.id===id);
+
+  // mvTemp stores KEYS (strings). Convert if needed.
+  state.mvTemp = new Set(
+    (entry?.moves||[])
+      .map(v => (typeof v === 'string' ? v : v?.key))
+      .filter(Boolean)
+      .slice(0,4)
+  );
+
+  renderMoveList();
+}
+
+      ffunction closeMovePicker(commit = false){
   if (commit) {
-    const teamArr = state[state.mvContext.team === 'A' ? 'teamA' : 'teamB'];
-    const entry = teamArr.find(x => x.id === state.mvContext.id);
+    const ctx = state.mvContext;
+    // Safety: if the sheet was torn down mid-await
+    if (!ctx) {
+      $('#movePicker').classList.add('hidden');
+      document.body.classList.remove('no-scroll');
+      state.mvTemp = new Set();
+      return;
+    }
+
+    // Normalize team key to match state keys
+    const teamKey = (ctx.team === 'A' || ctx.team === 'teamA') ? 'teamA' : 'teamB';
+    const teamArr = state[teamKey];
+    const entry   = teamArr.find(x => x.id === ctx.id);
+
     if (entry) {
-      // Ensure we store only move keys (strings), not full objects
+      // Persist as STRING KEYS, not move objects
       entry.moves = Array.from(state.mvTemp)
         .map(v => (typeof v === 'string' ? v : v?.key))
         .filter(Boolean)
         .slice(0, 4);
     }
+
     renderTeams();
   }
+
+  // Close & reset picker state
   $('#movePicker').classList.add('hidden');
   document.body.classList.remove('no-scroll');
   state.mvContext = null;
   state.mvTemp = new Set();
 }
+
     $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set();
     document.addEventListener('click',(e)=>{ if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false); });
     $('#mvDone').addEventListener('click',()=>closeMovePicker(true));
