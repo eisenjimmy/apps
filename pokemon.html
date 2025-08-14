@@ -466,7 +466,7 @@
       const filler=`<div class="rounded-2xl border border-dashed border-slate-700 h-24 flex items-center justify-center text-slate-500 text-xs">Empty</div>`;
       const mount=(el,teamKey)=>{ el.innerHTML=''; const team=state[teamKey]; team.forEach((p,idx)=>{ const wrap=document.createElement('div'); wrap.innerHTML=slot(teamKey,p,idx);
         wrap.querySelector('[data-remove]').addEventListener('click',()=>{ team.splice(idx,1); renderTeams(); updateStartButton(); });
-        wrap.querySelector('[data-mv]').addEventListener('click',()=>openMovePicker(teamKey,p.id,p.name));
+       wrap.querySelector('[data-mv]').addEventListener('click',()=>openMovePicker(teamKey === 'teamA' ? 'A' : 'B', p.id, p.name));
         el.appendChild(wrap.firstElementChild);
       }); for(let i=team.length;i<3;i++){ const d=document.createElement('div'); d.innerHTML=filler; el.appendChild(d.firstElementChild); } };
       mount($('#teamA'),'teamA'); mount($('#teamB'),'teamB'); updateStartButton();
