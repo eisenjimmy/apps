@@ -383,7 +383,7 @@ const AudioEngine=(()=>{
   function startBGM(){
     ensureCtx();
     stopBGM();
-    const root=220; // A3-ish
+    const root=220;
     const o1=ctx.createOscillator(); o1.type='sawtooth'; o1.frequency.value=root;
     const o2=ctx.createOscillator(); o2.type='triangle'; o2.frequency.value=root*1.5;
     const lfo=ctx.createOscillator(); lfo.type='sine'; lfo.frequency.value=0.08;
@@ -394,7 +394,6 @@ const AudioEngine=(()=>{
 
     o1.connect(filt); o2.connect(filt); filt.connect(env).connect(bgGain);
     o1.start(); o2.start(); lfo.start();
-    // gentle fade in
     env.gain.linearRampToValueAtTime(0.6, ctx.currentTime+1.0);
 
     bgSeq={o1,o2,lfo,env};
@@ -432,7 +431,7 @@ const AudioEngine=(()=>{
   }
   function fanfare(win=true){
     if(!ctx) return;
-    const seq = win ? [523,659,784,1046] : [392,370,349,330]; // C major up / gloomy down
+    const seq = win ? [523,659,784,1046] : [392,370,349,330];
     const t=ctx.currentTime;
     seq.forEach((f,i)=>{
       const o=ctx.createOscillator(); o.type=win?'sawtooth':'triangle';
@@ -489,7 +488,24 @@ const els={
 
 // champ state ----------
 function detectResourceType(f){const p=(f.partype||'').toLowerCase();if(p.includes('mana'))return'Mana';if(p.includes('energy'))return'Energy';return'None'}
-function buildChampState(full){const base=BALANCE.BASE_HP+(full.tags||[]).reduce((a,t)=>a+(BALANCE.ROLE_HP_BONUS[t]||0),0);const resType=detectResourceType(full);const conf=BALANCE.RES[resType];return{data:full,tags:full.tags||[],elem:champElement(full),hp:base,max:base,cds:[0,0,0,0],resType,res:conf.max,resMax:conf.max,statuses:{shield:0,shieldFactor:(full.tags||[]).includes('Support')?.35:BALANCE.SHIELD_REDUCE,weaken:0,burn:0,slow:0,roleMods:{magic:(full.tags||[]).includes('Mage')?1.05:1,physical:(full.tags||[]).some(x=>['Marksman','Fighter','Assassin'].includes(x))?1.05:1,penA:(full.tags||[]).includes('Assassin')?.05:0}}}
+function buildChampState(full){
+  const base=BALANCE.BASE_HP+(full.tags||[]).reduce((a,t)=>a+(BALANCE.ROLE_HP_BONUS[t]||0),0);
+  const resType=detectResourceType(full);const conf=BALANCE.RES[resType];
+  return{
+    data:full,tags:full.tags||[],elem:champElement(full),hp:base,max:base,cds:[0,0,0,0],
+    resType,res:conf.max,resMax:conf.max,
+    statuses:{
+      shield:0,
+      shieldFactor: ((full.tags||[]).includes('Support') ? 0.35 : BALANCE.SHIELD_REDUCE),
+      weaken:0,burn:0,slow:0,
+      roleMods:{
+        magic:(full.tags||[]).includes('Mage')?1.05:1,
+        physical:(full.tags||[]).some(x=>['Marksman','Fighter','Assassin'].includes(x))?1.05:1,
+        penA:(full.tags||[]).includes('Assassin')?0.05:0
+      }
+    }
+  }
+}
 
 // layout renderers ----------
 function benchPill(ch,isActive,side,idx){
@@ -698,7 +714,7 @@ function performAbility(side,idx){
 
   if(flags.isHeal){
     const team=teamOf(side);
-    team.forEach(c=>{if(!c||c.hp<=0)return; const heal=Math.round(c.max*(flags.isAOE?.15:.22)); c.hp=Math.min(c.max,c.hp+heal);});
+    team.forEach(c=>{if(!c||c.hp<=0)return; const heal=Math.round(c.max*(flags.isAOE ? 0.15 : 0.22)); c.hp=Math.min(c.max,c.hp+heal);});
     fxFloat(side,'+heal','heal'); logLine(`${me.data.name} used ${sp.name}. Your team recovers!`);
   }
   if(flags.isShield){
@@ -781,11 +797,24 @@ function cpuAct(){
     if(state.items.right.ether>0 && me.resType!=='None' && me.res<me.resMax*.25 && Math.random()<cfg.itemUse*.7) return useEther('right');
   }
   const team=state.rightTeam; const better=team.findIndex((c,i)=>i!==state.rightIdx && c && c.hp>me.hp+60);
-  if(better!==-1 && me.hp<me.max*(state.difficulty==='tryhard'?.3:.22)){state.rightIdx=better; logLine(`CPU switched to ${team[better].data.name}!`); renderAll(); return setTimeout(()=>endTurn(),TURN_DELAY_MS);}
+  if(better!==-1 && me.hp<me.max*(state.difficulty==='tryhard' ? 0.3 : 0.22)){state.rightIdx=better; logLine(`CPU switched to ${team[better].data.name}!`); renderAll(); return setTimeout(()=>endTurn(),TURN_DELAY_MS);}
   const ready=[0,1,2,3].filter(i=>me.cds[i]===0 && (me.resType==='None' || me.res>=spellCost(me.data.spells[i],i,me.resType)));
   if(ready.length===0) return performBasicAttack('right');
   if(Math.random()<cfg.mistake) return performAbility('right',ready[Math.floor(Math.random()*ready.length)]);
-  const scored=ready.map(i=>{const sp=me.data.spells[i],f=classifySpell(sp); let s=0; if(f.isHeal){const allies=team.filter(x=>x&&x.hp>0); const missing=allies.reduce((a,c)=>a+(c.max-c.hp),0); s+=missing*(f.isAOE?.5:.7);} else {const est=computeDamage(me,enemy,i,sp).dmg; s+=est; if(f.isAOE) s+=est*(state.leftTeam.filter(x=>x&&x.hp>0).length-1)*.6;} if(f.isBurn)s+=70;if(f.isSlow)s+=40;if(f.isShield)s+=40;if(f.isCC)s+=35;if(i===3)s+=120*cfg.preferR; const cost=spellCost(sp,i,me.resType); if(cost) s*= (1 - cost/(me.resMax||100)*.4); return{i,score:s};}).sort((a,b)=>b.score-a.score);
+  const scored=ready.map(i=>{
+    const sp=me.data.spells[i],f=classifySpell(sp); let s=0;
+    if(f.isHeal){
+      const allies=team.filter(x=>x&&x.hp>0); const missing=allies.reduce((a,c)=>a+(c.max-c.hp),0);
+      s+=missing*(f.isAOE ? 0.5 : 0.7);
+    } else {
+      const est=computeDamage(me,enemy,i,sp).dmg; s+=est;
+      if(f.isAOE) s+=est*(state.leftTeam.filter(x=>x&&x.hp>0).length-1)*.6;
+    }
+    if(f.isBurn)s+=70;if(f.isSlow)s+=40;if(f.isShield)s+=40;if(f.isCC)s+=35;
+    if(i===3)s+=120*cfg.preferR;
+    const cost=spellCost(sp,i,me.resType); if(cost) s*= (1 - cost/(me.resMax||100)*.4);
+    return{i,score:s};
+  }).sort((a,b)=>b.score-a.score);
   const basicScore=(()=>{const est=basicAttackDamage(me,enemy).dmg; const resLow=(me.resType!=='None' && me.res<(me.resMax||100)*.25)?1.15:1.0; return est*resLow;})();
   if(basicScore>=(scored[0]?.score||0)*.92) return performBasicAttack('right');
   performAbility('right',scored[0].i);
