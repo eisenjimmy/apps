@@ -130,7 +130,7 @@
       <div class="flex items-center justify-between">
         <h2 class="text-base font-bold text-slate-300">Build your teams</h2>
         <div class="flex gap-2">
-          <button id="btnRandomize" class="btn btn-secondary tap">Randomize teams</button>
+          <button id="btnRandomize" class="btn btn-secondary tap">Randomize My Pick</button>
           <button id="btnClear" class="btn btn-ghost tap">Clear</button>
         </div>
       </div>
@@ -410,7 +410,13 @@
       stats:{ rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0} },
       previewId:null
     };
+    // Attacker faints after using these if the move connects
+    const SELF_KO_MOVES = new Set(['self-destruct','explosion','final-gambit','mind-blown']);
 
+
+
+
+    
     document.addEventListener('DOMContentLoaded', async ()=>{
       renderTeams(); wireBuilder(); wireArena(); wireResults();
       await loadAllPokemon();
@@ -445,8 +451,7 @@
       $('#btnClear').addEventListener('click',()=>{ state.teamA=[]; state.teamB=[]; autoSeedRival(); renderTeams(); updateStartButton(); });
       $('#btnRandomize').addEventListener('click',()=>{
         const ids=state.allPokemon.map(p=>p.id); shuffle(ids);
-        state.teamA=ids.slice(0,3).map(id=>({id,name:nameFor(id)}));
-        state.teamB=ids.slice(3,6).map(id=>({id,name:nameFor(id)}));
+        state.teamA=ids.slice(0,3).map(id=>({id,name:nameFor(id)}));        
         renderTeams(); updateStartButton();
       });
       $('#startBattle').addEventListener('click', startBattle);
