@@ -1236,21 +1236,26 @@
 
   setBanner(`${atk.name} used ${move.display}!`, atkSide === 'A' ? 'your' : 'rival');
 
-  // Status/Heal moves (unchanged)
-  if (move.category === 'status' && (!move.power || move.power === 0) &&
-     (move.ailment_code || (move.stat_changes && move.stat_changes.length) || move.healing || true)) {
-    if (Math.random() * 100 > (move.accuracy ?? 100)) {
-      log(`${atk.name}'s ${move.display} missed!`);
-      await impactMiss(defSide);
-      await sleep(P(300));
-    } else {
-      await animateAttack(atkSide, defSide, move);
-      const acted = await applyStatusMove(atk, def, atkSide, defSide, move);
-      if (!acted) log('But it failed!');
-      await sleep(P(320));
-    }
-    return false;
+// Status/Heal moves (safe for non-async impactMiss)
+if (
+  move.category === 'status' &&
+  (!move.power || move.power === 0) &&
+  (move.ailment_code || (move.stat_changes && move.stat_changes.length) || move.healing || true)
+) {
+  if (Math.random() * 100 > (move.accuracy ?? 100)) {
+    log(`${atk.name}'s ${move.display || move.name} missed!`);
+    // Call without await in case impactMiss is not async
+    impactMiss(defSide);
+    await sleep(P(300));
+  } else {
+    await animateAttack(atkSide, defSide, move);
+    const acted = await applyStatusMove(atk, def, atkSide, defSide, move);
+    if (!acted) log('But it failed!');
+    await sleep(P(320));
   }
+  return false;
+}
+
 
   // Damaging path with semi-inv target logic
   let autoMiss = false, effBonus = 1.0;
