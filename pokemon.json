@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "source": "https://pokeapi.co/",
+    "generated_at": "2025-08-13T00:00:00.000Z",
+    "total_pokemon": 3,
+    "move_count": 5,
+    "level_cap": 50,
+    "schema": "v1"
+  },
+  "pokedex": [
+    {
+      "id": 1,
+      "name": "bulbasaur",
+      "types": ["grass","poison"],
+      "base_stats": {"hp":45,"attack":49,"defense":49,"special-attack":65,"special-defense":65,"speed":45},
+      "sprites": {
+        "front": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+        "back": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/1.png"
+      },
+      "moves": [
+        {"key":"tackle","display":"Tackle","type":"normal","category":"physical","power":40,"accuracy":100,"priority":0,"ailment_code":null,"ailment_chance":0,"stat_changes":[],"target":"selected-pokemon","healing":0,"method":"level-up","level":1},
+        {"key":"vine-whip","display":"Vine Whip","type":"grass","category":"physical","power":45,"accuracy":100,"priority":0,"ailment_code":null,"ailment_chance":0,"stat_changes":[],"target":"selected-pokemon","healing":0,"method":"level-up","level":9}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "charmander",
+      "types": ["fire"],
+      "base_stats": {"hp":39,"attack":52,"defense":43,"special-attack":60,"special-defense":50,"speed":65},
+      "sprites": {
+        "front": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
+        "back": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/4.png"
+      },
+      "moves": [
+        {"key":"scratch","display":"Scratch","type":"normal","category":"physical","power":40,"accuracy":100,"priority":0,"ailment_code":null,"ailment_chance":0,"stat_changes":[],"target":"selected-pokemon","healing":0,"method":"level-up","level":1},
+        {"key":"ember","display":"Ember","type":"fire","category":"special","power":40,"accuracy":100,"priority":0,"ailment_code":"brn","ailment_chance":10,"stat_changes":[],"target":"selected-pokemon","healing":0,"method":"level-up","level":9}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "squirtle",
+      "types": ["water"],
+      "base_stats": {"hp":44,"attack":48,"defense":65,"special-attack":50,"special-defense":64,"speed":43},
+      "sprites": {
+        "front": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
+        "back": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/7.png"
+      },
+      "moves": [
+        {"key":"tackle","display":"Tackle","type":"normal","category":"physical","power":40,"accuracy":100,"priority":0,"ailment_code":null,"ailment_chance":0,"stat_changes":[],"target":"selected-pokemon","healing":0,"method":"level-up","level":1},
+        {"key":"water-gun","display":"Water Gun","type":"water","category":"special","power":40,"accuracy":100,"priority":0,"ailment_code":null,"ailment_chance":0,"stat_changes":[],"target":"selected-pokemon","healing":0,"method":"level-up","level":9}
+      ]
+    }
+  ]
+}
