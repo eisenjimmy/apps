@@ -151,6 +151,14 @@
             <div class="text-sm text-slate-400">Rival team is auto‑picked (you can edit)</div>
             <div class="ml-auto"><button id="pickB" class="btn btn-primary tap">Pick</button></div>
           </div>
+          <!-- Trainer Button and Chip -->
+<div class="mt-2 flex gap-2">
+  <button id="btnTrainers" class="btn btn-secondary tap">Trainers</button>
+  <div id="trainerChip" class="hidden items-center gap-2">
+    <span class="chip">Trainer: <span id="trainerName"></span></span>
+    <button id="clearTrainer" class="btn btn-ghost tap text-rose-400">Clear</button>
+  </div>
+</div>
           <div id="teamB" class="grid grid-cols-3 gap-3"></div>
         </div>
       </div>
@@ -1405,6 +1413,78 @@ if (atkSide === 'A') {
       spriteEl.style.transform='';
       spark.remove(); ball.remove();
     }
+
+    const TRAINERS = [
+  { key:'brock', name:'Brock', candidates:[74,95,76,112,111,141,139] },
+  { key:'misty', name:'Misty', candidates:[120,121,130,131,91,134] },
+  // ... rest of Gen 1 & 2 gyms, elite four, Gary, Ash as per plan
+];
+
+state.selectedTrainer = null;
+
+async function pickStrongest(ids, n=3){
+  const details = await Promise.all(ids.map(id => getPokemonDetail(id)));
+  const scored = details.map(d => ({
+    id: d.id,
+    bst: d.stats.reduce((s,st)=>s + st.base_stat, 0)
+  }));
+  scored.sort((a,b)=>b.bst - a.bst);
+  return scored.slice(0, n).map(s => ({ id:s.id, name:nameFor(s.id) }));
+}
+
+async function applyTrainerSelection(key){
+  const trainer = TRAINERS.find(t => t.key === key);
+  if (!trainer) return;
+  const mons = await pickStrongest(trainer.candidates, 3);
+  state.teamB = mons.map(m => ({ id: m.id, name: m.name, moves: [] }));
+  state.selectedTrainer = { key: trainer.key, name: trainer.name };
+  ls.set('trainer:current', state.selectedTrainer);
+  document.getElementById('trainerName').textContent = trainer.name;
+  document.getElementById('trainerChip').classList.remove('hidden');
+  renderTeams();
+  updateStartButton();
+}
+
+function clearTrainerSelection(){
+  state.selectedTrainer = null;
+  ls.remove('trainer:current');
+  document.getElementById('trainerChip').classList.add('hidden');
+}
+
+document.getElementById('btnTrainers').addEventListener('click', openTrainerPicker);
+document.getElementById('clearTrainer').addEventListener('click', clearTrainerSelection);
+
+function openTrainerPicker(){
+  // simple alert list for now, replace with bottom sheet if needed
+  const names = TRAINERS.map(t => t.name).join('\n');
+  const choice = prompt('Select trainer by name:\n' + names);
+  const found = TRAINERS.find(t => t.name.toLowerCase() === choice?.toLowerCase());
+  if (found) applyTrainerSelection(found.key);
+}
+
+// Respect selected trainer in autoSeedRival
+const originalAutoSeedRival = autoSeedRival;
+autoSeedRival = function(){
+  if (state.selectedTrainer) return;
+  originalAutoSeedRival();
+};
+
+// Show trainer name in battle label
+const originalRenderBattleHeader = renderBattleHeader;
+renderBattleHeader = function(){
+  originalRenderBattleHeader();
+  if (state.selectedTrainer){
+    document.querySelector('#opponentName').textContent = 'Trainer: ' + state.selectedTrainer.name;
+  }
+};
+
+// Restore trainer on load
+const savedTrainer = ls.get('trainer:current');
+if (savedTrainer){
+  state.selectedTrainer = savedTrainer;
+  document.getElementById('trainerName').textContent = savedTrainer.name;
+  document.getElementById('trainerChip').classList.remove('hidden');
+}
   </script>
 </body>
 </html>
