@@ -44,7 +44,7 @@
     .sheet{ max-height:85vh; display:flex; flex-direction:column; }
     .sheet-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
     body.no-scroll{ overflow:hidden; }
-
+    .mirror-x { transform: scaleX(-1); }
     /* Animations */
     @keyframes lunge-right{0%{transform:translateX(0)}40%{transform:translateX(22px)}100%{transform:translateX(0)}}
     @keyframes lunge-left{0%{transform:translateX(0)}40%{transform:translateX(-22px)}100%{transform:translateX(0)}}
@@ -831,7 +831,25 @@
       enableMoveButtons(true);
       if(state.autoPlay) autoLoop();
     }
+  function pickSpriteURLs(sprites, id){
+  // Try official back sprites first (some gens are missing)
+  const tryPaths = [
+    sprites?.back_default,
+    // A few common versioned locations that sometimes exist
+    sprites?.versions?.['generation-v']?.['black-white']?.back_default,
+    sprites?.versions?.['generation-iv']?.['platinum']?.back_default,
+    sprites?.versions?.['generation-iii']?.['emerald']?.back_default,
+  ].filter(Boolean);
 
+  const front = sprites?.front_default || gridSpriteURL(id);
+  const backReal = tryPaths.find(Boolean) || null;
+
+  // If we have a real back sprite, use it; otherwise mirror the front.
+  if (backReal) {
+    return { front, back: backReal, backIsMirror: false };
+  }
+  return { front, back: front, backIsMirror: true };
+  }
     async function buildMon(id){
       const detail=await getPokemonDetail(id);
       const gs=k=>detail.stats.find(s=>s.stat.name===k).base_stat; const L=50;
@@ -839,8 +857,23 @@
       const derived={ maxHP:Math.floor(((2*base.hp)*L)/100)+L+10, atk:Math.floor(((2*base.atk)*L)/100)+5, def:Math.floor(((2*base.def)*L)/100)+5, spa:Math.floor(((2*base.spa)*L)/100)+5, spd:Math.floor(((2*base.spd)*L)/100)+5, spe:Math.floor(((2*base.spe)*L)/100)+5 };
       const types=detail.types; state.typesById.set(id,types);
       const pool=state.mvPoolCache.get(id)||await assembleMovePool(detail.moves); state.mvPoolCache.set(id,pool);
-      const moves=recommendMoves(pool,types).slice(0,4);
-      return { id, name:cap(detail.name), types, front:detail.sprites.front_default||gridSpriteURL(id), back:detail.sprites.back_default||detail.sprites.front_default||gridSpriteURL(id), base, stats:{...derived}, stages:{atk:0,def:0,spa:0,spd:0,spe:0}, hp:derived.maxHP, moves, status:null, volatile:{} };
+     const moves = recommendMoves(pool, types).slice(0,4);
+      const picked = pickSpriteURLs(detail.sprites, id);
+      return {
+        id,
+        name: cap(detail.name),
+        types,
+        front: picked.front,
+        back: picked.back,
+        backIsMirror: picked.backIsMirror, // <-- track if we're mirroring
+        base,
+        stats: { ...derived },
+        stages: { atk:0, def:0, spa:0, spd:0, spe:0 },
+        hp: derived.maxHP,
+        moves,
+        status: null,
+        volatile: {}
+      };    
     }
 
     const currA=()=>state.rosterA[state.aIdx], currB=()=>state.rosterB[state.bIdx];
@@ -854,8 +887,15 @@
     function setActiveDisplays(){
       const A=currA(), B=currB();
       $('#nameA').textContent=A.name; $('#nameB').textContent=B.name;
-      $('#spriteA').src=A.back; $('#spriteB').src=B.front;
-      $('#spriteA').classList.remove('semi-inv'); $('#spriteB').classList.remove('semi-inv');
+      $('#spriteA').src = A.back;
+      $('#spriteB').src = B.front;
+      
+      // mirror only if we’re faking a back
+      $('#spriteA').classList.toggle('mirror-x', !!A.backIsMirror);
+      
+      // clear semi-inv
+      $('#spriteA').classList.remove('semi-inv');
+      $('#spriteB').classList.remove('semi-inv');      
       setHPBars(); $('#roundTag').textContent=`Round ${state.round}`;
       updateRosterBadges(); renderMoveButtons();
     }
@@ -1225,7 +1265,9 @@ if (atkSide === 'A') {
       inMon.volatile = inMon.volatile || {};
       delete inMon.volatile.semiInv;
       delete inMon.volatile.charging;
-
+      if (isPlayer) {
+           $('#spriteA').classList.toggle('mirror-x', !!inMon.backIsMirror);
+      }
       setActiveDisplays();
       setBanner(isPlayer?`Go, ${inMon.name}!`:`Foe sent out ${inMon.name}!`, isPlayer?'your':'rival');
       await sendOutAnimation(spriteEl, stageEl);
