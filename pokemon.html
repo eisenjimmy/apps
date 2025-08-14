@@ -674,7 +674,24 @@
       const teamArr=state[team==='A'?'teamA':'teamB']; const entry=teamArr.find(x=>x.id===id); state.mvTemp=new Set((entry?.moves||[]).slice(0,4));
       renderMoveList();
     }
-    function closeMovePicker(commit=false){ if(commit){ const teamArr=state[state.mvContext.team==='A'?'teamA':'teamB']; const entry=teamArr.find(x=>x.id===state.mvContext.id); if(entry) entry.moves=Array.from(state.mvTemp).slice(0,4); renderTeams(); }
+      function closeMovePicker(commit=false){
+  if (commit) {
+    const teamArr = state[state.mvContext.team === 'A' ? 'teamA' : 'teamB'];
+    const entry = teamArr.find(x => x.id === state.mvContext.id);
+    if (entry) {
+      // Ensure we store only move keys (strings), not full objects
+      entry.moves = Array.from(state.mvTemp)
+        .map(v => (typeof v === 'string' ? v : v?.key))
+        .filter(Boolean)
+        .slice(0, 4);
+    }
+    renderTeams();
+  }
+  $('#movePicker').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+  state.mvContext = null;
+  state.mvTemp = new Set();
+}
       $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set(); }
     document.addEventListener('click',(e)=>{ if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false); });
     $('#mvDone').addEventListener('click',()=>closeMovePicker(true));
