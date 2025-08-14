@@ -20,7 +20,7 @@
     }
   </script>
 
-  <!-- Chart.js for the team picker radar -->
+  <!-- Chart.js for radar -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
@@ -59,6 +59,7 @@
     @media(min-width:640px){ .opp-sprite{width:168px;height:168px;top:72px;right:26px} .ply-sprite{width:168px;height:168px;bottom:84px;left:26px} .hpbox{min-width:230px} }
 
     .move-btn{ width:100%; border-radius:.75rem; padding:.55rem .75rem; font-size:.92rem; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.08); }
+
     .roster-strip img{ border-radius:8px; border:1px solid var(--border); }
     .roster-strip .slot{ width:28px; height:28px; border-radius:8px; overflow:hidden; opacity:.95 }
     .roster-strip .active{ outline:2px solid #10b981; outline-offset:1px; }
@@ -85,15 +86,12 @@
     .camshake{animation:shake .28s ease;}
     @keyframes faint{0%{transform:translateY(0);opacity:1;filter:none}100%{transform:translateY(34px);opacity:.2;filter:grayscale(100%)}}
     .faint{animation:faint .5s ease forwards;}
-    /* Semi-invulnerable visual (Fly/Dig charging) */
     .semi-inv { opacity:.35; filter:grayscale(40%); transform: translateY(-6px) scale(.95); }
 
-    /* Projectile & spark bits */
     .proj{ position:absolute; width:10px; height:10px; border-radius:999px; transform:translate(-50%,-50%); pointer-events:none; }
     .spark{ position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 22px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation:spark .35s ease forwards; pointer-events:none; }
     @keyframes spark{0%{transform:scale(.6);opacity:.95}100%{transform:scale(1.6);opacity:0}}
 
-    /* Poké Ball recall/sendout */
     .ball{ position:absolute; width:22px; height:22px; border-radius:999px; background: radial-gradient(circle at 50% 45%, #fff 0 38%, #ef4444 39% 100%); border:2px solid #111827; box-shadow:0 0 10px rgba(255,255,255,.2), 0 0 24px rgba(239,68,68,.25); transform: translate(-50%, -50%); pointer-events:none; opacity:0; }
     @keyframes ball-pop { 0%{transform:translate(-50%,-50%) scale(.2);opacity:0} 40%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1);opacity:1} }
     .ball-pop{ animation: ball-pop .25s ease forwards; }
@@ -102,7 +100,6 @@
     @keyframes sendout { 0%{ transform: scale(0); opacity:0; } 100%{ transform: scale(1); opacity:1; } }
     .sendout{ animation: sendout .35s ease forwards; }
 
-    /* Chart tweaks */
     #statChart { max-width: 100%; }
   </style>
 </head>
@@ -259,7 +256,7 @@
         </div>
       </div>
 
-      <!-- Preview (sticky) -->
+      <!-- Preview -->
       <div class="card p-3">
         <div class="flex items-center gap-3">
           <img id="pvSprite" class="w-10 h-10 pixel" alt="Preview sprite">
@@ -340,26 +337,48 @@
   </footer>
 
   <script>
-  /* ------------------- small helpers ------------------- */
+  /* ------------------- helpers ------------------- */
   const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
   const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-  const P=ms=>ms; // pacing knob
+  const P=ms=>ms; // pacing
   const gridSpriteURL=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
   const MAX_ID=1010, LV=50;
+
+  // --- robust fetch with exponential backoff ---
+  async function fetchJSON(url, {tries=5, baseDelay=300} = {}) {
+    let lastErr;
+    for (let i=0; i<tries; i++) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(\`HTTP \${r.status} for \${url}\`);
+        return await r.json();
+      } catch (e) {
+        lastErr = e;
+        const delay = baseDelay * Math.pow(2, i) + Math.random()*100;
+        await sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
+  // --- simple concurrency limiter ---
+  function pLimit(n) {
+    let active = 0, queue = [];
+    const next = () => { active--; if (queue.length) queue.shift()(); };
+    return fn => new Promise((res, rej) => {
+      const run = async () => { active++; try { res(await fn()); } catch (e) { rej(e); } finally { next(); } };
+      if (active < n) run(); else queue.push(run);
+    });
+  }
 
   const TYPE_COLORS={normal:'#A8A77A',fire:'#EE8130',water:'#6390F0',electric:'#F7D02C',grass:'#7AC74C',ice:'#96D9D6',fighting:'#C22E28',poison:'#A33EA1',ground:'#E2BF65',flying:'#A98FF3',psychic:'#F95587',bug:'#A6B91A',rock:'#B6A136',ghost:'#735797',dragon:'#6F35FC',dark:'#705746',steel:'#B7B7CE',fairy:'#D685AD'};
   const typeColor=t=>TYPE_COLORS[t]||'#64748b';
   const GEN_RANGES={1:[1,151],2:[152,251],3:[252,386],4:[387,493],5:[494,649],6:[650,721],7:[722,809],8:[810,898],9:[899,1010]};
-
-  /* type chart (atk vs def types) */
   const chart={normal:{rock:.5,ghost:0},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},ice:{water:.5,ice:.5,grass:2,ground:2,flying:2,dragon:2},fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:.5,flying:.5,psychic:.5,bug:.5,fairy:.5,ghost:0},poison:{grass:2,fairy:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0},ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:.5,flying:0,bug:.5},flying:{grass:2,fighting:2,bug:2,electric:.5,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},bug:{grass:2,psychic:2,dark:2,fire:.5,fighting:.5,poison:.5,flying:.5,ghost:.5,steel:.5,fairy:.5},rock:{fire:2,ice:2,flying:2,bug:2,fighting:.5,ground:.5,steel:.5},ghost:{ghost:2,psychic:2,normal:0,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{ghost:2,psychic:2,fighting:.5,dark:.5,fairy:.5},steel:{rock:2,ice:2,fairy:2,fire:.5,water:.5,electric:.5,steel:.5}};
   const effMultiplier=(t,ts)=>ts.reduce((m,ty)=>m*(chart[t]?.[ty]??1),1);
-
   const AIL_MAP={paralysis:'par',burn:'brn',poison:'psn','bad-poison':'psn',freeze:'frz',sleep:'slp',confusion:'cnf'};
   const PAR_SPEED=.5, RESIDUAL_FRACTION=16;
 
-  /* Multi-turn, priority, specials */
   const RECHARGE_MOVES = new Set(['hyper-beam','giga-impact']);
   const SEMI_INV_MOVES = { 'fly':{phase1Msg:'flew up high!',tag:'fly'}, 'dig':{phase1Msg:'dug underground!',tag:'dig'} };
   const SEMI_INV_COUNTERS = { fly:{hits:new Set(['gust','twister','thunder','hurricane']),bonus:2.0}, dig:{hits:new Set(['earthquake','magnitude']),bonus:2.0} };
@@ -367,7 +386,6 @@
   const PRIORITY_PLUS2 = new Set(['extreme-speed']);
   const getPriority=m=>typeof m.priority==='number'?m.priority:(PRIORITY_PLUS2.has((m.key||'').toLowerCase())?2:PRIORITY_PLUS1.has((m.key||'').toLowerCase())?1:0);
 
-  /* Special categories */
   const SPECIALS = {
     selfDestruct: new Set(['self-destruct','explosion']),
     recoil33: new Set(['double-edge','flare-blitz','volt-tackle','head-charge','wood-hammer','wild-charge','brave-bird','light-of-ruin']),
@@ -389,7 +407,6 @@
     leechSeed: new Set(['leech-seed']),
   };
 
-  /* state */
   let statChart=null;
   const STATE={
     allPokemon:[], teamA:[], teamB:[],
@@ -404,7 +421,6 @@
     stats:{ rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0} }
   };
 
-  /* ------------------- init ------------------- */
   document.addEventListener('DOMContentLoaded', async ()=>{
     renderTeams(); wireBuilder(); wireArena(); wireResults();
     await loadAllPokemon();
@@ -414,49 +430,104 @@
   /* ------------------- data loading ------------------- */
   async function loadAllPokemon(){
     try{
-      const r=await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${MAX_ID}`);
-      const data=await r.json();
+      const r=await fetchJSON(`https://pokeapi.co/api/v2/pokemon?limit=${MAX_ID}`);
+      const data=r;
       STATE.allPokemon=data.results.map(r=>({ id:Number(r.url.split('/').filter(Boolean).pop()), name:cap(r.name) })).filter(p=>p.id>=1 && p.id<=MAX_ID);
     }catch(e){
-      // fallback to Kanto names if network fails
       const KANTO=151; STATE.allPokemon=Array.from({length:KANTO},(_,i)=>({id:i+1,name:`#${String(i+1).padStart(3,'0')}`}));
     }
     renderGrid(); autoSeedRival(); renderTeams(); updateStartButton();
   }
+
   async function getPokemonDetail(id){
-    const cache=localStorage.getItem('poke:'+id);
-    if(cache) return JSON.parse(cache);
-    const r=await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`); const p=await r.json();
-    const types=p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name);
-    const out={id,name:cap(p.name),types,sprites:p.sprites,stats:p.stats,moves:p.moves};
-    localStorage.setItem('poke:'+id, JSON.stringify(out));
+    const k = 'poke:'+id;
+    const cache = localStorage.getItem(k);
+    if (cache) return JSON.parse(cache);
+    const p = await fetchJSON(`https://pokeapi.co/api/v2/pokemon/${id}`);
+    const types = p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name);
+    const out = { id, name:cap(p.name), types, sprites:p.sprites, stats:p.stats, moves:p.moves };
+    localStorage.setItem(k, JSON.stringify(out));
     return out;
   }
+
   async function assembleMovePool(movesArr){
-    const agg=new Map();
-    for(const m of movesArr){
-      const key=m.move.name;
-      for(const v of m.version_group_details){
-        const method=v.move_learn_method.name;
-        if(method==='level-up' && v.level_learned_at>50) continue;
-        if(method!=='level-up' && method!=='machine') continue;
-        if(!agg.has(key)) agg.set(key,{name:key,flags:new Set(),level:null});
-        const rec=agg.get(key); rec.flags.add(method); if(method==='level-up') rec.level=Math.max(rec.level||0, v.level_learned_at||0);
+    const chosen = new Map();
+    for (const m of movesArr) {
+      const key = m.move.name;
+      for (const v of m.version_group_details) {
+        const method = v.move_learn_method.name;
+        if (method === 'level-up' && v.level_learned_at <= 50) {
+          if (!chosen.has(key)) chosen.set(key, { name:key, flags:new Set(), level:0 });
+          chosen.get(key).flags.add('level-up');
+          chosen.get(key).level = Math.max(chosen.get(key).level, v.level_learned_at||1);
+        }
+        if (method === 'machine') {
+          if (!chosen.has(key)) chosen.set(key, { name:key, flags:new Set(), level:null });
+          chosen.get(key).flags.add('machine');
+        }
       }
     }
-    const out=[];
-    for(const {name,flags,level} of agg.values()){
-      let mv=STATE.moveCache.get(name)||JSON.parse(localStorage.getItem('mv:'+name)||'null');
-      if(!mv){ const r=await fetch(`https://pokeapi.co/api/v2/move/${name}`); mv=await r.json(); STATE.moveCache.set(name,mv); localStorage.setItem('mv:'+name, JSON.stringify(mv)); }
-      const type=mv.type?.name; if(!TYPE_COLORS[type]) continue;
-      const category=mv.damage_class?.name||'status', power=mv.power??null, accuracy=mv.accuracy??100, priority=mv.priority??0;
-      const ailRaw=mv.meta?.ailment?.name||'none', ailment_chance=mv.meta?.ailment_chance ?? mv.effect_chance ?? 0, ailment_code=AIL_MAP[ailRaw] || (ailRaw==='none'?null:ailRaw);
-      const stat_changes=mv.stat_changes||[], target=mv.target?.name||'selected-pokemon', healing=mv.meta?.healing ?? 0;
-      if(flags.has('level-up')) out.push({key:name,display:cleanMoveName(name),type,category,power,accuracy,method:'level-up',level:level||1,ailment_code,ailment_chance,stat_changes,target,healing,priority});
-      if(flags.has('machine'))  out.push({key:name,display:cleanMoveName(name),type,category,power,accuracy,method:'machine',level:null,ailment_code,ailment_chance,stat_changes,target,healing,priority});
+
+    const limiter = pLimit(8);
+    const tasks = [];
+    const results = [];
+
+    for (const {name} of chosen.values()) {
+      const cached = STATE.moveCache.get(name) || JSON.parse(localStorage.getItem('mv:'+name) || 'null');
+      if (cached) {
+        results.push({ ok:true, name, data:cached });
+      } else {
+        tasks.push(limiter(async () => {
+          try {
+            const mv = await fetchJSON(`https://pokeapi.co/api/v2/move/${name}`, {tries:5, baseDelay:350});
+            STATE.moveCache.set(name, mv);
+            localStorage.setItem('mv:'+name, JSON.stringify(mv));
+            results.push({ ok:true, name, data:mv });
+          } catch (e) {
+            results.push({ ok:false, name, err:String(e) });
+          }
+        }));
+      }
+    }
+
+    const mvListEl = document.getElementById('mvList');
+    if (mvListEl && !mvListEl.children.length) {
+      mvListEl.innerHTML = `<div class="text-sm text-slate-400">Loading moves… (fetching details)</div>`;
+    }
+
+    if (tasks.length) await Promise.allSettled(tasks);
+
+    const out = [];
+    for (const base of chosen.values()) {
+      const mv = STATE.moveCache.get(base.name) || results.find(r=>r.ok && r.name===base.name)?.data;
+      if (!mv) continue;
+      const type = mv.type?.name; if (!TYPE_COLORS[type]) continue;
+      const category = mv.damage_class?.name || 'status';
+      const power = mv.power ?? null;
+      const accuracy = mv.accuracy ?? 100;
+      const priority = mv.priority ?? 0;
+      const ailRaw = mv.meta?.ailment?.name || 'none';
+      const ailment_chance = mv.meta?.ailment_chance ?? mv.effect_chance ?? 0;
+      const ailment_code = AIL_MAP[ailRaw] || (ailRaw==='none'?null:ailRaw);
+      const stat_changes = mv.stat_changes || [];
+      const target = mv.target?.name || 'selected-pokemon';
+      const healing = mv.meta?.healing ?? 0;
+
+      if (base.flags.has('level-up'))
+        out.push({key:base.name, display:cleanMoveName(base.name), type, category, power, accuracy, method:'level-up', level:base.level||1, ailment_code, ailment_chance, stat_changes, target, healing, priority});
+      if (base.flags.has('machine'))
+        out.push({key:base.name, display:cleanMoveName(base.name), type, category, power, accuracy, method:'machine', level:null, ailment_code, ailment_chance, stat_changes, target, healing, priority});
+    }
+
+    if (!out.length) {
+      out.push(
+        {key:'tackle', display:'Tackle', type:'normal', category:'physical', power:40, accuracy:100, method:'level-up', level:1, priority:0},
+        {key:'growl', display:'Growl', type:'normal', category:'status', power:null, accuracy:100, method:'level-up', level:1, priority:0}
+      );
     }
     return out;
   }
+
   function cleanMoveName(n){ return n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
   /* ------------------- builder ------------------- */
@@ -509,7 +580,8 @@
     $('#picker').classList.remove('hidden'); $('#search').value=''; highlightChipSelections(); filterGrid('');
     if(!$('#grid').children.length) renderGrid();
     queueMicrotask(()=>{
-      const first = $('#grid [data-id]:not(.hidden)'); if(first) showPreview(Number(first.getAttribute('data-id')));
+      const firstVisible = $('#grid [data-id]:not(.hidden)');
+      if (firstVisible) showPreview(Number(firstVisible.getAttribute('data-id')));
       else if(STATE.tempPick.size){ showPreview([...STATE.tempPick][0]); }
     });
   }
@@ -531,8 +603,13 @@
       card.className='tap rounded-2xl border border-slate-700 bg-slate-800 p-2 flex flex-col items-center hover:border-emerald-400 focus:outline-none';
       card.setAttribute('data-id',p.id);
       card.innerHTML=`<img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-14 h-14 pixel"/><div class="text-[11px] mt-1">${String(p.id).padStart(3,'0')} • ${p.name}</div>`;
-      card.addEventListener('click',()=>{ toggleTempPick(p.id,card); showPreview(p.id); });
-      card.addEventListener('focus', ()=> showPreview(p.id));
+      const id=p.id;
+      const updatePreview=()=>showPreview(id);
+      card.addEventListener('click',()=>{ toggleTempPick(id,card); updatePreview(); });
+      card.addEventListener('pointerup', updatePreview);
+      card.addEventListener('mouseover', updatePreview);
+      card.addEventListener('focus', updatePreview);
+      if (STATE.tempPick?.has(id)) reflectPickedUI(id, card);
       grid.appendChild(card);
     });
   }
@@ -557,7 +634,6 @@
       }
       el.classList.toggle('hidden', !match);
     });
-    // keep preview sane
     const el = STATE.previewId ? $(`#grid [data-id="${STATE.previewId}"]`) : null;
     const stillVisible = !!(el && !el.classList.contains('hidden'));
     if(!stillVisible){ const first = $('#grid [data-id]:not(.hidden)'); if(first) showPreview(Number(first.getAttribute('data-id'))); }
@@ -591,33 +667,46 @@
     $$('[data-type]').forEach(b=>{ const v=b.getAttribute('data-type'); b.classList.toggle('on', STATE.filters.types.has(v)); });
   }
 
-  /* radar preview */
   async function showPreview(id){
-    const p=await getPokemonDetail(id); STATE.previewId=id;
-    $('#pvName').textContent=cap(p.name); $('#pvSprite').src=gridSpriteURL(id);
-    $('#pvTypes').innerHTML=(p.types||[]).map(t=>`<span class="type-badge mr-1" style="background:${typeColor(t)}">${t.toUpperCase()}</span>`).join(' ')||'—';
-    const base = {
-      hp:  p.stats.find(s=>s.stat.name==='hp').base_stat,
-      atk: p.stats.find(s=>s.stat.name==='attack').base_stat,
-      def: p.stats.find(s=>s.stat.name==='defense').base_stat,
-      spa: p.stats.find(s=>s.stat.name==='special-attack').base_stat,
-      spd: p.stats.find(s=>s.stat.name==='special-defense').base_stat,
-      spe: p.stats.find(s=>s.stat.name==='speed').base_stat,
-    };
-    const lv50 = deriveLv50(base);
-    const data = [lv50.maxHP, lv50.atk, lv50.def, lv50.spa, lv50.spd, lv50.spe];
-    const maxAxis = Math.max(120, Math.ceil(Math.max(...data)/10)*10);
-    const ctx = document.getElementById('statChart').getContext('2d');
-    if(statChart) statChart.destroy();
-    statChart = new Chart(ctx, {
-      type:'radar',
-      data:{ labels:['HP','Atk','Def','SpA','SpD','Spe'], datasets:[{ label:'Lv.50 Stats', data, fill:true, backgroundColor:'rgba(16,185,129,0.18)', borderColor:'rgba(16,185,129,0.9)', borderWidth:2, pointBackgroundColor:'rgba(16,185,129,1)', pointRadius:2.5 }] },
-      options:{
-        responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
-        scales:{ r:{ suggestedMin:0, suggestedMax:maxAxis, angleLines:{color:'rgba(148,163,184,.25)'}, grid:{color:'rgba(148,163,184,.18)'}, pointLabels:{color:'#e5e7eb',font:{weight:700}}, ticks:{display:false} } }
+    STATE.previewId = id;
+    const nameEl = $('#pvName'), typesEl = $('#pvTypes'), imgEl = $('#pvSprite');
+    if (nameEl) nameEl.textContent = 'Loading…';
+    if (typesEl) typesEl.innerHTML = '<span class="text-[12px] text-slate-500">Fetching details</span>';
+    if (imgEl) imgEl.src = gridSpriteURL(id);
+
+    try{
+      const p = await getPokemonDetail(id);
+      if (!p) throw new Error('No data');
+      if (nameEl) nameEl.textContent = cap(p.name || `#${id}`);
+      if (imgEl) imgEl.src = gridSpriteURL(id);
+      const types = (p.types || []);
+      if (typesEl) {
+        typesEl.innerHTML = types.length
+          ? types.map(t=>`<span class="type-badge mr-1" style="background:${typeColor(t)}">${t.toUpperCase()}</span>`).join(' ')
+          : '—';
       }
-    });
+      STATE.typesById.set(id, types);
+      const get = (k)=>p.stats?.find(s=>s.stat?.name===k)?.base_stat ?? 50;
+      const base = { hp:get('hp'), atk:get('attack'), def:get('defense'),
+                     spa:get('special-attack'), spd:get('special-defense'), spe:get('speed') };
+      const lv50 = deriveLv50(base);
+      const data = [lv50.maxHP, lv50.atk, lv50.def, lv50.spa, lv50.spd, lv50.spe];
+      const maxAxis = Math.max(120, Math.ceil(Math.max(...data)/10)*10);
+      const ctx = document.getElementById('statChart')?.getContext('2d');
+      if (statChart) { try { statChart.destroy(); } catch(_){} }
+      if (ctx) {
+        statChart = new Chart(ctx, {
+          type:'radar',
+          data:{ labels:['HP','Atk','Def','SpA','SpD','Spe'], datasets:[{ label:'Lv.50 Stats', data, fill:true, backgroundColor:'rgba(16,185,129,0.18)', borderColor:'rgba(16,185,129,0.9)', borderWidth:2, pointBackgroundColor:'rgba(16,185,129,1)', pointRadius:2.5 }] },
+          options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ r:{ suggestedMin:0, suggestedMax:maxAxis, angleLines:{color:'rgba(148,163,184,.25)'}, grid:{color:'rgba(148,163,184,.18)'}, pointLabels:{color:'#e5e7eb',font:{weight:700}}, ticks:{display:false} } } }
+        });
+      }
+    }catch(err){
+      if (nameEl) nameEl.textContent = `#${String(id).padStart(3,'0')}`;
+      if (typesEl) typesEl.innerHTML = '<span class="text-[12px] text-rose-300">Failed to load</span>';
+    }
   }
+
   function deriveLv50(base){
     const maxHP = Math.floor(((2*base.hp)*LV)/100)+LV+10;
     const atk   = Math.floor(((2*base.atk)*LV)/100)+5;
@@ -634,8 +723,9 @@
     $('#mvPickedCount').textContent=`0 / 4 selected`;
     $('#mvSearch').value=''; $('#fltLvl').checked=true; $('#fltTM').checked=true;
     STATE.mvContext={team,id,name,types:null}; document.body.classList.add('no-scroll'); $('#movePicker').classList.remove('hidden');
+    $('#mvList').innerHTML = `<div class="text-sm text-slate-400">Loading moves…</div>`;
     const detail=await getPokemonDetail(id); const types=detail.types; STATE.typesById.set(id,types); STATE.mvContext.types=types;
-    const pool=STATE.mvPoolCache.get(id)||await assembleMovePool(detail.moves); STATE.mvPoolCache.set(id,pool);
+    let pool=STATE.mvPoolCache.get(id)||await assembleMovePool(detail.moves); if(pool.length>160) pool=pool.slice(0,160); STATE.mvPoolCache.set(id,pool);
     const teamArr=STATE[team==='A'?'teamA':'teamB']; const entry=teamArr.find(x=>x.id===id);
     STATE.mvTemp=new Set((entry?.moves||[]).map(m=>m.key).slice(0,4));
     renderMoveList();
@@ -878,14 +968,12 @@
     if(STATE.waitingForPlayerChoice && !(STATE.queuedMove || STATE.queuedAction)){ toast('Choose a move or Pokémon.'); STATE.lock=false; return; }
 
     const A0=currA(), B0=currB();
-    // CPU action: switch if needed, else pick move
     let cpuAction=null; const cpuSwitchTo=cpuShouldSwitch(B0,A0,STATE.rosterB);
     if(cpuSwitchTo!==null) cpuAction={type:'switch',to:cpuSwitchTo}; else cpuAction={type:'move',move:bestMoveAgainst(B0,A0)};
     await sleep(P(150));
 
     STATE.waitingForPlayerChoice=false; enableMoveButtons(false); $('#btnNext').disabled=true;
 
-    // Order resolution (switch/move/priority/speed)
     if(STATE.queuedAction?.type==='switch' && cpuAction.type==='switch'){
       await performSwitch('A',STATE.queuedAction.to); if(battleAlive()) await performSwitch('B',cpuAction.to);
     } else if(STATE.queuedAction?.type==='switch' && cpuAction.type==='move'){
@@ -907,10 +995,8 @@
       }
     }
 
-    // Residuals
     if(battleAlive()){
       endOfTurnResidual(currA(),'A'); endOfTurnResidual(currB(),'B'); setHPBars();
-      // expire turn-based volatiles
       [currA(),currB()].forEach(m=>{ if(m.volatile?.protect) delete m.volatile.protect; if(m.volatile?.destinyBond) m.volatile.destinyBond=false; });
     }
     if(!battleAlive()){ finishRound(); STATE.lock=false; return; }
@@ -921,7 +1007,6 @@
     STATE.lock=false; if(STATE.autoPlay) autoLoop();
   }
 
-  /* ------------------- one action ------------------- */
   async function takeOneAction(side, atk, def, move){
     const atkSide=side, defSide=side==='A'?'B':'A';
     if(atk.hp<=0 || def.hp<=0) return false;
@@ -929,7 +1014,6 @@
     setBanner(`${atk.name} is preparing to move…`, atkSide==='A'?'your':'rival');
     if(handlePreMoveStatus(atk)){ setHPBars(); await sleep(P(420)); return false; }
 
-    // Encore enforcement
     if(atk.volatile?.encore && atk.volatile.encore.turns>0){
       const forced=atk.volatile.encore.key;
       const own=atk.moves.find(m=>m.key===forced);
@@ -937,14 +1021,12 @@
       else delete atk.volatile.encore;
     }
 
-    // Finish two-turn?
     if(atk.volatile?.charging){
       move = atk.volatile.charging.move;
       delete atk.volatile.charging;
       if(atk.volatile.semiInv){ delete atk.volatile.semiInv; const atkImg=(atkSide==='A')?$('#spriteA'):$('#spriteB'); atkImg.classList.remove('semi-inv'); }
       await solarBeamChargeGlow(atkSide,false);
     } else {
-      // Start semi-invulnerable (Fly/Dig)
       const k=(move.key||'').toLowerCase();
       if(SEMI_INV_MOVES[k]){
         setBanner(`${atk.name} ${SEMI_INV_MOVES[k].phase1Msg}`, atkSide==='A'?'your':'rival');
@@ -957,30 +1039,21 @@
       }
     }
 
-    // Protect / Detect
     if(SPECIALS.protect.has((move.key||'').toLowerCase())){
       atk.volatile.protect=true; log(`${atk.name} protected itself!`); setBanner(`${atk.name} protected itself!`,'info'); await sleep(P(220)); return false;
     }
-
-    // Destiny Bond
     if(SPECIALS.destiny.has((move.key||'').toLowerCase())){
       atk.volatile.destinyBond=true; log(`${atk.name} is hoping to take its foe down with it!`); setBanner(`Destiny Bond!`,'info'); await sleep(P(220)); return false;
     }
-
-    // Perish Song
     if(SPECIALS.perish.has((move.key||'').toLowerCase())){
       [atk,def].forEach(m=>{ m.volatile.perish=3; });
       log(`A doom-laden countdown began!`); setBanner(`Perish Song echoed…`,'info'); await sleep(P(220)); return false;
     }
-
-    // Encore
     if(SPECIALS.encore.has((move.key||'').toLowerCase())){
       if(def.volatile?.lastMove){ def.volatile.encore={key:def.volatile.lastMove,turns:3}; log(`${def.name} received an Encore!`); setBanner(`${def.name} will repeat its last move!`,'info'); }
       else { log(`But it failed!`); }
       await sleep(P(220)); return false;
     }
-
-    // Sleep Talk
     if(SPECIALS.sleepTalk.has((move.key||'').toLowerCase())){
       if(atk.status?.type!=='slp'){ log(`But it failed!`); await sleep(P(200)); return false; }
       const pool=atk.moves.filter(m=>m.key!=='sleep-talk' && m.key!=='rest');
@@ -988,8 +1061,6 @@
       move = pool[Math.floor(Math.random()*pool.length)];
       setBanner(`${atk.name} used Sleep Talk! (${move.display})`, atkSide==='A'?'your':'rival');
     }
-
-    // Substitute
     if(SPECIALS.substitute.has((move.key||'').toLowerCase())){
       if(atk.volatile.subHP>0){ log(`But it failed — already has a Substitute!`); await sleep(P(200)); return false; }
       const cost=Math.floor(atk.stats.maxHP/4);
@@ -997,8 +1068,6 @@
       atk.hp-=cost; atk.volatile.subHP=cost;
       setHPBars(); log(`${atk.name} put in a Substitute!`); setBanner(`A decoy appeared!`,'info'); await sleep(P(220)); return false;
     }
-
-    // Leech Seed
     if(SPECIALS.leechSeed.has((move.key||'').toLowerCase())){
       if(def.types.includes('grass')){ log(`It doesn’t affect ${def.name}…`); await sleep(P(200)); return false; }
       if(def.volatile.leech){ log(`But it failed — already seeded!`); await sleep(P(200)); return false; }
@@ -1008,14 +1077,11 @@
 
     setBanner(`${atk.name} used ${move.display}!`, atkSide==='A'?'your':'rival');
 
-    // Non-damaging status / buffs
     if(move.category==='status' && (!move.power || move.power===0) && (move.ailment_code || (move.stat_changes&&move.stat_changes.length) || move.healing || SPECIALS.protect.has((move.key||'').toLowerCase()) || SPECIALS.substitute.has((move.key||'').toLowerCase()) || SPECIALS.leechSeed.has((move.key||'').toLowerCase()))){
-      // accuracy
       if(!SPECIALS.protect.has((move.key||'').toLowerCase()) && Math.random()*100 > (move.accuracy ?? 100)){
         log(`${atk.name}'s ${move.display} missed!`); await impactMiss(defSide); await sleep(P(300)); return false;
       }
       await animateAttack(atkSide,defSide,move);
-      // if target has Substitute and this would inflict status, block
       if(def.volatile?.subHP && (move.ailment_code || (move.stat_changes && move.stat_changes.some(s=>s.change<0)))){
         log(`The Substitute blocked the effect!`); await sleep(P(220)); return false;
       }
@@ -1026,7 +1092,6 @@
       return false;
     }
 
-    // Damaging path with semi-invulnerable target logic and Protect/Substitute
     let autoMiss=false, effBonus=1.0;
     if(def.volatile?.protect){ log(`${def.name} protected itself!`); await impactMiss(defSide); return false; }
     if(def.volatile?.semiInv){
@@ -1037,10 +1102,8 @@
       else effBonus=counters.bonus||1.0;
     }
 
-    // signature animation
-    await animateAttack(attkSide=atkSide,defenderSide=defSide,move);
+    await animateAttack(atkSide,defSide,move);
 
-    // multi-hit/accuracy
     const acc=(move.accuracy ?? 100);
     let hits=1;
     const key=(move.key||'').toLowerCase();
@@ -1054,10 +1117,8 @@
       if(autoMiss || Math.random()*100 > acc){ await impactMiss(defSide); log(`${atk.name}'s ${move.display} missed!`); setBanner(`${move.display} missed!`,'info'); return false; }
     }
 
-    // Counter/Mirror Coat handling (store last hit)
     def.volatile.lastHit=null;
 
-    // Fixed damage or normal damage
     let totalDmg=0;
     if (SPECIALS.fixed50.has(key)) totalDmg = LV;
     else if (SPECIALS.fixed40.has(key)) totalDmg = 40;
@@ -1070,20 +1131,16 @@
       }
     }
 
-    // Critical (skip on fixed)
     const isFixed = SPECIALS.fixed50.has(key)||SPECIALS.fixed40.has(key)||SPECIALS.fixed20.has(key);
     const crit = !isFixed && Math.random()<0.1;
     if(crit){ totalDmg=Math.floor(totalDmg*1.75); log('Critical hit!'); await screenShake(); }
 
-    // Apply Substitute
     if(def.volatile?.subHP){
       const before=def.volatile.subHP; def.volatile.subHP=Math.max(0,def.volatile.subHP-totalDmg);
       log(`The Substitute took ${Math.min(before,totalDmg)} damage.`);
       if(def.volatile.subHP<=0){ delete def.volatile.subHP; log(`The Substitute broke!`); }
       await impactHit(defSide,move.type); await sleep(P(240));
-      // no ailment when substitute present
     } else {
-      // Apply damage to HP
       def.hp=Math.max(0, def.hp-totalDmg);
       if(atkSide==='A') STATE.stats.dmgA+=totalDmg; else STATE.stats.dmgB+=totalDmg;
       await impactHit(defSide,move.type); setHPBars();
@@ -1091,29 +1148,24 @@
       def.volatile.lastHit = { amount: totalDmg, category: move.category };
       await sleep(P(300));
 
-      // Ailments after hit
       if(def.hp>0 && move.ailment_code){
         const applied=tryApplyStatus(def,move.ailment_code,move.ailment_chance||0);
         if(applied){ log(`${def.name} is now ${applied.toUpperCase()}!`); STATE.stats.statusCounts[applied]=(STATE.stats.statusCounts[applied]||0)+1; setBanner(`${def.name} is ${applied.toUpperCase()}!`,'info'); setHPBars(); await sleep(P(220)); }
       }
     }
 
-    // Drain
     if(SPECIALS.drain50.has(key) && totalDmg>0 && atk.hp>0){
       const heal=Math.max(1,Math.floor(totalDmg*0.5)); const before=atk.hp;
       atk.hp=Math.min(atk.stats.maxHP, atk.hp+heal);
       if(atk.hp>before){ log(`${atk.name} drained ${atk.hp-before} HP!`); setHPBars(); await sleep(P(180)); }
     }
-    // Recoil
     if(SPECIALS.recoil33.has(key) && totalDmg>0){ const recoil=Math.max(1,Math.floor(totalDmg/3)); atk.hp=Math.max(0,atk.hp-recoil); log(`${atk.name} is hit with recoil (${recoil}).`); setHPBars(); await sleep(P(180)); }
     if(SPECIALS.recoil25.has(key) && totalDmg>0){ const recoil=Math.max(1,Math.floor(totalDmg/4)); atk.hp=Math.max(0,atk.hp-recoil); log(`${atk.name} is hit with recoil (${recoil}).`); setHPBars(); await sleep(P(180)); }
 
-    // Self-Destruct/Explosion -> user faints after damage
     if(SPECIALS.selfDestruct.has(key)){ atk.hp=0; setHPBars(); log(`${atk.name} fainted from ${move.display}!`); await faintSprite(atkSide); await sleep(P(220)); }
 
-    // Counter / Mirror Coat execution (if user selected those)
     if(SPECIALS.counter.has(key)){
-      const last=atk.volatile?.lastTaken; // damage taken earlier in the turn
+      const last=atk.volatile?.lastTaken;
       if(last && last.category==='physical'){ const dmg=last.amount*2; def.hp=Math.max(0, def.hp-dmg); log(`${atk.name} countered for ${dmg} damage!`); await impactHit(defSide,'fighting'); setHPBars(); await sleep(P(220)); }
       else { log(`But it failed!`); }
     }
@@ -1123,21 +1175,17 @@
       else { log(`But it failed!`); }
     }
 
-    // Destiny Bond trigger (if target fainted by direct damage)
     if(def.hp<=0 && def.volatile?.destinyBond){
       log(`${def.name} took ${atk.name} down with it!`); atk.hp=0; setHPBars(); await faintSprite(atkSide); await sleep(P(200));
     }
 
-    // Faints & auto-send
     if(def.hp<=0){
       if(atkSide==='A') STATE.stats.koA++; else STATE.stats.koB++;
       await faintSprite(defSide); await sleep(P(200));
-      // CPU/player choose next available
       if(atkSide==='A'){ const next=STATE.rosterB.findIndex((x,i)=>i>STATE.bIdx&&x.hp>0); if(next!==-1) STATE.bIdx=next; }
       else { const next=STATE.rosterA.findIndex((x,i)=>i>STATE.aIdx&&x.hp>0); if(next!==-1) STATE.aIdx=next; }
       if(!battleAlive()) return true;
       setActiveDisplays(); setBanner(`${(atkSide==='A'?currB():currA()).name} was sent out!`,'info'); await sleep(P(280));
-      // prevent queued move carry-over
       if(atkSide==='A') STATE.queuedMove=null;
       return true;
     }
@@ -1152,10 +1200,7 @@
       return true;
     }
 
-    // Recharge?
     if(RECHARGE_MOVES.has(key)){ atk.volatile.recharge=1; }
-
-    // remember last move for Encore; and record that defender took damage for Counter/Mirror
     atk.volatile.lastMove=key;
     def.volatile.lastTaken={ amount: totalDmg, category: move.category };
 
@@ -1204,14 +1249,12 @@
     if(isRest){ atk.hp=atk.stats.maxHP; atk.status={type:'slp',turns:2}; log(`${atk.name} fell asleep and restored its health!`); setBanner(`${atk.name} fell asleep and restored HP!`,'info'); setHPBars(); return true; }
     if(isHeal){ const pct=m.healing?(m.healing/100):0.5; const healed=Math.max(1,Math.floor(atk.stats.maxHP*pct)); const before=atk.hp; atk.hp=Math.min(atk.stats.maxHP,atk.hp+healed); log(`${atk.name} healed ${atk.hp-before} HP.`); setHPBars(); return true; }
 
-    // buffs/debuffs
     if(m.stat_changes && m.stat_changes.length){
       const t = targetIsSelf?atk:def;
       for(const sc of m.stat_changes){ const which=statKeyFromName(sc.stat?.name); if(!which) continue; t.stages[which]=clamp(t.stages[which]+sc.change,-6,6); }
       const dir=m.stat_changes.some(s=>s.change>0)?'rose':(m.stat_changes.some(s=>s.change<0)?'fell':'changed'); log(`${(targetIsSelf?atk:def).name}'s stats ${dir}!`); setBanner(`${(targetIsSelf?atk:def).name}'s stats ${dir}!`,'info'); return true;
     }
 
-    // direct ailment (blocked by Substitute)
     if(m.ailment_code){
       if(def.volatile?.subHP){ log(`But it failed — blocked by Substitute!`); return false; }
       const applied=tryApplyStatus(targetIsSelf?atk:def,m.ailment_code,m.ailment_chance||100);
@@ -1230,15 +1273,11 @@
   }
   function endOfTurnResidual(mon, side){
     if(mon.hp<=0) return;
-
-    // Burn/Poison residual
     if(mon.status?.type==='brn' || mon.status?.type==='psn'){
       const dmg=Math.max(1,Math.floor(mon.stats.maxHP/RESIDUAL_FRACTION));
       mon.hp=Math.max(0,mon.hp-dmg);
       log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`); setBanner(`${mon.name} takes residual damage…`,'info');
     }
-
-    // Leech Seed
     if(mon.volatile?.leech){
       const dmg=Math.max(1,Math.floor(mon.stats.maxHP/8));
       mon.hp=Math.max(0,mon.hp-dmg);
@@ -1246,8 +1285,6 @@
       if(other?.hp>0){ other.hp=Math.min(other.stats.maxHP, other.hp+dmg); }
       log(`${mon.name} had its energy drained (${dmg}).`); setHPBars();
     }
-
-    // Perish Song
     if(mon.volatile?.perish>0){
       mon.volatile.perish--; log(`${mon.name}'s perish count fell to ${mon.volatile.perish}.`);
       if(mon.volatile.perish===0){ mon.hp=0; setHPBars(); log(`${mon.name} perished!`); }
