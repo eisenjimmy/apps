@@ -130,7 +130,7 @@
       <div class="flex items-center justify-between">
         <h2 class="text-base font-bold text-slate-300">Build your teams</h2>
         <div class="flex gap-2">
-          <button id="btnRandomize" class="btn btn-secondary tap">Randomize teams</button>
+          <button id="btnRandomize" class="btn btn-secondary tap">Randomize My Pick</button>
           <button id="btnClear" class="btn btn-ghost tap">Clear</button>
         </div>
       </div>
@@ -151,9 +151,11 @@
             <div class="text-sm text-slate-400">Rival team is auto‑picked (you can edit)</div>
             <div class="ml-auto"><button id="pickB" class="btn btn-primary tap">Pick</button></div>
           </div>
-          <!-- Trainer Button and Chip -->
-<div class="mt-2 flex gap-2">
-  <button id="btnTrainers" class="btn btn-secondary tap">Trainers</button>
+      <!-- Trainer Dropdown and Chip -->
+<div class="mt-2 flex flex-col gap-2 w-full">
+ <select id="trainerSelect" class="w-full px-3 py-2 border border-slate-600 bg-slate-800 text-slate-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+    <option value="">Select a Trainer...</option>
+  </select>
   <div id="trainerChip" class="hidden items-center gap-2">
     <span class="chip">Trainer: <span id="trainerName"></span></span>
     <button id="clearTrainer" class="btn btn-ghost tap text-rose-400">Clear</button>
@@ -408,7 +410,13 @@
       stats:{ rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0} },
       previewId:null
     };
+    // Attacker faints after using these if the move connects
+    const SELF_KO_MOVES = new Set(['self-destruct','explosion','final-gambit','mind-blown']);
 
+
+
+
+    
     document.addEventListener('DOMContentLoaded', async ()=>{
       renderTeams(); wireBuilder(); wireArena(); wireResults();
       await loadAllPokemon();
@@ -443,8 +451,7 @@
       $('#btnClear').addEventListener('click',()=>{ state.teamA=[]; state.teamB=[]; autoSeedRival(); renderTeams(); updateStartButton(); });
       $('#btnRandomize').addEventListener('click',()=>{
         const ids=state.allPokemon.map(p=>p.id); shuffle(ids);
-        state.teamA=ids.slice(0,3).map(id=>({id,name:nameFor(id)}));
-        state.teamB=ids.slice(3,6).map(id=>({id,name:nameFor(id)}));
+        state.teamA=ids.slice(0,3).map(id=>({id,name:nameFor(id)}));        
         renderTeams(); updateStartButton();
       });
       $('#startBattle').addEventListener('click', startBattle);
@@ -1414,29 +1421,52 @@ if (atkSide === 'A') {
       spark.remove(); ball.remove();
     }
 
-    const TRAINERS = [
-  { key:'brock', name:'Brock', candidates:[74,95,76,112,111,141,139] },
-  { key:'misty', name:'Misty', candidates:[120,121,130,131,91,134] },
-  // ... rest of Gen 1 & 2 gyms, elite four, Gary, Ash as per plan
+   const TRAINERS = [
+  { key:'brock',    name:'Brock',    description:'Gen 1 - Rock Gym Leader', candidates:[74,95,76,112,111,141,139] },
+  { key:'misty',    name:'Misty',    description:'Gen 1 - Water Gym Leader', candidates:[120,121,130,131,91,134] },
+  { key:'lt-surge', name:'Lt. Surge',description:'Gen 1 - Electric Gym Leader', candidates:[25,26,125,135,82] },
+  { key:'erika',    name:'Erika',    description:'Gen 1 - Grass Gym Leader', candidates:[114,71,45,3,103] },
+  { key:'koga',     name:'Koga',     description:'Gen 1 - Poison Gym Leader / Gen 2 E4', candidates:[49,89,110,42,169] },
+  { key:'sabrina',  name:'Sabrina',  description:'Gen 1 - Psychic Gym Leader', candidates:[64,65,122,97,124] },
+  { key:'blaine',   name:'Blaine',   description:'Gen 1 - Fire Gym Leader', candidates:[58,59,38,78,126,6] },
+  { key:'giovanni', name:'Giovanni', description:'Gen 1 - Ground Gym Leader / Team Rocket Boss', candidates:[51,31,34,53,76,112,115] },
+  { key:'lorelei',  name:'Lorelei',  description:'Gen 1 - Elite Four (Ice)', candidates:[87,91,80,124,131] },
+  { key:'bruno-k',  name:'Bruno',    description:'Gen 1 - Elite Four (Fighting/Rock)', candidates:[95,106,107,68] },
+  { key:'agatha',   name:'Agatha',   description:'Gen 1 - Elite Four (Ghost/Poison)', candidates:[94,93,24,42] },
+  { key:'lance-k',  name:'Lance',    description:'Gen 1 - Elite Four (Dragon)', candidates:[130,149,148,142,6] },
+  { key:'gary',     name:'Gary',     description:'Gen 1 - Champion', candidates:[18,65,112,103,59,130,6,3,9] },
+  { key:'ash-k1',   name:'Ash',      description:'Gen 1 - Protagonist', candidates:[25,6,1,7,18,99,89,128,143] },
+  { key:'falkner',  name:'Falkner',  description:'Gen 2 - Flying Gym Leader', candidates:[17,18,164,227] },
+  { key:'bugsy',    name:'Bugsy',    description:'Gen 2 - Bug Gym Leader', candidates:[123,15,12,214] },
+  { key:'whitney',  name:'Whitney',  description:'Gen 2 - Normal Gym Leader', candidates:[35,241,40,143] },
+  { key:'morty',    name:'Morty',    description:'Gen 2 - Ghost Gym Leader', candidates:[92,93,94,200] },
+  { key:'chuck',    name:'Chuck',    description:'Gen 2 - Fighting Gym Leader', candidates:[57,62,237,68] },
+  { key:'jasmine',  name:'Jasmine',  description:'Gen 2 - Steel Gym Leader', candidates:[81,82,208,227] },
+  { key:'pryce',    name:'Pryce',    description:'Gen 2 - Ice Gym Leader', candidates:[86,87,221,91,131] },
+  { key:'clair',    name:'Clair',    description:'Gen 2 - Dragon Gym Leader', candidates:[148,230,130,149] },
+  { key:'will',     name:'Will',     description:'Gen 2 - Elite Four (Psychic)', candidates:[178,80,124,103] },
+  { key:'koga-j',   name:'Koga',     description:'Gen 2 - Elite Four (Poison)', candidates:[168,49,89,169,205] },
+  { key:'bruno-j',  name:'Bruno',    description:'Gen 2 - Elite Four (Fighting/Rock)', candidates:[237,106,107,68,208] },
+  { key:'karen',    name:'Karen',    description:'Gen 2 - Elite Four (Dark)', candidates:[197,229,45,94,198] },
+  { key:'lance-j',  name:'Lance',    description:'Gen 2 - Champion (Dragon)', candidates:[149,149,149,130,142,6] }
 ];
 
-state.selectedTrainer = null;
+if (!('selectedTrainer' in state)) state.selectedTrainer = null;
 
 async function pickStrongest(ids, n=3){
   const details = await Promise.all(ids.map(id => getPokemonDetail(id)));
-  const scored = details.map(d => ({
-    id: d.id,
-    bst: d.stats.reduce((s,st)=>s + st.base_stat, 0)
-  }));
-  scored.sort((a,b)=>b.bst - a.bst);
-  return scored.slice(0, n).map(s => ({ id:s.id, name:nameFor(s.id) }));
+  return details
+    .map(d => ({ id: d.id, name: nameFor(d.id), bst: d.stats.reduce((s,st)=> s + st.base_stat, 0) }))
+    .sort((a,b)=> b.bst - a.bst)
+    .slice(0, n)
+    .map(s => ({ id:s.id, name:s.name }));
 }
 
 async function applyTrainerSelection(key){
   const trainer = TRAINERS.find(t => t.key === key);
   if (!trainer) return;
-  const mons = await pickStrongest(trainer.candidates, 3);
-  state.teamB = mons.map(m => ({ id: m.id, name: m.name, moves: [] }));
+  const top3 = await pickStrongest(trainer.candidates, 3);
+  state.teamB = top3.map(m => ({ id: m.id, name: m.name }));
   state.selectedTrainer = { key: trainer.key, name: trainer.name };
   ls.set('trainer:current', state.selectedTrainer);
   document.getElementById('trainerName').textContent = trainer.name;
@@ -1447,43 +1477,30 @@ async function applyTrainerSelection(key){
 
 function clearTrainerSelection(){
   state.selectedTrainer = null;
-  ls.remove('trainer:current');
+  try { localStorage.removeItem('trainer:current'); } catch {}
   document.getElementById('trainerChip').classList.add('hidden');
+  document.getElementById('trainerSelect').value = '';
 }
 
-document.getElementById('btnTrainers').addEventListener('click', openTrainerPicker);
+document.getElementById('trainerSelect').addEventListener('change', function(){
+  if (this.value) applyTrainerSelection(this.value);
+});
+
 document.getElementById('clearTrainer').addEventListener('click', clearTrainerSelection);
 
-function openTrainerPicker(){
-  // simple alert list for now, replace with bottom sheet if needed
-  const names = TRAINERS.map(t => t.name).join('\n');
-  const choice = prompt('Select trainer by name:\n' + names);
-  const found = TRAINERS.find(t => t.name.toLowerCase() === choice?.toLowerCase());
-  if (found) applyTrainerSelection(found.key);
-}
+TRAINERS.forEach(t => {
+  const opt = document.createElement('option');
+  opt.value = t.key;
+  opt.textContent = `${t.name} — ${t.description}`;
+  document.getElementById('trainerSelect').appendChild(opt);
+});
 
-// Respect selected trainer in autoSeedRival
-const originalAutoSeedRival = autoSeedRival;
-autoSeedRival = function(){
-  if (state.selectedTrainer) return;
-  originalAutoSeedRival();
-};
-
-// Show trainer name in battle label
-const originalRenderBattleHeader = renderBattleHeader;
-renderBattleHeader = function(){
-  originalRenderBattleHeader();
-  if (state.selectedTrainer){
-    document.querySelector('#opponentName').textContent = 'Trainer: ' + state.selectedTrainer.name;
-  }
-};
-
-// Restore trainer on load
 const savedTrainer = ls.get('trainer:current');
 if (savedTrainer){
   state.selectedTrainer = savedTrainer;
   document.getElementById('trainerName').textContent = savedTrainer.name;
   document.getElementById('trainerChip').classList.remove('hidden');
+  document.getElementById('trainerSelect').value = savedTrainer.key;
 }
   </script>
 </body>
