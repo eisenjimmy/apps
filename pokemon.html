@@ -1,1 +1,1490 @@
-<!doctype html> <html lang="en"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /> <meta name="theme-color" content="#0b1220"> <title>Jimmy’s Pokémon Stadium</title> <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"/> <!-- Tailwind --> <script src="https://cdn.tailwindcss.com"></script> <script> tailwind.config = { theme: { extend: { fontFamily: { ui: ['ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial'] }, boxShadow: { soft: '0 8px 40px rgba(0,0,0,.32)' } } } } </script> <!-- Chart.js for the stat radar --> <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script> <style> :root{ --bg:#0b1220; --bg-2:#0f172a; --panel:rgba(15,23,42,.85); --border:#1f2a44; --border-2:#2a3b61; --text:#e5e7eb; --muted:#9ca3af; } .pixel{ image-rendering: pixelated; image-rendering: crisp-edges; } .hpbar-inner{ transition:width .35s ease; } .card{ background:var(--panel); backdrop-filter:blur(10px); border:1px solid var(--border); border-radius:1rem; box-shadow:0 8px 40px rgba(0,0,0,.28); } .btn{ display:inline-flex; align-items:center; justify-content:center; border-radius:.75rem; padding:.55rem 1rem; font-weight:700; color:#fff; gap:.5rem; } .btn-primary{ background:linear-gradient(180deg,#10b981,#059669); } .btn-secondary{ background:linear-gradient(180deg,#334155,#475569); color:var(--text); } .btn-warn{ background:linear-gradient(180deg,#eab308,#ca8a04); color:#111827; } .btn-ghost{ background:transparent; color:var(--muted); padding:.5rem .75rem; } .chip{ display:inline-flex; align-items:center; gap:.3rem; border-radius:999px; padding:.25rem .6rem; font-size:.75rem; font-weight:800; background:#0b1220; color:#cbd5e1; border:1px solid var(--border-2); } .chip.on{ outline:2px solid #10b981; background:#052e2b; } .chip-sm{ font-size:.7rem; padding:.18rem .5rem; } .grid-auto-fit{ display:grid; grid-template-columns:repeat(auto-fit,minmax(84px,1fr)); gap:.75rem; } .tap{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; } .type-badge{ font-size:10px; font-weight:900; padding:.125rem .5rem; border-radius:999px; color:#fff; } .move-btn{ width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.92rem; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.08); } .tag{ font-size:10px; font-weight:800; padding:.125rem .5rem; border-radius:.5rem; background:#0f172a; color:#cbd5e1; border:1px solid var(--border); } .sheet{ max-height:85vh; display:flex; flex-direction:column; } .sheet-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; } body.no-scroll{ overflow:hidden; } .mirror-x { transform: scaleX(-1); } /* Animations */ @keyframes lunge-right{0%{transform:translateX(0)}40%{transform:translateX(22px)}100%{transform:translateX(0)}} @keyframes lunge-left{0%{transform:translateX(0)}40%{transform:translateX(-22px)}100%{transform:translateX(0)}} .lunge-right{animation:lunge-right .35s ease;} .lunge-left{animation:lunge-left .35s ease;} @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,0)}40%{transform:translate(4px,0)}60%{transform:translate(-3px,0)}80%{transform:translate(3px,0)}} .shake{animation:shake .35s ease;} @keyframes flash{0%{filter:brightness(1)}50%{filter:brightness(2)}100%{filter:brightness(1)}} .flash{animation:flash .28s ease;} @keyframes jiggle{0%{transform:translate(0,0)}25%{transform:translate(0,-2px)}50%{transform:translate(0,0)}75%{transform:translate(0,2px)}100%{transform:translate(0,0)}} .camshake{animation:jiggle .25s ease;} .proj{ position:absolute; width:10px; height:10px; border-radius:999px; box-shadow:0 0 10px rgba(0,0,0,.45); transform:translate(-50%,-50%); pointer-events:none; } @keyframes spark{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.6);opacity:0}} .spark{ position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 22px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation:spark .35s ease forwards; pointer-events:none; } @keyframes faint{0%{transform:translateY(0);opacity:1;filter:none}100%{transform:translateY(34px);opacity:.2;filter:grayscale(100%)}} .faint{animation:faint .5s ease forwards;} /* Poké Ball recall/sendout */ .ball{ position:absolute; width:22px; height:22px; border-radius:999px; background: radial-gradient(circle at 50% 45%, #fff 0 38%, #ef4444 39% 100%); border:2px solid #111827; box-shadow:0 0 10px rgba(255,255,255,.2), 0 0 24px rgba(239,68,68,.25); transform: translate(-50%, -50%); pointer-events:none; opacity:0; } @keyframes ball-pop { 0%{transform:translate(-50%,-50%) scale(.2);opacity:0} 40%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1);opacity:1} } .ball-pop{ animation: ball-pop .25s ease forwards; } @keyframes recall { 0%{ transform: scale(1); opacity:1; } 100%{ transform: scale(0) rotate(-10deg); opacity:0; } } .recall{ animation: recall .35s ease forwards; transform-origin:center; } @keyframes sendout { 0%{ transform: scale(0); opacity:0; } 100%{ transform: scale(1); opacity:1; } } .sendout{ animation: sendout .35s ease forwards; } /* GB layout */ .stage{ position:relative; overflow:hidden; } .battle{ position:relative; height:320px; background:radial-gradient(ellipse at 20% 85%, rgba(255,255,255,.04), transparent 48%), radial-gradient(ellipse at 80% 15%, rgba(255,255,255,.04), transparent 48%); border-radius:.75rem; border:1px solid var(--border); } @media(min-width:640px){ .battle{height:380px} } .hpbox{ min-width:210px; background:#0b1220; border:2px solid #334155; border-radius:.5rem; padding:.35rem .5rem .5rem; box-shadow:inset 0 0 0 2px #1e293b; color:var(--text); } .hpbox-title{ font-weight:900; font-size:.8rem; letter-spacing:.02em; } .hpbox-hp{ font-size:.68rem; color:#a1a1aa; display:flex; justify-content:space-between; align-items:center; } .hpbar{ height:8px; width:100%; background:#1f2937; border-radius:999px; overflow:hidden; } .lv{ font-size:.7rem; font-weight:900; color:#e5e7eb; } .st-dot{ width:8px; height:8px; border-radius:999px; border:1px solid #e2e8f0; } .st-tag{ font-size:.6rem; font-weight:900; padding:.05rem .3rem; border:1px solid #94a3b8; border-radius:.25rem; color:#e5e7eb; } .opp-hp{ position:absolute; top:10px; left:10px; } .opp-sprite{ position:absolute; top:70px; right:18px; width:140px; height:140px; } .ply-sprite{ position:absolute; bottom:74px; left:18px; width:140px; height:140px; } .ply-hp{ position:absolute; bottom:10px; right:10px; } @media(min-width:640px){ .opp-sprite{width:168px;height:168px;top:72px;right:26px} .ply-sprite{width:168px;height:168px;bottom:84px;left:26px} .hpbox{min-width:230px} } .roster-strip img{ border-radius:8px; border:1px solid var(--border); } .roster-strip .slot{ width:28px; height:28px; border-radius:8px; overflow:hidden; opacity:.95 } .roster-strip .active{ outline:2px solid #10b981; outline-offset:1px; } .roster-strip .down{ filter:grayscale(100%); opacity:.5 } .gb-box{ position:relative; background:#0b1220; border:2px solid #334155; border-radius:.75rem; box-shadow: inset 0 0 0 2px #1e293b, 0 10px 40px rgba(0,0,0,.35); color:var(--text); } .gb-box::before,.gb-box::after{ content:""; position:absolute; pointer-events:none; border:2px solid #334155; width:14px; height:14px; opacity:.9; } .gb-box::before{ top:-6px; left:-6px; border-right:none; border-bottom:none; border-radius:.5rem 0 0 0; } .gb-box::after{ bottom:-6px; right:-6px; border-left:none; border-top:none; border-radius:0 0 .5rem 0; } @keyframes caret-blink{0%,60%{opacity:1;transform:translateY(0)}80%{opacity:.15}100%{opacity:1;transform:translateY(1px)}} .gb-caret{ font-weight:900; margin-left:.5rem; display:inline-block; animation:caret-blink .9s steps(1,end) infinite; } .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:40; } .modal.show{ display:flex; } /* NEW: while semi-invulnerable (charging phase) */ .semi-inv { opacity:.35; filter:grayscale(40%); transform: translateY(-6px) scale(.95); } /* Chart tweaks for dark mode */ #statChart { max-width: 100%; } </style> </head> <body class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 font-ui text-slate-100"> <!-- Header --> <header class="sticky top-0 z-10 bg-slate-900/80 backdrop-blur border-b border-slate-800"> <div class="max-w-5xl mx-auto px-4 py-3"> <div class="flex items-center gap-3"> <img alt="Poké Ball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/> <h1 class="text-lg font-extrabold leading-none">Jimmy’s Pokémon Stadium</h1> </div> <div class="pl-9 text-[12px] text-slate-400">Gen‑1 layout • Lv.50 • Status • TM/HM • Gens 1–9</div> </div> </header> <main class="max-w-5xl mx-auto px-4 py-4 space-y-6"> <!-- Builder --> <section id="builder" class="space-y-4"> <div class="flex items-center justify-between"> <h2 class="text-base font-bold text-slate-300">Build your teams</h2> <div class="flex gap-2"> <button id="btnRandomize" class="btn btn-secondary tap">Randomize teams</button> <button id="btnClear" class="btn btn-ghost tap">Clear</button> </div> </div> <div class="grid md:grid-cols-2 gap-4"> <div class="card p-4"> <div class="flex items-center gap-2 mb-3"> <span class="chip">You</span> <div class="text-sm text-slate-400">Choose 3 (tap Moves to pick up to 4)</div> <div class="ml-auto"><button id="pickA" class="btn btn-primary tap">Pick</button></div> </div> <div id="teamA" class="grid grid-cols-3 gap-3"></div> </div> <div class="card p-4"> <div class="flex items-center gap-2 mb-3"> <span class="chip">Rival</span> <div class="text-sm text-slate-400">Rival team is auto‑picked (you can edit)</div> <div class="ml-auto"><button id="pickB" class="btn btn-primary tap">Pick</button></div> </div> <div id="teamB" class="grid grid-cols-3 gap-3"></div> </div> </div> <div class="flex flex-wrap items-center gap-3 pt-2"> <button id="startBattle" class="btn btn-warn tap disabled:opacity-50" disabled>Start Battle</button> <div id="buildHint" class="text-sm text-slate-400">Pick 3 for each side to begin.</div> </div> </section> <!-- Arena --> <section id="arena" class="hidden space-y-3"> <div class="flex items-center gap-2"> <span id="roundTag" class="chip">Round 1</span> <label class="ml-2 flex items-center gap-2 text-xs text-slate-300"> <input id="autoPlay" type="checkbox" class="accent-emerald-500"> Auto play </label> <div class="ml-auto"> <button id="reset" class="btn btn-secondary tap">Back to builder</button> </div> </div> <!-- Stage --> <div class="card p-4 stage" id="stage"> <div class="battle"> <div class="hpbox opp-hp"> <div class="flex items-center justify-between"> <div class="flex items-center gap-2"> <span id="dotB" class="st-dot"></span> <div id="nameB" class="hpbox-title">???</div> <span id="stTextB" class="st-tag hidden">OK</span> </div> <div class="lv">Lv 50</div> </div> <div class="hpbox-hp"><span>HP <span id="hpTextB"></span></span></div> <div class="hpbar mt-1"><div id="hpBarB" class="hpbar-inner h-full" style="width:100%"></div></div> <div id="rosterB" class="roster-strip mt-2 flex gap-2"></div> </div> <img id="spriteB" class="pixel opp-sprite" alt="Opponent sprite"/> <img id="spriteA" class="pixel ply-sprite" alt="Your sprite"/> <div class="hpbox ply-hp"> <div class="flex items-center justify-between"> <div class="flex items-center gap-2"> <span id="dotA" class="st-dot"></span> <div id="nameA" class="hpbox-title">???</div> <span id="stTextA" class="st-tag hidden">OK</span> </div> <div class="lv">Lv 50</div> </div> <div class="hpbox-hp"><span>HP <span id="hpTextA"></span></span></div> <div class="hpbar mt-1"><div id="hpBarA" class="hpbar-inner h-full" style="width:100%"></div></div> <div id="rosterA" class="roster-strip mt-2 flex gap-2 justify-end"></div> </div> </div> <!-- Banner --> <div id="turnBanner" class="gb-box mt-4 p-3 text-sm ring-2 ring-slate-600" aria-live="polite"> Ready! <span id="gbCaret" class="gb-caret hidden">►</span> </div> <!-- Moves --> <div class="mt-3 grid grid-cols-2 gap-2" id="moveButtons"></div> <!-- Switch / Next --> <div class="mt-2 flex items-center gap-2"> <button id="btnSwitch" class="btn btn-secondary tap">Pokémon</button> <button id="btnNext" class="btn btn-secondary tap disabled:opacity-50" disabled>Next</button> </div> </div> <details class="card p-3"> <summary class="text-sm cursor-pointer text-slate-300">Show battle log (debug)</summary> <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1 mt-2 text-slate-300"></ol> <div class="mt-2"><button id="clearLog" class="btn btn-ghost tap">Clear log</button></div> </details> </section> </main> <!-- Team Picker --> <div id="picker" class="fixed inset-0 z-20 hidden"> <div class="absolute inset-0 bg-black/50" data-close></div> <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800"> <div class="flex items-center gap-2"> <div id="pickerLabel" class="chip">Pick — You</div> <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400" /> <button id="donePick" class="btn btn-secondary tap">Done</button> </div> <div class="space-y-2"> <div class="flex items-center gap-2 flex-wrap"> <span class="text-[11px] uppercase tracking-wider text-slate-400">Gen</span> <button class="chip chip-sm" data-gen="all">All</button> <button class="chip chip-sm" data-gen="1">I</button><button class="chip chip-sm" data-gen="2">II</button><button class="chip chip-sm" data-gen="3">III</button> <button class="chip chip-sm" data-gen="4">IV</button><button class="chip chip-sm" data-gen="5">V</button><button class="chip chip-sm" data-gen="6">VI</button> <button class="chip chip-sm" data-gen="7">VII</button><button class="chip chip-sm" data-gen="8">VIII</button><button class="chip chip-sm" data-gen="9">IX</button> </div> <div class="flex items-center gap-2 flex-wrap"> <span class="text-[11px] uppercase tracking-wider text-slate-400">Type</span> <button class="chip chip-sm" data-type="all">All</button> <button class="chip chip-sm" data-type="normal">Normal</button><button class="chip chip-sm" data-type="fire">Fire</button> <button class="chip chip-sm" data-type="water">Water</button><button class="chip chip-sm" data-type="electric">Electric</button> <button class="chip chip-sm" data-type="grass">Grass</button><button class="chip chip-sm" data-type="ice">Ice</button> <button class="chip chip-sm" data-type="fighting">Fighting</button><button class="chip chip-sm" data-type="poison">Poison</button> <button class="chip chip-sm" data-type="ground">Ground</button><button class="chip chip-sm" data-type="flying">Flying</button> <button class="chip chip-sm" data-type="psychic">Psychic</button><button class="chip chip-sm" data-type="bug">Bug</button> <button class="chip chip-sm" data-type="rock">Rock</button><button class="chip chip-sm" data-type="ghost">Ghost</button> <button class="chip chip-sm" data-type="dragon">Dragon</button><button class="chip chip-sm" data-type="dark">Dark</button> <button class="chip chip-sm" data-type="steel">Steel</button><button class="chip chip-sm" data-type="fairy">Fairy</button> </div> </div> <!-- PREVIEW: stat radar (sticky above grid) --> <div class="card p-3"> <div class="flex items-center gap-3"> <img id="pvSprite" class="w-10 h-10 pixel" alt="Preview sprite"> <div class="flex-1"> <div id="pvName" class="font-bold">—</div> <div id="pvTypes" class="text-[12px] text-slate-400">—</div> </div> <div class="text-[11px] text-slate-400">Lv. 50</div> </div> <div class="mt-3"> <canvas id="statChart" height="160"></canvas> </div> </div> <div id="pickedCount" class="text-xs text-slate-400">0 / 3 selected</div> <div class="sheet-scroll pr-1"><div id="grid" class="grid-auto-fit"></div></div> </div> </div> <!-- Move Picker --> <div id="movePicker" class="fixed inset-0 z-30 hidden"> <div class="absolute inset-0 bg-black/50" data-close-mv></div> <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800"> <div class="flex items-center gap-2"> <div id="mvTitle" class="chip">Moves — ???</div> <div class="ml-auto flex items-center gap-2 text-xs"> <label class="flex items-center gap-1 text-slate-300"><input id="fltLvl" type="checkbox" class="accent-emerald-500" checked><span>Level‑Up ≤50</span></label> <label class="flex items-center gap-1 text-slate-300"><input id="fltTM" type="checkbox" class="accent-emerald-500" checked><span>TM/HM</span></label> </div> </div> <div class="flex items-center gap-2"> <input id="mvSearch" type="text" placeholder="Search moves…" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400" /> <button id="mvRecommend" class="btn btn-secondary tap">Recommend 4</button> <button id="mvClear" class="btn btn-ghost tap">Clear</button> <button id="mvDone" class="btn btn-primary tap">Done</button> </div> <div id="mvPickedCount" class="text-xs text-slate-400">0 / 4 selected</div> <div class="sheet-scroll pr-1"><div id="mvList" class="space-y-2"></div></div> </div> </div> <!-- Switch Picker (player) --> <div id="switchPicker" class="fixed inset-0 z-30 hidden"> <div class="absolute inset-0 bg-black/50" data-close-sw></div> <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800"> <div class="flex items-center gap-2"> <div class="chip">Switch Pokémon</div> <div class="ml-auto text-xs text-slate-400">Switching uses your turn</div> </div> <div id="swList" class="grid grid-cols-3 sm:grid-cols-6 gap-2"></div> <div class="flex justify-end gap-2"> <button id="swCancel" class="btn btn-ghost tap">Cancel</button> </div> </div> </div> <!-- Results Modal --> <div id="resultModal" class="modal"> <div class="gb-box max-w-md w-[92%] p-5 bg-slate-900"> <div id="resultTitle" class="text-2xl font-extrabold text-center mb-2">You Win!</div> <div id="resultSubtitle" class="text-center text-slate-400 mb-4">Battle Summary</div> <div class="grid grid-cols-2 gap-3 text-sm mb-4"> <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">Rounds</div><div id="rsRounds">—</div></div> <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">KOs</div><div id="rsKO">You — / Rival —</div></div> <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">Damage (You)</div><div id="rsDmgA">—</div></div> <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">Damage (Rival)</div><div id="rsDmgB">—</div></div> <div class="border border-slate-700 rounded-lg p-3 col-span-2"><div class="font-bold mb-1">Statuses Inflicted</div><div id="rsStatus" class="flex flex-wrap gap-2 text-[12px]"></div></div> </div> <div class="flex gap-2 justify-center"> <button id="btnRematch" class="btn btn-primary tap">Try Again?</button> <button id="btnBack" class="btn btn-secondary tap">Back to Builder</button> </div> </div> </div> <footer class="max-w-5xl mx-auto px-4 py-8 text-center text-xs text-slate-500"> Data & sprites from <a class="underline" href="https://pokeapi.co/" target="_blank" rel="noreferrer">PokéAPI</a>. </footer> <script> /* ===== utils/constants ===== */ const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s)); const sleep=ms=>new Promise(r=>setTimeout(r,ms)); const cap=s=>s.charAt(0).toUpperCase()+s.slice(1); const P=ms=>ms; const gridSpriteURL=id=>https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png; const MAX_ID=1010; const ls={ get(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} }; const TYPE_COLORS={normal:'#A8A77A',fire:'#EE8130',water:'#6390F0',electric:'#F7D02C',grass:'#7AC74C',ice:'#96D9D6',fighting:'#C22E28',poison:'#A33EA1',ground:'#E2BF65',flying:'#A98FF3',psychic:'#F95587',bug:'#A6B91A',rock:'#B6A136',ghost:'#735797',dragon:'#6F35FC',dark:'#705746',steel:'#B7B7CE',fairy:'#D685AD'}; const typeColor=t=>TYPE_COLORS[t]||'#64748b'; const GEN_RANGES={1:[1,151],2:[152,251],3:[252,386],4:[387,493],5:[494,649],6:[650,721],7:[722,809],8:[810,898],9:[899,1010]}; const chart={normal:{rock:.5,ghost:0},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},ice:{water:.5,ice:.5,grass:2,ground:2,flying:2,dragon:2},fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:.5,flying:.5,psychic:.5,bug:.5,fairy:.5,ghost:0},poison:{grass:2,fairy:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0},ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:.5,flying:0,bug:.5},flying:{grass:2,fighting:2,bug:2,electric:.5,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},bug:{grass:2,psychic:2,dark:2,fire:.5,fighting:.5,poison:.5,flying:.5,ghost:.5,steel:.5,fairy:.5},rock:{fire:2,ice:2,flying:2,bug:2,fighting:.5,ground:.5,steel:.5},ghost:{ghost:2,psychic:2,normal:0,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{ghost:2,psychic:2,fighting:.5,dark:.5,fairy:.5},steel:{rock:2,ice:2,fairy:2,fire:.5,water:.5,electric:.5,steel:.5}}; const effMultiplier=(t,ts)=>ts.reduce((m,ty)=>m*(chart[t]?.[ty]??1),1); const AIL_MAP={paralysis:'par',burn:'brn',poison:'psn','bad-poison':'psn',freeze:'frz',sleep:'slp',confusion:'cnf'}; const PAR_SPEED=.5, RESIDUAL_FRACTION=16; /* ==== NEW: multi-turn, priority constants ==== */ const RECHARGE_MOVES = new Set(['hyper-beam','giga-impact']); const SEMI_INV_MOVES = { 'fly': {phase1Msg:'flew up high!', tag:'fly'}, 'dig': {phase1Msg:'dug underground!', tag:'dig'} }; const SEMI_INV_COUNTERS = { fly: { hits: new Set(['gust','twister','thunder','hurricane']), bonus: 2.0 }, dig: { hits: new Set(['earthquake','magnitude']), bonus: 2.0 } }; const PRIORITY_FALLBACK_PLUS1 = new Set(['quick-attack','aqua-jet','vacuum-wave','bullet-punch','ice-shard','shadow-sneak','sucker-punch','grassy-glide','accelerock','water-shuriken']); const PRIORITY_FALLBACK_PLUS2 = new Set(['extreme-speed']); const getPriority = (m)=>{ if(typeof m.priority === 'number') return m.priority; const k=(m.key||'').toLowerCase(); if(PRIORITY_FALLBACK_PLUS2.has(k)) return 2; if(PRIORITY_FALLBACK_PLUS1.has(k)) return 1; return 0; }; /* ====== Chart preview state ====== */ let statChart = null; const STAT_LABELS = ['HP','Atk','Def','SpA','SpD','Spe']; const state={ allPokemon:[], teamA:[], teamB:[], pickingFor:'A', tempPick:new Set(), filters:{ gens:new Set(['all']), types:new Set(['all']) }, mvContext:null, mvTemp:new Set(), mvPoolCache:new Map(), moveCache:new Map(), typesById:new Map(), rosterA:[], rosterB:[], aIdx:0, bIdx:0, round:1, waitingForPlayerChoice:true, queuedMove:null, queuedAction:null, autoPlay:false, lock:false, stats:{ rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0} }, previewId:null }; document.addEventListener('DOMContentLoaded', async ()=>{ renderTeams(); wireBuilder(); wireArena(); wireResults(); await loadAllPokemon(); wirePickerChips(); }); /* ===== Data loading ===== */ async function fetchWithTimeout(url,ms=8000){ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms); try{ const r=await fetch(url,{signal:ctl.signal}); clearTimeout(t); return r; } catch(e){ clearTimeout(t); throw e; } } async function loadAllPokemon(){ try{ const res=await fetchWithTimeout(https://pokeapi.co/api/v2/pokemon?limit=${MAX_ID}); if(!res.ok) throw new Error('HTTP '+res.status); const data=await res.json(); state.allPokemon=data.results.map(r=>({ id:Number(r.url.split('/').filter(Boolean).pop()), name:cap(r.name) })).filter(p=>p.id>=1 && p.id<=MAX_ID); }catch(e){ console.warn('Fallback to Kanto',e); const KANTO=["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","Nidoran♀","Nidorina","Nidoqueen","Nidoran♂","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetch’d","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","Mr. Mime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew"]; state.allPokemon=KANTO.map((n,i)=>({id:i+1,name:n})); toast('Online list failed — using Kanto fallback.'); } renderGrid(); autoSeedRival(); renderTeams(); updateStartButton(); } /* ===== Builder ===== */ function wireBuilder(){ $('#pickA').addEventListener('click',()=>openPicker('A')); $('#pickB').addEventListener('click',()=>openPicker('B')); $('#btnClear').addEventListener('click',()=>{ state.teamA=[]; state.teamB=[]; autoSeedRival(); renderTeams(); updateStartButton(); }); $('#btnRandomize').addEventListener('click',()=>{ const ids=state.allPokemon.map(p=>p.id); shuffle(ids); state.teamA=ids.slice(0,3).map(id=>({id,name:nameFor(id)})); state.teamB=ids.slice(3,6).map(id=>({id,name:nameFor(id)})); renderTeams(); updateStartButton(); }); $('#startBattle').addEventListener('click', startBattle); } function wireResults(){ $('#btnBack').addEventListener('click',()=>{ hideResult(); $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); }); $('#btnRematch').addEventListener('click',()=>{ hideResult(); startBattle(); }); } function autoSeedRival(){ if(!state.allPokemon?.length) return; const ids=state.allPokemon.map(p=>p.id); shuffle(ids); state.teamB=ids.slice(0,3).map(id=>({id,name:nameFor(id)})); } function nameFor(id){ const p=state.allPokemon.find(x=>x.id===id); return p?p.name:#${id}; } function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; } function renderTeams(){ const moveChips=p=>{ const list=p.moves?.slice(0,4)||[]; if(!list.length) return '<span class="text-[10px] text-slate-400">No moves chosen</span>'; return list.map(n=><span class="tag">${cleanMoveName(n)}</span>).join(' '); }; const slot=(teamKey,p,idx)=> <div class="card p-2 flex flex-col items-center"> <img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-16 h-16 pixel"/> <div class="text-xs mt-1 text-center">${p.name}</div> <div class="mt-2 flex items-center gap-2"> <button class="btn-ghost text-xs tap" data-mv>Moves</button> <button class="btn-ghost text-xs tap text-rose-400" data-remove>Remove</button> </div> <div class="mt-2 flex flex-wrap gap-1 justify-center">${moveChips(p)}</div> </div>; const filler=<div class="rounded-2xl border border-dashed border-slate-700 h-24 flex items-center justify-center text-slate-500 text-xs">Empty</div>; const mount=(el,teamKey)=>{ el.innerHTML=''; const team=state[teamKey]; team.forEach((p,idx)=>{ const wrap=document.createElement('div'); wrap.innerHTML=slot(teamKey,p,idx); wrap.querySelector('[data-remove]').addEventListener('click',()=>{ team.splice(idx,1); renderTeams(); updateStartButton(); }); wrap.querySelector('[data-mv]').addEventListener('click',()=>openMovePicker(teamKey === 'teamA' ? 'A' : 'B', p.id, p.name)); el.appendChild(wrap.firstElementChild); }); for(let i=team.length;i<3;i++){ const d=document.createElement('div'); d.innerHTML=filler; el.appendChild(d.firstElementChild); } }; mount($('#teamA'),'teamA'); mount($('#teamB'),'teamB'); updateStartButton(); } function updateStartButton(){ const ok=state.teamA.length===3 && state.teamB.length===3; $('#startBattle').disabled=!ok; $('#buildHint').textContent=ok?'Optionally edit moves, then Start Battle.':'Pick 3 for each side to begin.'; } /* ===== Picker (w/ chips + radar preview) ===== */ function openPicker(team){ state.pickingFor=team; state.tempPick=new Set((team==='A'?state.teamA:state.teamB).map(p=>p.id)); $('#pickerLabel').textContent=Pick — ${team==='A'?'You':'Rival'}; $('#pickedCount').textContent=${state.tempPick.size} / 3 selected; document.body.classList.add('no-scroll'); $('#picker').classList.remove('hidden'); $('#search').value=''; highlightChipSelections(); filterGrid(''); if(!$('#grid').children.length) renderGrid(); // hydrate preview with the first visible, or a selected one queueMicrotask(()=>{ const first = $('#grid [data-id]:not(.hidden)'); if(first){ showPreview(Number(first.getAttribute('data-id'))); } else if(state.tempPick.size){ const any = [...state.tempPick][0]; showPreview(any); } }); } function closePicker(commit=false){ if(commit){ const list=Array.from(state.tempPick).slice(0,3).map(id=>{ const existing=(state.pickingFor==='A'?state.teamA:state.teamB).find(x=>x.id===id); return existing?existing:({id,name:nameFor(id)}); }); if(state.pickingFor==='A') state.teamA=list; else state.teamB=list; renderTeams(); updateStartButton(); } $('#picker').classList.add('hidden'); document.body.classList.remove('no-scroll'); } $('#donePick').addEventListener('click',()=>closePicker(true)); $('#picker').addEventListener('click',(e)=>{ if(e.target.hasAttribute('data-close')) closePicker(false); }); $('#search').addEventListener('input',(e)=>filterGrid(e.target.value.trim().toLowerCase())); function renderGrid(){ const grid=$('#grid'); grid.innerHTML=''; state.allPokemon.forEach(p=>{ const card=document.createElement('button'); card.className='tap rounded-2xl border border-slate-700 bg-slate-800 p-2 flex flex-col items-center hover:border-emerald-400 focus:outline-none'; card.setAttribute('data-id',p.id); card.innerHTML=<img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-14 h-14 pixel"/><div class="text-[11px] mt-1">${String(p.id).padStart(3,'0')} • ${p.name}</div>; card.addEventListener('click',()=>{ toggleTempPick(p.id,card); showPreview(p.id); // update chart on tap }); card.addEventListener('focus', ()=> showPreview(p.id)); grid.appendChild(card); }); } function filterGrid(q){ if(state.filters.types.size && !state.filters.types.has('all')) primeTypesForFilter(); $$('#grid [data-id]').forEach(el=>{ const id=Number(el.getAttribute('data-id')); const name=nameFor(id).toLowerCase(); let match=!q || name.includes(q) || String(id).padStart(3,'0').includes(q); if(match && state.filters.gens.size && !state.filters.gens.has('all')){ match = [...state.filters.gens].some(g=>{ if(g==='all') return true; const [lo,hi]=GEN_RANGES[g]; return id>=lo && id<=hi; }); } if(match && state.filters.types.size && !state.filters.types.has('all')){ const ty = state.typesById.get(id); match = Array.isArray(ty) ? [...state.filters.types].some(t=>ty.includes(t)) : false; } el.classList.toggle('hidden', !match); reflectPickedUI(id,el); }); // keep preview sensible const el = state.previewId ? $(#grid [data-id="${state.previewId}"]) : null; const stillVisible = !!(el && !el.classList.contains('hidden')); if(!stillVisible){ const first = $('#grid [data-id]:not(.hidden)'); if(first) showPreview(Number(first.getAttribute('data-id'))); } $('#pickedCount').textContent=${state.tempPick.size} / 3 selected; } function toggleTempPick(id,el){ if(state.tempPick.has(id)) state.tempPick.delete(id); else { if(state.tempPick.size>=3) return; state.tempPick.add(id); } $('#pickedCount').textContent=${state.tempPick.size} / 3 selected; reflectPickedUI(id,el); } function reflectPickedUI(id,el){ const picked=state.tempPick.has(id); el.style.borderColor=picked?'#10b981':'#334155'; el.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.25)':'none'; } function wirePickerChips(){ $$('[data-gen]').forEach(btn=>{ btn.addEventListener('click',()=>{ const val=btn.getAttribute('data-gen'); if(val==='all'){ state.filters.gens.clear(); state.filters.gens.add('all'); } else{ if(state.filters.gens.has('all')) state.filters.gens.delete('all'); if(state.filters.gens.has(val)) state.filters.gens.delete(val); else state.filters.gens.add(val); if(state.filters.gens.size===0) state.filters.gens.add('all'); } highlightChipSelections(); filterGrid($('#search').value.trim().toLowerCase()); }); }); $$('[data-type]').forEach(btn=>{ btn.addEventListener('click',()=>{ const val=btn.getAttribute('data-type'); if(val==='all'){ state.filters.types.clear(); state.filters.types.add('all'); } else{ if(state.filters.types.has('all')) state.filters.types.delete('all'); if(state.filters.types.has(val)) state.filters.types.delete(val); else state.filters.types.add(val); if(state.filters.types.size===0) state.filters.types.add('all'); } highlightChipSelections(); filterGrid($('#search').value.trim().toLowerCase()); }); }); highlightChipSelections(); } function highlightChipSelections(){ $$('[data-gen]').forEach(b=>{ const v=b.getAttribute('data-gen'); b.classList.toggle('on', state.filters.gens.has(v)); }); $$('[data-type]').forEach(b=>{ const v=b.getAttribute('data-type'); b.classList.toggle('on', state.filters.types.has(v)); }); } let typingFetchQueue=[]; let typingInFlight=0; const TYPING_CONCURRENCY=6; function primeTypesForFilter(){ const wantTypes=!state.filters.types.has('all'); if(!wantTypes) return; typingFetchQueue = $$('#grid [data-id]').map(el=>Number(el.getAttribute('data-id'))).filter(id=>!state.typesById.has(id)); pumpTypingQueue(); } async function pumpTypingQueue(){ while(typingInFlight < TYPING_CONCURRENCY && typingFetchQueue.length){ const id=typingFetchQueue.shift(); typingInFlight++; getPokemonDetail(id).then(d=>{ state.typesById.set(id,d.types||[]); }).catch(()=>{}).finally(()=>{ typingInFlight--; filterGrid($('#search').value.trim().toLowerCase()); pumpTypingQueue(); }); } } /* ===== Chart helpers ===== */ function deriveLv50(statsBase){ const L=50; const maxHP = Math.floor(((2*statsBase.hp)*L)/100)+L+10; const atk = Math.floor(((2*statsBase.atk)*L)/100)+5; const def = Math.floor(((2*statsBase.def)*L)/100)+5; const spa = Math.floor(((2*statsBase.spa)*L)/100)+5; const spd = Math.floor(((2*statsBase.spd)*L)/100)+5; const spe = Math.floor(((2*statsBase.spe)*L)/100)+5; return { maxHP, atk, def, spa, spd, spe }; } function typePill(t){ return <span class="type-badge mr-1" style="background:${typeColor(t)}">${t.toUpperCase()}</span>; } async function showPreview(id){ try{ const p = await getPokemonDetail(id); $('#pvName').textContent = cap(p.name); $('#pvSprite').src = gridSpriteURL(id); $('#pvTypes').innerHTML = (p.types||[]).map(typePill).join(' ') || '—'; const base = { hp: p.stats.find(s=>s.stat.name==='hp').base_stat, atk: p.stats.find(s=>s.stat.name==='attack').base_stat, def: p.stats.find(s=>s.stat.name==='defense').base_stat, spa: p.stats.find(s=>s.stat.name==='special-attack').base_stat, spd: p.stats.find(s=>s.stat.name==='special-defense').base_stat, spe: p.stats.find(s=>s.stat.name==='speed').base_stat, }; const lv50 = deriveLv50(base); const data = [lv50.maxHP, lv50.atk, lv50.def, lv50.spa, lv50.spd, lv50.spe]; const maxAxis = Math.max(120, Math.ceil(Math.max(...data)/10)*10); const ctx = document.getElementById('statChart').getContext('2d'); if(statChart){ statChart.destroy(); } statChart = new Chart(ctx, { type: 'radar', data: { labels: STAT_LABELS, datasets: [{ label: 'Lv.50 Stats', data, fill: true, backgroundColor: 'rgba(16,185,129,0.18)', borderColor: 'rgba(16,185,129,0.9)', borderWidth: 2, pointBackgroundColor: 'rgba(16,185,129,1)', pointRadius: 2.5, }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx)=> ${ctx.label}: ${ctx.formattedValue} } } }, scales: { r: { suggestedMin: 0, suggestedMax: maxAxis, angleLines: { color: 'rgba(148,163,184,.25)' }, grid: { color: 'rgba(148,163,184,.18)' }, pointLabels: { color: '#e5e7eb', font: { weight: 700 } }, ticks: { display: false } } } } }); state.previewId = id; }catch(e){ console.warn('Preview failed', e); } } /* ===== Move editor ===== */ async function openMovePicker(team,id,name){ // normalize team to 'A' or 'B' const teamShort = (team === 'A' || team === 'teamA') ? 'A' : 'B'; $('#mvTitle').textContent=Moves — ${name} (${teamShort==='A'?'You':'Rival'}); $('#mvPickedCount').textContent=0 / 4 selected; $('#mvSearch').value=''; $('#fltLvl').checked=true; $('#fltTM').checked=true; state.mvContext={team:teamShort,id,name,types:null}; document.body.classList.add('no-scroll'); $('#movePicker').classList.remove('hidden'); // fetch move pool/types const pool=await getMovePool(id); const types=state.typesById.get(id)||[]; // the sheet could have been closed while awaiting — guard it if(!state.mvContext || state.mvContext.id!==id) return; state.mvContext.types=types; const teamKey = (teamShort==='A') ? 'teamA' : 'teamB'; const teamArr = state[teamKey]; const entry = teamArr.find(x=>x.id===id); // mvTemp stores KEYS (strings). Convert if needed. state.mvTemp = new Set( (entry?.moves||[]) .map(v => (typeof v === 'string' ? v : v?.key)) .filter(Boolean) .slice(0,4) ); renderMoveList(); } function closeMovePicker(commit = false){ if (commit) { const ctx = state.mvContext; // Safety: if the sheet was torn down mid-await if (!ctx) { $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvTemp = new Set(); return; } // Normalize team key to match state keys const teamKey = (ctx.team === 'A' || ctx.team === 'teamA') ? 'teamA' : 'teamB'; const teamArr = state[teamKey]; const entry = teamArr.find(x => x.id === ctx.id); if (entry) { // Persist as STRING KEYS, not move objects entry.moves = Array.from(state.mvTemp) .map(v => (typeof v === 'string' ? v : v?.key)) .filter(Boolean) .slice(0, 4); } renderTeams(); } // Close & reset picker state $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext = null; state.mvTemp = new Set(); } $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set(); document.addEventListener('click',(e)=>{ if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false); }); $('#mvDone').addEventListener('click',()=>closeMovePicker(true)); $('#mvClear').addEventListener('click',()=>{ state.mvTemp.clear(); renderMoveList(); }); $('#mvRecommend').addEventListener('click',()=>{ const pool=getFilteredMovePool(); const picks=recommendMoves(pool,state.mvContext.types).slice(0,4).map(m=>m.key); state.mvTemp=new Set(picks); renderMoveList(); }); $('#mvSearch').addEventListener('input',renderMoveList); $('#fltLvl').addEventListener('change',renderMoveList); $('#fltTM').addEventListener('change',renderMoveList); function renderMoveList(){ const list=$('#mvList'); list.innerHTML=''; const q=$('#mvSearch').value.trim().toLowerCase(); const filtered=getFilteredMovePool().filter(m=>!q || m.display.toLowerCase().includes(q) || m.type.includes(q)); filtered.sort((a,b)=>{ const stabA=(state.mvContext.types||[]).includes(a.type)?1:0; const stabB=(state.mvContext.types||[]).includes(b.type)?1:0; const catA=a.category==='status'?-1:1, catB=b.category==='status'?-1:1; return (stabB-stabA)||(catB-catA)||((b.power||0)-(a.power||0))||((b.level||0)-(a.level||0))||(a.method==='machine'?1:-1); }); for(const m of filtered){ const row=document.createElement('button'); const picked=state.mvTemp.has(m.key); row.className='w-full border border-slate-700 rounded-xl p-2 flex items-center gap-3 tap bg-slate-800'; row.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.20)':'none'; const ail=m.ailment_code? • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}:''; const extra=(m.stat_changes?.length?' • Stat':'')+(m.healing?' • Heal':'')+(m.priority? • Prio ${m.priority}:''); row.innerHTML=<span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span> <div class="flex-1 text-left"><div class="font-bold">${m.display}</div> <div class="text-[11px] text-slate-400">${m.category==='status'?'Status':('Pow '+(m.power??'—'))} • Acc ${m.accuracy??'—'}% • ${cap(m.category)}${ail}${extra} • ${m.method==='machine'?'TM/HM':('Lv '+(m.level||'?'))}</div></div> <div class="text-[11px] px-2 py-1 rounded-md ${picked?'bg-emerald-100 text-emerald-700':'bg-slate-700 text-slate-200'}">${picked?'Selected':'Select'}</div>; row.addEventListener('click',()=>{ if(picked){ state.mvTemp.delete(m.key); } else { if(state.mvTemp.size>=4){ toast('Max 4 moves.'); return; } state.mvTemp.add(m.key);} $('#mvPickedCount').textContent=${state.mvTemp.size} / 4 selected; renderMoveList(); }); list.appendChild(row); } $('#mvPickedCount').textContent = ${state.mvTemp.size} / 4 selected; } function getFilteredMovePool(){ const pool=state.mvPoolCache.get(state.mvContext.id)||[]; const incLvl=$('#fltLvl').checked, incTM=$('#fltTM').checked; return pool.filter(m=>(m.method==='level-up'&&incLvl)||(m.method==='machine'&&incTM)); } async function getMovePool(id){ if(state.mvPoolCache.has(id)) return state.mvPoolCache.get(id); const cached=ls.get('pool:'+id); if(cached){ state.mvPoolCache.set(id,cached.pool||cached); if(cached.types) state.typesById.set(id,cached.types); return state.mvPoolCache.get(id); } const detail=await getPokemonDetail(id); const types=detail.types; state.typesById.set(id,types); const pool=await assembleMovePool(detail.moves); state.mvPoolCache.set(id,pool); ls.set('pool:'+id,{pool,types}); return pool; } async function getPokemonDetail(id){ const c=ls.get('poke:'+id); if(c) return c; const res=await fetch(https://pokeapi.co/api/v2/pokemon/${id}); const p=await res.json(); const types=p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name); const out={id,name:cap(p.name),types,sprites:p.sprites,stats:p.stats,moves:p.moves}; ls.set('poke:'+id,out); return out; } async function assembleMovePool(movesArray){ const agg=new Map(); for(const m of movesArray){ const key=m.move.name; for(const v of m.version_group_details){ const method=v.move_learn_method.name; if(method==='level-up'&&v.level_learned_at>50) continue; if(method!=='level-up'&&method!=='machine') continue; if(!agg.has(key)) agg.set(key,{name:key,flags:new Set(),level:null,sources:new Set()}); const rec=agg.get(key); rec.flags.add(method); rec.sources.add(v.version_group.name); if(method==='level-up'){ rec.level=Math.max(rec.level||0,v.level_learned_at||0); } } } const out=[]; for(const {name,flags,level,sources} of agg.values()){ let mv=state.moveCache.get(name)||ls.get('mv:'+name); if(!mv){ const r=await fetch(https://pokeapi.co/api/v2/move/${name}); mv=await r.json(); state.moveCache.set(name,mv); ls.set('mv:'+name,mv); } const type=mv.type?.name; if(!TYPE_COLORS[type]) continue; const category=mv.damage_class?.name||'status', power=mv.power??null, accuracy=mv.accuracy??100; const priority=mv.priority ?? 0; const ailRaw=mv.meta?.ailment?.name||'none', ailment_chance=mv.meta?.ailment_chance ?? mv.effect_chance ?? 0, ailment_code=AIL_MAP[ailRaw] || (ailRaw==='none'?null:ailRaw); const stat_changes=mv.stat_changes||[], target=mv.target?.name||'selected-pokemon', healing=mv.meta?.healing ?? 0; if(flags.has('level-up')) out.push({key:name,display:cleanMoveName(name),type,category,power,accuracy,method:'level-up',level:level||1,sources:[...sources],ailment_code,ailment_chance,stat_changes,target,healing,priority}); if(flags.has('machine')) out.push({key:name,display:cleanMoveName(name),type,category,power,accuracy,method:'machine',level:null,sources:[...sources],ailment_code,ailment_chance,stat_changes,target,healing,priority}); } return out; } const cleanMoveName=n=>n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); function recommendMoves(pool,types=[]){ const scored=pool.map(m=>{ const stab=types.includes(m.type)?1.5:1.0; const base=m.category==='status'?(40+(m.ailment_code?20:0)+(m.stat_changes?.length?25:0)+(m.healing?30:0)):(m.power||0)*stab; const score=base+((m.level||0)/5)+(m.method==='level-up'?1:0); return {score,m}; }); scored.sort((a,b)=>b.score-a.score); const seen=new Set(),picks=[]; for(const s of scored){ if(!seen.has(s.m.key)){ seen.add(s.m.key); picks.push(s.m);} if(picks.length>=4) break; } if(!picks.length) picks.push({key:'tackle',display:'Tackle',type:'normal',category:'physical',power:40,accuracy:100,method:'level-up',level:1,priority:0}); return picks; } /* ===== Arena / Battle ===== */ function wireArena(){ $('#reset').addEventListener('click',()=>{ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); }); $('#clearLog')?.addEventListener('click', clearLog); $('#btnNext').addEventListener('click', async()=>{ if(!state.waitingForPlayerChoice && !state.lock) await resolveTurn(); }); $('#autoPlay').addEventListener('change', e=>{ state.autoPlay=e.target.checked; if(state.autoPlay) autoLoop(); }); $('#btnSwitch').addEventListener('click', ()=>{ if(state.lock || !state.waitingForPlayerChoice) return; openSwitchPicker(); }); $('#switchPicker').addEventListener('click',(e)=>{ if(e.target.hasAttribute('data-close-sw')) closeSwitchPicker(); }); $('#swCancel').addEventListener('click', closeSwitchPicker); } async function startBattle(){ $('#builder').classList.add('hidden'); $('#arena').classList.remove('hidden'); clearLog(); state.stats={rounds:0,dmgA:0,dmgB:0,koA:0,koB:0,statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0}}; state.rosterA=[]; state.rosterB=[]; state.aIdx=0; state.bIdx=0; state.round=1; state.waitingForPlayerChoice=true; state.queuedMove=null; state.queuedAction=null; state.lock=false; const all6=[...state.teamA,...state.teamB]; const details=await Promise.all(all6.map(async p=>{ const mon=await buildMon(p.id); if(p.moves&&p.moves.length){ const want=p.moves.slice(0,4); const pool=state.mvPoolCache.get(p.id)||await getMovePool(p.id); const byKey=new Map(pool.map(x=>[x.key,x])); const chosen=[]; for(const k of want){ if(byKey.has(k)) chosen.push(byKey.get(k)); } if(chosen.length){ mon.moves=chosen; } } return mon; })); state.rosterA=details.slice(0,3); state.rosterB=details.slice(3,6); updateRosterBadges(); setActiveDisplays(); renderMoveButtons(); setBanner(Your turn — choose a move for ${currA().name}.,'your'); enableMoveButtons(true); if(state.autoPlay) autoLoop(); } function pickSpriteURLs(sprites, id){ // Try official back sprites first (some gens are missing) const tryPaths = [ sprites?.back_default, // A few common versioned locations that sometimes exist sprites?.versions?.['generation-v']?.['black-white']?.back_default, sprites?.versions?.['generation-iv']?.['platinum']?.back_default, sprites?.versions?.['generation-iii']?.['emerald']?.back_default, ].filter(Boolean); const front = sprites?.front_default || gridSpriteURL(id); const backReal = tryPaths.find(Boolean) || null; // If we have a real back sprite, use it; otherwise mirror the front. if (backReal) { return { front, back: backReal, backIsMirror: false }; } return { front, back: front, backIsMirror: true }; } async function buildMon(id){ const detail=await getPokemonDetail(id); const gs=k=>detail.stats.find(s=>s.stat.name===k).base_stat; const L=50; const base={hp:gs('hp'),atk:gs('attack'),def:gs('defense'),spa:gs('special-attack'),spd:gs('special-defense'),spe:gs('speed')}; const derived={ maxHP:Math.floor(((2*base.hp)*L)/100)+L+10, atk:Math.floor(((2*base.atk)*L)/100)+5, def:Math.floor(((2*base.def)*L)/100)+5, spa:Math.floor(((2*base.spa)*L)/100)+5, spd:Math.floor(((2*base.spd)*L)/100)+5, spe:Math.floor(((2*base.spe)*L)/100)+5 }; const types=detail.types; state.typesById.set(id,types); const pool=state.mvPoolCache.get(id)||await assembleMovePool(detail.moves); state.mvPoolCache.set(id,pool); const moves = recommendMoves(pool, types).slice(0,4); const picked = pickSpriteURLs(detail.sprites, id); return { id, name: cap(detail.name), types, front: picked.front, back: picked.back, backIsMirror: picked.backIsMirror, // <-- track if we're mirroring base, stats: { ...derived }, stages: { atk:0, def:0, spa:0, spd:0, spe:0 }, hp: derived.maxHP, moves, status: null, volatile: {} }; } const currA=()=>state.rosterA[state.aIdx], currB=()=>state.rosterB[state.bIdx]; function updateRosterBadges(){ const mk=(mon,isActive)=><div class="slot ${isActive?'active':''} ${mon.hp>0?'':'down'}"><img class="w-7 h-7 pixel" src="${gridSpriteURL(mon.id)}" alt="${mon.name}"></div>; $('#rosterA').innerHTML=state.rosterA.map((m,i)=>mk(m,i===state.aIdx)).join(''); $('#rosterB').innerHTML=state.rosterB.map((m,i)=>mk(m,i===state.bIdx)).join(''); } function setActiveDisplays(){ const A=currA(), B=currB(); $('#nameA').textContent=A.name; $('#nameB').textContent=B.name; $('#spriteA').src = A.back; $('#spriteB').src = B.front; // mirror only if we’re faking a back $('#spriteA').classList.toggle('mirror-x', !!A.backIsMirror); // clear semi-inv $('#spriteA').classList.remove('semi-inv'); $('#spriteB').classList.remove('semi-inv'); setHPBars(); $('#roundTag').textContent=Round ${state.round}; updateRosterBadges(); renderMoveButtons(); } function setHPBars(){ const A=currA(), B=currB(); const pctA=Math.max(0,Math.round((A.hp/A.stats.maxHP)*100)), pctB=Math.max(0,Math.round((B.hp/B.stats.maxHP)*100)); const colorHP=(el,pct)=>{ if(pct>50){el.style.background='linear-gradient(90deg,#22c55e,#16a34a)';} else if(pct>20){el.style.background='linear-gradient(90deg,#f59e0b,#d97706)';} else {el.style.background='linear-gradient(90deg,#ef4444,#dc2626)';} }; $('#hpBarA').style.width=pctA+'%'; colorHP($('#hpBarA'),pctA); $('#hpBarB').style.width=pctB+'%'; colorHP($('#hpBarB'),pctB); $('#hpTextA').textContent=${A.hp} / ${A.stats.maxHP}; $('#hpTextB').textContent=${B.hp} / ${B.stats.maxHP}; updateStatusUI('A',A); updateStatusUI('B',B); } function updateStatusUI(side,mon){ const dot=side==='A'?$('#dotA'):$('#dotB'), tag=side==='A'?$('#stTextA'):$('#stTextB'); let color='#10b981', label=null; if(mon.status?.type){ label=mon.status.type.toUpperCase(); switch(mon.status.type){ case'par':color='#fbbf24';break; case'brn':color='#f97316';break; case'psn':color='#8b5cf6';break; case'frz':color='#22d3ee';break; case'slp':color='#94a3b8';break; default: color='#10b981'; } } else { const pct=Math.round((mon.hp/mon.stats.maxHP)*100); if(pct<=20) color='#ef4444'; else if(pct<=50) color='#f59e0b'; } dot.style.backgroundColor=color; if(label){ tag.textContent=label; tag.classList.remove('hidden'); } else tag.classList.add('hidden'); } function renderMoveButtons(){ const A=currA(); const box=$('#moveButtons'); box.innerHTML=''; A.moves.forEach(m=>{ const btn=document.createElement('button'); btn.className='move-btn tap'; btn.style.background=linear-gradient(180deg, ${typeColor(m.type)}, #1f2937); const ail=m.ailment_code? • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}:''; const extra=(m.stat_changes?.length?' • Stat':'')+(m.healing?' • Heal':'')+(m.priority? • Prio ${m.priority}:''); btn.innerHTML=<div class="text-left"> <div class="font-extrabold">${m.display}</div> <div class="text-[10px] opacity-90">${m.category==='status'?'Status':('Pow '+(m.power??'—'))} • Acc ${m.accuracy??'—'}% • ${cap(m.category)}${ail}${extra}</div> </div> <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>; btn.addEventListener('click', async()=>{ if(state.lock || !state.waitingForPlayerChoice) return; state.queuedMove=m; state.queuedAction=null; await resolveTurn(); }); box.appendChild(btn); }); enableMoveButtons(state.waitingForPlayerChoice); } function enableMoveButtons(on){ $$('#moveButtons .move-btn').forEach(b=>{ b.disabled=!on; b.style.opacity=on?'1':'.65'; b.style.filter=on?'none':'grayscale(35%)'; b.style.cursor=on?'pointer':'not-allowed'; }); $('#btnSwitch').disabled=!on; $('#btnSwitch').style.opacity=on?'1':'.65'; $('#btnSwitch').style.cursor=on?'pointer':'not-allowed'; } /* ===== Switch picker ===== */ function openSwitchPicker(){ const list=$('#swList'); list.innerHTML=''; state.rosterA.forEach((mon,i)=>{ const disabled = (i===state.aIdx) || mon.hp<=0; const btn=document.createElement('button'); btn.className='tap border border-slate-700 rounded-xl p-2 bg-slate-800 flex flex-col items-center'; btn.disabled=disabled; btn.style.opacity=disabled?'.45':'1'; btn.innerHTML=<img src="${gridSpriteURL(mon.id)}" class="w-12 h-12 pixel"/><div class="mt-1 text-[11px]">${mon.name}</div>; btn.addEventListener('click', async ()=>{ if(disabled) return; state.queuedAction = { type:'switch', to:i }; closeSwitchPicker(); await resolveTurn(); }); list.appendChild(btn); }); document.body.classList.add('no-scroll'); $('#switchPicker').classList.remove('hidden'); } function closeSwitchPicker(){ $('#switchPicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); } /* ===== AI helpers ===== */ function moveEffectivenessScore(move, atkTypes, defTypes){ const eff = effMultiplier(move.type, defTypes); let s = 0; if (eff === 0) s -= 60; else if (eff < 1) s -= (1-eff) * 40; else if (eff > 1) s += (eff-1) * 55; if (atkTypes.includes(move.type)) s += 18; return s; } function koPressureScore(expectedDamage, defenderHP){ const frac = expectedDamage / Math.max(1, defenderHP); return frac >= 1 ? 120 : Math.floor(frac * 90); } function playersBestDamageAgainst(target, playerMon){ let best = 0; for(const m of playerMon.moves){ if (m.category === 'status') continue; best = Math.max(best, estimateDamage(playerMon, target, m)); } return best; } function bestMoveAgainst(attacker, defender){ let best = attacker.moves[0], bestScore = -1e9; for(const m of attacker.moves){ let score = 0; if(m.category === 'status'){ const hasEffect = m.ailment_code || (m.stat_changes && m.stat_changes.length) || m.healing || /rest|recover|soft-boiled|moonlight|morning-sun|synthesis|roost|milk-drink|slack-off|aromatherapy|heal-bell|refresh|haze/.test(m.key); score = (hasEffect ? 35 : 5) + (m.ailment_chance||0)/3 + (m.healing?22:0) + ((m.stat_changes?.length||0)*6); } else { const dmg = estimateDamage(attacker, defender, m); score += dmg; score += moveEffectivenessScore(m, attacker.types, defender.types); score += koPressureScore(dmg, defender.hp); score += (m.accuracy ?? 100) * 0.12; } score += getPriority(m) * 6; // prefer faster resolution if(score > bestScore){ bestScore = score; best = m; } } return best; } function cpuShouldSwitch(cpu, player, bench){ const options = bench.map((m,i)=>({m,i})).filter(x => x.m.hp > 0 && x.i !== state.bIdx); if (!options.length) return null; const lowHP = cpu.hp / cpu.stats.maxHP <= 0.25; let allIneffective = true; for(const m of cpu.moves){ if(m.category === 'status') continue; const eff = effMultiplier(m.type, player.types); if (eff > 0.5) { allIneffective = false; break; } } if(!lowHP && !allIneffective) return null; let bestIdx = null, bestScore = -1e9; for(const {m: cand, i} of options){ const move = bestMoveAgainst(cand, player); const dmg = (move.category==='status') ? 0 : estimateDamage(cand, player, move); let offScore = dmg + moveEffectivenessScore(move, cand.types, player.types); const threat = playersBestDamageAgainst(cand, currA()); const survScore = (cand.stats.maxHP ? (1 - (threat/Math.max(1,cand.stats.maxHP))) : 0) * 75; const total = offScore + survScore; if(total > bestScore){ bestScore = total; bestIdx = i; } } const cpuBest = bestMoveAgainst(cpu, player); const cpuDmg = (cpuBest.category==='status')?0:estimateDamage(cpu, player, cpuBest); const cpuScore = cpuDmg + moveEffectivenessScore(cpuBest, cpu.types, player.types); if(bestScore >= cpuScore + 18) return bestIdx; if(lowHP && bestScore > cpuScore + 5) return bestIdx; return null; } /* ===== Turn engine ===== */ async function autoLoop(){ while(state.autoPlay && battleAlive()){ if(state.waitingForPlayerChoice){ const A=currA(), B=currB(); state.queuedMove = bestMoveAgainst(A,B); } await resolveTurn(); await sleep(P(700)); } } function battleAlive(){ return state.rosterA.some(m=>m.hp>0) && state.rosterB.some(m=>m.hp>0); } function effectiveSpeed(mon){ let s=mon.stats.spe; if(mon.status?.type==='par') s=Math.floor(s*PAR_SPEED); s=applyStage(s,mon.stages.spe); return s; } function setBanner(text,mode='info'){ const b=$('#turnBanner'), caret=$('#gbCaret'); b.textContent=text+' '; b.appendChild(caret); const ring=mode==='your'?'ring-emerald-500':mode==='rival'?'ring-rose-500':'ring-slate-600'; b.className=gb-box mt-4 p-3 text-sm ring-2 ${ring}; if(mode==='your') caret.classList.remove('hidden'); else caret.classList.add('hidden'); } async function resolveTurn(){ if(state.lock) return; state.lock=true; if(state.waitingForPlayerChoice && !(state.queuedMove || state.queuedAction)){ toast('Choose a move or Pokémon.'); state.lock=false; return; } const A0=currA(), B0=currB(); // CPU decide: switch or move let cpuAction=null; const cpuSwitchTo = cpuShouldSwitch(B0, A0, state.rosterB); if(cpuSwitchTo !== null) cpuAction = {type:'switch', to: cpuSwitchTo}; else cpuAction = {type:'move', move: bestMoveAgainst(B0, A0)}; await sleep(P(150)); state.waitingForPlayerChoice=false; enableMoveButtons(false); $('#btnNext').disabled = true; // Cases if (state.queuedAction?.type === 'switch' && cpuAction.type === 'switch') { await performSwitch('A', state.queuedAction.to); if (battleAlive()) await performSwitch('B', cpuAction.to); } else if (state.queuedAction?.type === 'switch' && cpuAction.type === 'move') { await performSwitch('A', state.queuedAction.to); if (battleAlive()) { await takeOneAction('B', currB(), currA(), cpuAction.move); } } else if (!state.queuedAction && cpuAction.type === 'switch') { await performSwitch('B', cpuAction.to); if (battleAlive()) { await takeOneAction('A', currA(), currB(), state.queuedMove); } } else { // both move: priority first, then speed const pA=getPriority(state.queuedMove), pB=getPriority(cpuAction.move); let order=[{side:'A',move:state.queuedMove},{side:'B',move:cpuAction.move}]; if(pA!==pB) order.sort((x,y)=>getPriority(x.move)>getPriority(y.move)?-1:1); else { const aSpd=effectiveSpeed(A0), bSpd=effectiveSpeed(B0); if(bSpd>aSpd || (bSpd===aSpd && Math.random()<0.5)) order.reverse(); } let endTurnOnFaint=false; for(const step of order){ if(!battleAlive() || endTurnOnFaint) break; const atk = step.side==='A'? currA():currB(); const def = step.side==='A'? currB():currA(); if(step.side==='A' && (!state.queuedMove || !atk.moves.some(x=>x.key===state.queuedMove.key))){ log(${atk.name} couldn’t act this turn.); continue; } const fainted = await takeOneAction(step.side, atk, def, step.move); if(fainted) endTurnOnFaint = true; } } // Residuals if(battleAlive()){ endOfTurnResidual(currA()); endOfTurnResidual(currB()); setHPBars(); } if(!battleAlive()){ finishRound(); state.lock=false; return; } // Next round state.round++; setActiveDisplays(); state.queuedMove=null; state.queuedAction=null; state.waitingForPlayerChoice=true; $('#btnNext').disabled=false; setBanner(Your turn — choose a move for ${currA().name}.,'your'); enableMoveButtons(true); state.lock=false; if(state.autoPlay) autoLoop(); } async function takeOneAction(side, atk, def, move){ const atkSide=side, defSide=side==='A'?'B':'A'; if(atk.hp<=0 || def.hp<=0) return false; setBanner(${atk.name} is preparing to move…, atkSide==='A'?'your':'rival'); if(handlePreMoveStatus(atk)){ setHPBars(); await sleep(P(420)); return false; } // If finishing a two-turn move if(atk.volatile?.charging){ move = atk.volatile.charging.move; delete atk.volatile.charging; delete atk.volatile.semiInv; const atkImg = (atkSide==='A') ? $('#spriteA') : $('#spriteB'); atkImg.classList.remove('semi-inv'); } else { // Start charging if semi-inv move const k=(move.key||'').toLowerCase(); if(SEMI_INV_MOVES[k]){ const tag=SEMI_INV_MOVES[k].tag; setBanner(${atk.name} ${SEMI_INV_MOVES[k].phase1Msg}, atkSide==='A'?'your':'rival'); atk.volatile.charging={move,tag}; atk.volatile.semiInv=tag; const atkImg = (atkSide==='A') ? $('#spriteA') : $('#spriteB'); atkImg.classList.add('semi-inv'); await sleep(P(400)); return false; } } setBanner(${atk.name} used ${move.display}!, atkSide==='A'?'your':'rival'); // Status/Heal moves if(move.category==='status' && (!move.power || move.power===0) && (move.ailment_code || (move.stat_changes&&move.stat_changes.length) || move.healing || true)){ if(Math.random()*100 > (move.accuracy ?? 100)){ log(${atk.name}'s ${move.display} missed!); await impactMiss(defSide); await sleep(P(300)); } else { await animateAttack(atkSide,defSide,move); const acted=await applyStatusMove(atk,def,atkSide,defSide,move); if(!acted) log(But it failed!); await sleep(P(320)); } return false; } // Damaging path with semi-inv target logic let autoMiss=false, effBonus=1.0; if(def.volatile?.semiInv){ const tag=def.volatile.semiInv; const k=(move.key||'').toLowerCase(); const counters=SEMI_INV_COUNTERS[tag]; if(!counters || !counters.hits.has(k)) autoMiss=true; else effBonus=counters.bonus||1.0; } await animateAttack(atkSide,defSide,move); if(autoMiss || Math.random()*100 > (move.accuracy ?? 100)){ await impactMiss(defSide); log(${atk.name}'s ${move.display} missed!); setBanner(${atk.name}'s ${move.display} missed!,'info'); await sleep(P(300)); return false; } let dmg=computeDamage(atk,def,move); if(effBonus!==1.0) dmg=Math.floor(dmg*effBonus); const crit=Math.random()<0.1; if(crit){ dmg=Math.floor(dmg*1.75); log('Critical hit!'); await screenShake(); } def.hp=Math.max(0,def.hp-dmg); if(atkSide==='A') state.stats.dmgA+=dmg; else state.stats.dmgB+=dmg; await impactHit(defSide,move.type); setHPBars(); log(${atk.name} dealt ${dmg} damage to ${def.name}.); await sleep(P(300)); if(def.hp>0 && move.ailment_code){ const applied=tryApplyStatus(def,move.ailment_code,move.ailment_chance||0); if(applied){ log(${def.name} is now ${applied.toUpperCase()}!); state.stats.statusCounts[applied]=(state.stats.statusCounts[applied]||0)+1; setBanner(${def.name} is ${applied.toUpperCase()}!,'info'); setHPBars(); await sleep(P(220)); } } if(def.hp<=0){ log(${def.name} fainted!); if(atkSide==='A') state.stats.koA++; else state.stats.koB++; await faintSprite(defSide); await sleep(P(250)); if(atkSide==='A'){ const next=state.rosterB.findIndex((x,i)=>i>state.bIdx&&x.hp>0); if(next!==-1) state.bIdx=next; } else { const next=state.rosterA.findIndex((x,i)=>i>state.aIdx&&x.hp>0); if(next!==-1) state.aIdx=next; } if(!battleAlive()) return true; setActiveDisplays(); setBanner(${(atkSide==='A'?currB():currA()).name} was sent out!,'info'); await sleep(P(320)); return true; } if (atkSide === 'A') { const nextIdx = state.teamB.findIndex(p => p.hp > 0); if (nextIdx !== -1) state.bIdx = nextIdx; } else { const nextIdx = state.teamA.findIndex(p => p.hp > 0); if (nextIdx !== -1) state.aIdx = nextIdx; } // Post-move: recharge? if(RECHARGE_MOVES.has((move.key||'').toLowerCase())){ atk.volatile.recharge = 1; } return false; } function finishRound(){ const youWin=state.rosterA.some(m=>m.hp>0); setBanner(youWin?'🏆 You win!':'🏆 Rival wins!', youWin?'your':'rival'); state.stats.rounds=state.round; showResult(youWin); } async function performSwitch(side, toIndex){ const isPlayer = side==='A'; const spriteEl = isPlayer? $('#spriteA') : $('#spriteB'); const stageEl = $('#stage'); // clear semi-inv on the outgoing const outMon = isPlayer ? currA() : currB(); if(outMon?.volatile?.semiInv){ delete outMon.volatile.semiInv; delete outMon.volatile.charging; spriteEl.classList.remove('semi-inv'); } setBanner(isPlayer?${outMon.name}, come back!:${outMon.name} was withdrawn!, isPlayer?'your':'rival'); await recallAnimation(spriteEl, stageEl); if(isPlayer) state.aIdx = toIndex; else state.bIdx = toIndex; const inMon = isPlayer ? currA() : currB(); inMon.volatile = inMon.volatile || {}; delete inMon.volatile.semiInv; delete inMon.volatile.charging; if (isPlayer) { $('#spriteA').classList.toggle('mirror-x', !!inMon.backIsMirror); } setActiveDisplays(); setBanner(isPlayer?Go, ${inMon.name}!:Foe sent out ${inMon.name}!, isPlayer?'your':'rival'); await sendOutAnimation(spriteEl, stageEl); await sleep(P(200)); } /* ===== Damage, status, residuals ===== */ function applyStage(value,stage){ if(stage===0) return value; if(stage>0) return Math.floor(value*(2+stage)/2); return Math.floor(value*2/(2-stage)); } function estimateDamage(attacker,defender,move){ let A=(move.category==='physical')? attacker.stats.atk : attacker.stats.spa; let D=(move.category==='physical')? defender.stats.def : defender.stats.spd; A=applyStage(A, move.category==='physical'? attacker.stages.atk : attacker.stages.spa); D=applyStage(D, move.category==='physical'? defender.stages.def : defender.stages.spd); if(move.category==='physical' && attacker.status?.type==='brn'){ A=Math.floor(A*0.5); } const base=(((2*50/5+2)*(move.power||0)*(A/Math.max(1,D)))/50)+2; const stab=attacker.types.includes(move.type)?1.5:1.0; const eff=effMultiplier(move.type, defender.types); const dmg=base*stab*eff*0.925; const roll=(Math.random()*0.15)+0.85; return Math.max(1,Math.floor(dmg*roll)); } const computeDamage=(a,d,m)=>estimateDamage(a,d,m); function handlePreMoveStatus(mon){ // Recharge turn (e.g., Hyper Beam) if(mon.volatile?.recharge){ mon.volatile.recharge -= 1; if(mon.volatile.recharge <= 0) delete mon.volatile.recharge; log(${mon.name} must recharge!); setBanner(${mon.name} must recharge!, 'info'); return true; } if(mon.status?.type==='slp'){ mon.status.turns=(mon.status.turns??1); if(mon.status.turns>0){ mon.status.turns--; log(${mon.name} is fast asleep…); setBanner(${mon.name} is fast asleep…,'info'); return true; } log(${mon.name} woke up!); setBanner(${mon.name} woke up!,'info'); mon.status=null; return false; } if(mon.status?.type==='frz'){ if(Math.random()<0.2){ log(${mon.name} thawed out!); setBanner(${mon.name} thawed out!,'info'); mon.status=null; return false; } log(${mon.name} is frozen solid!); setBanner(${mon.name} is frozen solid!,'info'); return true; } if(mon.status?.type==='par' && Math.random()<0.25){ log(${mon.name} is fully paralyzed!); setBanner(${mon.name} is fully paralyzed!,'info'); return true; } return false; } async function applyStatusMove(atk,def,atkSide,defSide,m){ const key=m.key?.toLowerCase?.()||''; const isCureAll=/aromatherapy|heal-bell/.test(key); const isSelfCure=/refresh/.test(key); const isRest=/^rest$/.test(key); const isHeal=m.healing>0 || /recover|soft-boiled|roost|synthesis|morning-sun|moonlight|milk-drink|slack-off|heal-order/.test(key); const isHaze=/^haze$/.test(key); const targetIsSelf=m.target?.includes('user')||m.target?.includes('self')||/ally/.test(m.target||'')||(m.stat_changes?.some(sc=>sc.change>0)); const tStat=targetIsSelf?atk:def; let acted=false; if(isHaze){ ['atk','def','spa','spd','spe'].forEach(s=>{ atk.stages[s]=0; def.stages[s]=0; }); log(All stat changes were eliminated!); setBanner(All stat changes were eliminated!,'info'); acted=true; } if(isRest){ atk.hp=atk.stats.maxHP; atk.status={type:'slp',turns:Math.floor(Math.random()*2)+2}; log(${atk.name} fell asleep and restored its health!); setBanner(${atk.name} fell asleep and restored HP!,'info'); setHPBars(); acted=true; } else if(isHeal){ const pct=m.healing?(m.healing/100):0.5; const healed=Math.max(1,Math.floor(atk.stats.maxHP*pct)); const before=atk.hp; atk.hp=Math.min(atk.stats.maxHP,atk.hp+healed); log(${atk.name} healed ${atk.hp-before} HP.); setHPBars(); acted=true; } if(isCureAll){ (atkSide==='A'?state.rosterA:state.rosterB).forEach(mon=>{ if(mon.status) mon.status=null; }); log(A soothing bell echoed! Team status cured.); setBanner(Team status cured!,'info'); acted=true; } else if(isSelfCure){ if(atk.status){ atk.status=null; log(${atk.name} cured its status!); setBanner(${atk.name} cured its status!,'info'); acted=true; } } if(m.ailment_code && !targetIsSelf){ const applied=tryApplyStatus(tStat,m.ailment_code,m.ailment_chance||100); if(applied){ log(${tStat.name} is now ${applied.toUpperCase()}!); setBanner(${tStat.name} is ${applied.toUpperCase()}!,'info'); acted=true; } } if(m.stat_changes && m.stat_changes.length){ for(const sc of m.stat_changes){ const which=statKeyFromName(sc.stat?.name); if(!which) continue; tStat.stages[which]=clamp(tStat.stages[which]+sc.change,-6,6); } const dir=m.stat_changes.some(s=>s.change>0)?'rose':(m.stat_changes.some(s=>s.change<0)?'fell':'changed'); log(${tStat.name}'s stats ${dir}!); setBanner(${tStat.name}'s stats ${dir}!,'info'); acted=true; } setHPBars(); return acted; } function statKeyFromName(n){ switch(n){ case'attack':return'atk'; case'defense':return'def'; case'special-attack':return'spa'; case'special-defense':return'spd'; case'speed':return'spe'; default:return null; } } function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); } function tryApplyStatus(target,code,chancePct){ if(!code || target.status?.type || target.hp<=0) return null; if(Math.random()*100>chancePct) return null; switch(code){ case'slp': target.status={type:'slp',turns:Math.floor(Math.random()*3)+1}; break; case'frz': target.status={type:'frz'}; break; case'par': target.status={type:'par'}; break; case'brn': target.status={type:'brn'}; break; case'psn': target.status={type:'psn'}; break; default: return null; } return code; } function endOfTurnResidual(mon){ if(mon.hp<=0) return; if(mon.status?.type==='brn'||mon.status?.type==='psn'){ const dmg=Math.max(1,Math.floor(mon.stats.maxHP/RESIDUAL_FRACTION)); mon.hp=Math.max(0,mon.hp-dmg); log(${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).); setBanner(${mon.name} takes damage from ${mon.status.type==='brn'?'burn':'poison'}…,'info'); } } /* ===== Effects & helpers ===== */ async function faintSprite(side){ const img=side==='A'?$('#spriteA'):$('#spriteB'); img.classList.add('faint'); await sleep(P(500)); img.classList.remove('faint'); } async function animateAttack(attackerSide,defenderSide,move){ const atkImg=attackerSide==='A'?$('#spriteA'):$('#spriteB'); const defImg=defenderSide==='A'?$('#spriteA'):$('#spriteB'); const stage=$('#stage'); const isPhysical=move.category==='physical'; if(isPhysical){ atkImg.classList.add(attackerSide==='A'?'lunge-right':'lunge-left'); await sleep(P(350)); atkImg.classList.remove('lunge-right','lunge-left'); } else{ const atkRect=atkImg.getBoundingClientRect(), defRect=defImg.getBoundingClientRect(), stRect=stage.getBoundingClientRect(); const start={x:(atkRect.left+atkRect.right)/2 - stRect.left + (attackerSide==='A'?26:-26), y:(atkRect.top+atkRect.bottom)/2 - stRect.top - 8}; const end={x:(defRect.left+defRect.right)/2 - stRect.left + (defenderSide==='A'?26:-26), y:(defRect.top+defRect.bottom)/2 - stRect.top - 8}; const proj=document.createElement('div'); proj.className='proj'; proj.style.background=typeColor(move.type); stage.appendChild(proj); const steps=22, dx=(end.x-start.x)/steps, dy=(end.y-start.y)/steps; for(let i=0;i<=steps;i++){ const t=i/steps, arc=-30*Math.sin(Math.PI*t); proj.style.left=(start.x+dx*i)+'px'; proj.style.top=(start.y+dy*i+arc)+'px'; await sleep(P(10)); } proj.remove(); } await sleep(P(120)); } async function impactHit(defenderSide,type){ const defImg=defenderSide==='A'?$('#spriteA'):$('#spriteB'); const stage=$('#stage'); defImg.classList.add('flash','shake'); const r=defImg.getBoundingClientRect(), st=stage.getBoundingClientRect(); const spark=document.createElement('div'); spark.className='spark'; spark.style.left=((r.left+r.right)/2 - st.left)+'px'; spark.style.top=((r.top+r.bottom)/2 - st.top)+'px'; spark.style.background=typeColor(type); stage.appendChild(spark); await sleep(P(350)); defImg.classList.remove('flash','shake'); spark.remove(); await sleep(P(120)); } async function impactMiss(){ const stage=$('#stage'); stage.classList.add('camshake'); await sleep(P(220)); stage.classList.remove('camshake'); } async function screenShake(){ const stage=$('#stage'); stage.classList.add('camshake'); await sleep(P(260)); stage.classList.remove('camshake'); } function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; } function clearLog(){ $('#log').innerHTML=''; } let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-800 text-slate-100 border border-slate-700 text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1800); } /* ===== Results modal ===== */ function showResult(youWin){ $('#resultTitle').textContent = youWin ? 'You Win!' : 'Rival Wins!'; $('#rsRounds').textContent = state.stats.rounds; $('#rsKO').textContent = You ${state.stats.koA} — Rival ${state.stats.koB}; $('#rsDmgA').textContent = state.stats.dmgA; $('#rsDmgB').textContent = state.stats.dmgB; const st=$('#rsStatus'); st.innerHTML=''; for(const [k,v] of Object.entries(state.stats.statusCounts)){ if(v) { const s=document.createElement('span'); s.className='tag'; s.textContent=${k.toUpperCase()}: ${v}; st.appendChild(s);} } $('#resultModal').classList.add('show'); } function hideResult(){ $('#resultModal').classList.remove('show'); } /* ===== Recall/Sendout ===== */ async function recallAnimation(spriteEl, stageEl){ const rect = spriteEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect(); const ball = document.createElement('div'); ball.className='ball'; ball.style.left=((rect.left+rect.right)/2 - st.left)+'px'; ball.style.top=((rect.top+rect.bottom)/2 - st.top + 12)+'px'; stageEl.appendChild(ball); spriteEl.classList.add('recall'); ball.classList.add('ball-pop'); await sleep(P(320)); spriteEl.classList.remove('recall'); ball.style.opacity='1'; await sleep(P(100)); ball.remove(); } async function sendOutAnimation(spriteEl, stageEl){ const rect = spriteEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect(); const ball = document.createElement('div'); ball.className='ball'; ball.style.left=((rect.left+rect.right)/2 - st.left)+'px'; ball.style.top=((rect.top+rect.bottom)/2 - st.top + 12)+'px'; stageEl.appendChild(ball); ball.classList.add('ball-pop'); const spark=document.createElement('div'); spark.className='spark'; spark.style.left=ball.style.left; spark.style.top=ball.style.top; stageEl.appendChild(spark); spriteEl.style.opacity='0'; spriteEl.style.transform='scale(0)'; await sleep(P(160)); spriteEl.classList.add('sendout'); spriteEl.style.opacity='1'; await sleep(P(320)); spriteEl.classList.remove('sendout'); spriteEl.style.transform=''; spark.remove(); ball.remove(); } </script> </body> </html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220">
+  <title>Jimmy’s Pokémon Stadium</title>
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"/>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { ui: ['ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial'] },
+          boxShadow: { soft: '0 8px 40px rgba(0,0,0,.32)' }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js for the stat radar -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{ --bg:#0b1220; --bg-2:#0f172a; --panel:rgba(15,23,42,.85); --border:#1f2a44; --border-2:#2a3b61; --text:#e5e7eb; --muted:#9ca3af; }
+    .pixel{ image-rendering: pixelated; image-rendering: crisp-edges; }
+    .hpbar-inner{ transition:width .35s ease; }
+    .card{ background:var(--panel); backdrop-filter:blur(10px); border:1px solid var(--border); border-radius:1rem; box-shadow:0 8px 40px rgba(0,0,0,.28); }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; border-radius:.75rem; padding:.55rem 1rem; font-weight:700; color:#fff; gap:.5rem; }
+    .btn-primary{ background:linear-gradient(180deg,#10b981,#059669); }
+    .btn-secondary{ background:linear-gradient(180deg,#334155,#475569); color:var(--text); }
+    .btn-warn{ background:linear-gradient(180deg,#eab308,#ca8a04); color:#111827; }
+    .btn-ghost{ background:transparent; color:var(--muted); padding:.5rem .75rem; }
+    .chip{ display:inline-flex; align-items:center; gap:.3rem; border-radius:999px; padding:.25rem .6rem; font-size:.75rem; font-weight:800; background:#0b1220; color:#cbd5e1; border:1px solid var(--border-2); }
+    .chip.on{ outline:2px solid #10b981; background:#052e2b; }
+    .chip-sm{ font-size:.7rem; padding:.18rem .5rem; }
+    .grid-auto-fit{ display:grid; grid-template-columns:repeat(auto-fit,minmax(84px,1fr)); gap:.75rem; }
+    .tap{ -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .type-badge{ font-size:10px; font-weight:900; padding:.125rem .5rem; border-radius:999px; color:#fff; }
+    .move-btn{ width:100%; border-radius:.75rem; padding:.5rem .75rem; font-size:.92rem; font-weight:800; color:#fff; display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.08); }
+    .tag{ font-size:10px; font-weight:800; padding:.125rem .5rem; border-radius:.5rem; background:#0f172a; color:#cbd5e1; border:1px solid var(--border); }
+    .sheet{ max-height:85vh; display:flex; flex-direction:column; }
+    .sheet-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    body.no-scroll{ overflow:hidden; }
+    .mirror-x { transform: scaleX(-1); }
+    /* Animations */
+    @keyframes lunge-right{0%{transform:translateX(0)}40%{transform:translateX(22px)}100%{transform:translateX(0)}}
+    @keyframes lunge-left{0%{transform:translateX(0)}40%{transform:translateX(-22px)}100%{transform:translateX(0)}}
+    .lunge-right{animation:lunge-right .35s ease;} .lunge-left{animation:lunge-left .35s ease;}
+    @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,0)}40%{transform:translate(4px,0)}60%{transform:translate(-3px,0)}80%{transform:translate(3px,0)}}
+    .shake{animation:shake .35s ease;}
+    @keyframes flash{0%{filter:brightness(1)}50%{filter:brightness(2)}100%{filter:brightness(1)}}
+    .flash{animation:flash .28s ease;}
+    @keyframes jiggle{0%{transform:translate(0,0)}25%{transform:translate(0,-2px)}50%{transform:translate(0,0)}75%{transform:translate(0,2px)}100%{transform:translate(0,0)}}
+    .camshake{animation:jiggle .25s ease;}
+
+    .proj{ position:absolute; width:10px; height:10px; border-radius:999px; box-shadow:0 0 10px rgba(0,0,0,.45); transform:translate(-50%,-50%); pointer-events:none; }
+    @keyframes spark{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+    .spark{ position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 22px rgba(255,255,255,.9), inset 0 0 12px rgba(255,255,255,.9); animation:spark .35s ease forwards; pointer-events:none; }
+    @keyframes faint{0%{transform:translateY(0);opacity:1;filter:none}100%{transform:translateY(34px);opacity:.2;filter:grayscale(100%)}}
+    .faint{animation:faint .5s ease forwards;}
+
+    /* Poké Ball recall/sendout */
+    .ball{ position:absolute; width:22px; height:22px; border-radius:999px; background: radial-gradient(circle at 50% 45%, #fff 0 38%, #ef4444 39% 100%); border:2px solid #111827; box-shadow:0 0 10px rgba(255,255,255,.2), 0 0 24px rgba(239,68,68,.25); transform: translate(-50%, -50%); pointer-events:none; opacity:0; }
+    @keyframes ball-pop { 0%{transform:translate(-50%,-50%) scale(.2);opacity:0} 40%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1);opacity:1} }
+    .ball-pop{ animation: ball-pop .25s ease forwards; }
+    @keyframes recall { 0%{ transform: scale(1); opacity:1; } 100%{ transform: scale(0) rotate(-10deg); opacity:0; } }
+    .recall{ animation: recall .35s ease forwards; transform-origin:center; }
+    @keyframes sendout { 0%{ transform: scale(0); opacity:0; } 100%{ transform: scale(1); opacity:1; } }
+    .sendout{ animation: sendout .35s ease forwards; }
+
+    /* GB layout */
+    .stage{ position:relative; overflow:hidden; }
+    .battle{ position:relative; height:320px; background:radial-gradient(ellipse at 20% 85%, rgba(255,255,255,.04), transparent 48%), radial-gradient(ellipse at 80% 15%, rgba(255,255,255,.04), transparent 48%); border-radius:.75rem; border:1px solid var(--border); }
+    @media(min-width:640px){ .battle{height:380px} }
+
+    .hpbox{ min-width:210px; background:#0b1220; border:2px solid #334155; border-radius:.5rem; padding:.35rem .5rem .5rem; box-shadow:inset 0 0 0 2px #1e293b; color:var(--text); }
+    .hpbox-title{ font-weight:900; font-size:.8rem; letter-spacing:.02em; }
+    .hpbox-hp{ font-size:.68rem; color:#a1a1aa; display:flex; justify-content:space-between; align-items:center; }
+    .hpbar{ height:8px; width:100%; background:#1f2937; border-radius:999px; overflow:hidden; }
+    .lv{ font-size:.7rem; font-weight:900; color:#e5e7eb; }
+    .st-dot{ width:8px; height:8px; border-radius:999px; border:1px solid #e2e8f0; }
+    .st-tag{ font-size:.6rem; font-weight:900; padding:.05rem .3rem; border:1px solid #94a3b8; border-radius:.25rem; color:#e5e7eb; }
+
+    .opp-hp{ position:absolute; top:10px; left:10px; }
+    .opp-sprite{ position:absolute; top:70px; right:18px; width:140px; height:140px; }
+    .ply-sprite{ position:absolute; bottom:74px; left:18px; width:140px; height:140px; }
+    .ply-hp{ position:absolute; bottom:10px; right:10px; }
+    @media(min-width:640px){ .opp-sprite{width:168px;height:168px;top:72px;right:26px} .ply-sprite{width:168px;height:168px;bottom:84px;left:26px} .hpbox{min-width:230px} }
+
+    .roster-strip img{ border-radius:8px; border:1px solid var(--border); }
+    .roster-strip .slot{ width:28px; height:28px; border-radius:8px; overflow:hidden; opacity:.95 }
+    .roster-strip .active{ outline:2px solid #10b981; outline-offset:1px; }
+    .roster-strip .down{ filter:grayscale(100%); opacity:.5 }
+
+    .gb-box{ position:relative; background:#0b1220; border:2px solid #334155; border-radius:.75rem; box-shadow: inset 0 0 0 2px #1e293b, 0 10px 40px rgba(0,0,0,.35); color:var(--text); }
+    .gb-box::before,.gb-box::after{ content:""; position:absolute; pointer-events:none; border:2px solid #334155; width:14px; height:14px; opacity:.9; }
+    .gb-box::before{ top:-6px; left:-6px; border-right:none; border-bottom:none; border-radius:.5rem 0 0 0; }
+    .gb-box::after{ bottom:-6px; right:-6px; border-left:none; border-top:none; border-radius:0 0 .5rem 0; }
+    @keyframes caret-blink{0%,60%{opacity:1;transform:translateY(0)}80%{opacity:.15}100%{opacity:1;transform:translateY(1px)}}
+    .gb-caret{ font-weight:900; margin-left:.5rem; display:inline-block; animation:caret-blink .9s steps(1,end) infinite; }
+
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:40; }
+    .modal.show{ display:flex; }
+
+    /* NEW: while semi-invulnerable (charging phase) */
+    .semi-inv { opacity:.35; filter:grayscale(40%); transform: translateY(-6px) scale(.95); }
+
+    /* Chart tweaks for dark mode */
+    #statChart { max-width: 100%; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 font-ui text-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-10 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+    <div class="max-w-5xl mx-auto px-4 py-3">
+      <div class="flex items-center gap-3">
+        <img alt="Poké Ball" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" class="w-6 h-6 pixel"/>
+        <h1 class="text-lg font-extrabold leading-none">Jimmy’s Pokémon Stadium</h1>
+      </div>
+      <div class="pl-9 text-[12px] text-slate-400">Gen‑1 layout • Lv.50 • Status • TM/HM • Gens 1–9</div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-4 space-y-6">
+    <!-- Builder -->
+    <section id="builder" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-slate-300">Build your teams</h2>
+        <div class="flex gap-2">
+          <button id="btnRandomize" class="btn btn-secondary tap">Randomize teams</button>
+          <button id="btnClear" class="btn btn-ghost tap">Clear</button>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="chip">You</span>
+            <div class="text-sm text-slate-400">Choose 3 (tap Moves to pick up to 4)</div>
+            <div class="ml-auto"><button id="pickA" class="btn btn-primary tap">Pick</button></div>
+          </div>
+          <div id="teamA" class="grid grid-cols-3 gap-3"></div>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="chip">Rival</span>
+            <div class="text-sm text-slate-400">Rival team is auto‑picked (you can edit)</div>
+            <div class="ml-auto"><button id="pickB" class="btn btn-primary tap">Pick</button></div>
+          </div>
+          <!-- Trainer Button and Chip -->
+<div class="mt-2 flex gap-2">
+  <button id="btnTrainers" class="btn btn-secondary tap">Trainers</button>
+  <div id="trainerChip" class="hidden items-center gap-2">
+    <span class="chip">Trainer: <span id="trainerName"></span></span>
+    <button id="clearTrainer" class="btn btn-ghost tap text-rose-400">Clear</button>
+  </div>
+</div>
+          <div id="teamB" class="grid grid-cols-3 gap-3"></div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <button id="startBattle" class="btn btn-warn tap disabled:opacity-50" disabled>Start Battle</button>
+        <div id="buildHint" class="text-sm text-slate-400">Pick 3 for each side to begin.</div>
+      </div>
+    </section>
+
+    <!-- Arena -->
+    <section id="arena" class="hidden space-y-3">
+      <div class="flex items-center gap-2">
+        <span id="roundTag" class="chip">Round 1</span>
+        <label class="ml-2 flex items-center gap-2 text-xs text-slate-300">
+          <input id="autoPlay" type="checkbox" class="accent-emerald-500"> Auto play
+        </label>
+        <div class="ml-auto">
+          <button id="reset" class="btn btn-secondary tap">Back to builder</button>
+        </div>
+      </div>
+
+      <!-- Stage -->
+      <div class="card p-4 stage" id="stage">
+        <div class="battle">
+          <div class="hpbox opp-hp">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span id="dotB" class="st-dot"></span>
+                <div id="nameB" class="hpbox-title">???</div>
+                <span id="stTextB" class="st-tag hidden">OK</span>
+              </div>
+              <div class="lv">Lv 50</div>
+            </div>
+            <div class="hpbox-hp"><span>HP <span id="hpTextB"></span></span></div>
+            <div class="hpbar mt-1"><div id="hpBarB" class="hpbar-inner h-full" style="width:100%"></div></div>
+            <div id="rosterB" class="roster-strip mt-2 flex gap-2"></div>
+          </div>
+
+          <img id="spriteB" class="pixel opp-sprite" alt="Opponent sprite"/>
+          <img id="spriteA" class="pixel ply-sprite" alt="Your sprite"/>
+
+          <div class="hpbox ply-hp">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span id="dotA" class="st-dot"></span>
+                <div id="nameA" class="hpbox-title">???</div>
+                <span id="stTextA" class="st-tag hidden">OK</span>
+              </div>
+              <div class="lv">Lv 50</div>
+            </div>
+            <div class="hpbox-hp"><span>HP <span id="hpTextA"></span></span></div>
+            <div class="hpbar mt-1"><div id="hpBarA" class="hpbar-inner h-full" style="width:100%"></div></div>
+            <div id="rosterA" class="roster-strip mt-2 flex gap-2 justify-end"></div>
+          </div>
+        </div>
+
+        <!-- Banner -->
+        <div id="turnBanner" class="gb-box mt-4 p-3 text-sm ring-2 ring-slate-600" aria-live="polite">
+          Ready! <span id="gbCaret" class="gb-caret hidden">►</span>
+        </div>
+
+        <!-- Moves -->
+        <div class="mt-3 grid grid-cols-2 gap-2" id="moveButtons"></div>
+
+        <!-- Switch / Next -->
+        <div class="mt-2 flex items-center gap-2">
+          <button id="btnSwitch" class="btn btn-secondary tap">Pokémon</button>
+          <button id="btnNext" class="btn btn-secondary tap disabled:opacity-50" disabled>Next</button>
+        </div>
+      </div>
+
+      <details class="card p-3">
+        <summary class="text-sm cursor-pointer text-slate-300">Show battle log (debug)</summary>
+        <ol id="log" class="space-y-2 text-sm max-h-80 overflow-auto pr-1 mt-2 text-slate-300"></ol>
+        <div class="mt-2"><button id="clearLog" class="btn btn-ghost tap">Clear log</button></div>
+      </details>
+    </section>
+  </main>
+
+  <!-- Team Picker -->
+  <div id="picker" class="fixed inset-0 z-20 hidden">
+    <div class="absolute inset-0 bg-black/50" data-close></div>
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800">
+      <div class="flex items-center gap-2">
+        <div id="pickerLabel" class="chip">Pick — You</div>
+        <input id="search" type="text" placeholder="Search Pokémon…" class="ml-auto w-full max-w-xs px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <button id="donePick" class="btn btn-secondary tap">Done</button>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-[11px] uppercase tracking-wider text-slate-400">Gen</span>
+          <button class="chip chip-sm" data-gen="all">All</button>
+          <button class="chip chip-sm" data-gen="1">I</button><button class="chip chip-sm" data-gen="2">II</button><button class="chip chip-sm" data-gen="3">III</button>
+          <button class="chip chip-sm" data-gen="4">IV</button><button class="chip chip-sm" data-gen="5">V</button><button class="chip chip-sm" data-gen="6">VI</button>
+          <button class="chip chip-sm" data-gen="7">VII</button><button class="chip chip-sm" data-gen="8">VIII</button><button class="chip chip-sm" data-gen="9">IX</button>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-[11px] uppercase tracking-wider text-slate-400">Type</span>
+          <button class="chip chip-sm" data-type="all">All</button>
+          <button class="chip chip-sm" data-type="normal">Normal</button><button class="chip chip-sm" data-type="fire">Fire</button>
+          <button class="chip chip-sm" data-type="water">Water</button><button class="chip chip-sm" data-type="electric">Electric</button>
+          <button class="chip chip-sm" data-type="grass">Grass</button><button class="chip chip-sm" data-type="ice">Ice</button>
+          <button class="chip chip-sm" data-type="fighting">Fighting</button><button class="chip chip-sm" data-type="poison">Poison</button>
+          <button class="chip chip-sm" data-type="ground">Ground</button><button class="chip chip-sm" data-type="flying">Flying</button>
+          <button class="chip chip-sm" data-type="psychic">Psychic</button><button class="chip chip-sm" data-type="bug">Bug</button>
+          <button class="chip chip-sm" data-type="rock">Rock</button><button class="chip chip-sm" data-type="ghost">Ghost</button>
+          <button class="chip chip-sm" data-type="dragon">Dragon</button><button class="chip chip-sm" data-type="dark">Dark</button>
+          <button class="chip chip-sm" data-type="steel">Steel</button><button class="chip chip-sm" data-type="fairy">Fairy</button>
+        </div>
+      </div>
+
+      <!-- PREVIEW: stat radar (sticky above grid) -->
+      <div class="card p-3">
+        <div class="flex items-center gap-3">
+          <img id="pvSprite" class="w-10 h-10 pixel" alt="Preview sprite">
+          <div class="flex-1">
+            <div id="pvName" class="font-bold">—</div>
+            <div id="pvTypes" class="text-[12px] text-slate-400">—</div>
+          </div>
+          <div class="text-[11px] text-slate-400">Lv. 50</div>
+        </div>
+        <div class="mt-3">
+          <canvas id="statChart" height="160"></canvas>
+        </div>
+      </div>
+
+      <div id="pickedCount" class="text-xs text-slate-400">0 / 3 selected</div>
+      <div class="sheet-scroll pr-1"><div id="grid" class="grid-auto-fit"></div></div>
+    </div>
+  </div>
+
+  <!-- Move Picker -->
+  <div id="movePicker" class="fixed inset-0 z-30 hidden">
+    <div class="absolute inset-0 bg-black/50" data-close-mv></div>
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800">
+      <div class="flex items-center gap-2">
+        <div id="mvTitle" class="chip">Moves — ???</div>
+        <div class="ml-auto flex items-center gap-2 text-xs">
+          <label class="flex items-center gap-1 text-slate-300"><input id="fltLvl" type="checkbox" class="accent-emerald-500" checked><span>Level‑Up ≤50</span></label>
+          <label class="flex items-center gap-1 text-slate-300"><input id="fltTM" type="checkbox" class="accent-emerald-500" checked><span>TM/HM</span></label>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="mvSearch" type="text" placeholder="Search moves…" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <button id="mvRecommend" class="btn btn-secondary tap">Recommend 4</button>
+        <button id="mvClear" class="btn btn-ghost tap">Clear</button>
+        <button id="mvDone" class="btn btn-primary tap">Done</button>
+      </div>
+      <div id="mvPickedCount" class="text-xs text-slate-400">0 / 4 selected</div>
+      <div class="sheet-scroll pr-1"><div id="mvList" class="space-y-2"></div></div>
+    </div>
+  </div>
+
+  <!-- Switch Picker (player) -->
+  <div id="switchPicker" class="fixed inset-0 z-30 hidden">
+    <div class="absolute inset-0 bg-black/50" data-close-sw></div>
+    <div class="absolute inset-x-0 bottom-0 sheet rounded-t-3xl bg-slate-900 p-4 space-y-3 border-t border-slate-800">
+      <div class="flex items-center gap-2">
+        <div class="chip">Switch Pokémon</div>
+        <div class="ml-auto text-xs text-slate-400">Switching uses your turn</div>
+      </div>
+      <div id="swList" class="grid grid-cols-3 sm:grid-cols-6 gap-2"></div>
+      <div class="flex justify-end gap-2">
+        <button id="swCancel" class="btn btn-ghost tap">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Modal -->
+  <div id="resultModal" class="modal">
+    <div class="gb-box max-w-md w-[92%] p-5 bg-slate-900">
+      <div id="resultTitle" class="text-2xl font-extrabold text-center mb-2">You Win!</div>
+      <div id="resultSubtitle" class="text-center text-slate-400 mb-4">Battle Summary</div>
+      <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+        <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">Rounds</div><div id="rsRounds">—</div></div>
+        <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">KOs</div><div id="rsKO">You — / Rival —</div></div>
+        <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">Damage (You)</div><div id="rsDmgA">—</div></div>
+        <div class="border border-slate-700 rounded-lg p-3"><div class="font-bold mb-1">Damage (Rival)</div><div id="rsDmgB">—</div></div>
+        <div class="border border-slate-700 rounded-lg p-3 col-span-2"><div class="font-bold mb-1">Statuses Inflicted</div><div id="rsStatus" class="flex flex-wrap gap-2 text-[12px]"></div></div>
+      </div>
+      <div class="flex gap-2 justify-center">
+        <button id="btnRematch" class="btn btn-primary tap">Try Again?</button>
+        <button id="btnBack" class="btn btn-secondary tap">Back to Builder</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="max-w-5xl mx-auto px-4 py-8 text-center text-xs text-slate-500">
+    Data & sprites from <a class="underline" href="https://pokeapi.co/" target="_blank" rel="noreferrer">PokéAPI</a>.
+  </footer>
+
+  <script>
+    /* ===== utils/constants ===== */
+    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+    const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+    const P=ms=>ms;
+    const gridSpriteURL=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+    const MAX_ID=1010;
+
+    const ls={ get(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
+
+    const TYPE_COLORS={normal:'#A8A77A',fire:'#EE8130',water:'#6390F0',electric:'#F7D02C',grass:'#7AC74C',ice:'#96D9D6',fighting:'#C22E28',poison:'#A33EA1',ground:'#E2BF65',flying:'#A98FF3',psychic:'#F95587',bug:'#A6B91A',rock:'#B6A136',ghost:'#735797',dragon:'#6F35FC',dark:'#705746',steel:'#B7B7CE',fairy:'#D685AD'};
+    const typeColor=t=>TYPE_COLORS[t]||'#64748b';
+
+    const GEN_RANGES={1:[1,151],2:[152,251],3:[252,386],4:[387,493],5:[494,649],6:[650,721],7:[722,809],8:[810,898],9:[899,1010]};
+    const chart={normal:{rock:.5,ghost:0},fire:{fire:.5,water:.5,grass:2,ice:2,bug:2,rock:.5,dragon:.5,steel:2},water:{fire:2,water:.5,grass:.5,ground:2,rock:2,dragon:.5},electric:{water:2,electric:.5,grass:.5,ground:0,flying:2,dragon:.5},grass:{fire:.5,water:2,grass:.5,poison:.5,ground:2,flying:.5,bug:.5,rock:2,dragon:.5,steel:.5},ice:{water:.5,ice:.5,grass:2,ground:2,flying:2,dragon:2},fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:.5,flying:.5,psychic:.5,bug:.5,fairy:.5,ghost:0},poison:{grass:2,fairy:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0},ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:.5,flying:0,bug:.5},flying:{grass:2,fighting:2,bug:2,electric:.5,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,dark:0,steel:.5},bug:{grass:2,psychic:2,dark:2,fire:.5,fighting:.5,poison:.5,flying:.5,ghost:.5,steel:.5,fairy:.5},rock:{fire:2,ice:2,flying:2,bug:2,fighting:.5,ground:.5,steel:.5},ghost:{ghost:2,psychic:2,normal:0,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{ghost:2,psychic:2,fighting:.5,dark:.5,fairy:.5},steel:{rock:2,ice:2,fairy:2,fire:.5,water:.5,electric:.5,steel:.5}};
+    const effMultiplier=(t,ts)=>ts.reduce((m,ty)=>m*(chart[t]?.[ty]??1),1);
+
+    const AIL_MAP={paralysis:'par',burn:'brn',poison:'psn','bad-poison':'psn',freeze:'frz',sleep:'slp',confusion:'cnf'};
+    const PAR_SPEED=.5, RESIDUAL_FRACTION=16;
+
+    /* ==== NEW: multi-turn, priority constants ==== */
+    const RECHARGE_MOVES = new Set(['hyper-beam','giga-impact']);
+    const SEMI_INV_MOVES = {
+      'fly': {phase1Msg:'flew up high!', tag:'fly'},
+      'dig': {phase1Msg:'dug underground!', tag:'dig'}
+    };
+    const SEMI_INV_COUNTERS = {
+      fly: { hits: new Set(['gust','twister','thunder','hurricane']), bonus: 2.0 },
+      dig: { hits: new Set(['earthquake','magnitude']), bonus: 2.0 }
+    };
+    const PRIORITY_FALLBACK_PLUS1 = new Set(['quick-attack','aqua-jet','vacuum-wave','bullet-punch','ice-shard','shadow-sneak','sucker-punch','grassy-glide','accelerock','water-shuriken']);
+    const PRIORITY_FALLBACK_PLUS2 = new Set(['extreme-speed']);
+    const getPriority = (m)=>{
+      if(typeof m.priority === 'number') return m.priority;
+      const k=(m.key||'').toLowerCase();
+      if(PRIORITY_FALLBACK_PLUS2.has(k)) return 2;
+      if(PRIORITY_FALLBACK_PLUS1.has(k)) return 1;
+      return 0;
+    };
+
+    /* ====== Chart preview state ====== */
+    let statChart = null;
+    const STAT_LABELS = ['HP','Atk','Def','SpA','SpD','Spe'];
+
+    const state={
+      allPokemon:[], teamA:[], teamB:[],
+      pickingFor:'A', tempPick:new Set(),
+      filters:{ gens:new Set(['all']), types:new Set(['all']) },
+      mvContext:null, mvTemp:new Set(),
+      mvPoolCache:new Map(), moveCache:new Map(), typesById:new Map(),
+      rosterA:[], rosterB:[], aIdx:0, bIdx:0, round:1,
+      waitingForPlayerChoice:true, queuedMove:null, queuedAction:null, autoPlay:false, lock:false,
+      stats:{ rounds:0, dmgA:0, dmgB:0, koA:0, koB:0, statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0} },
+      previewId:null
+    };
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      renderTeams(); wireBuilder(); wireArena(); wireResults();
+      await loadAllPokemon();
+      wirePickerChips();
+    });
+
+    /* ===== Data loading ===== */
+    async function fetchWithTimeout(url,ms=8000){
+      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),ms);
+      try{ const r=await fetch(url,{signal:ctl.signal}); clearTimeout(t); return r; } catch(e){ clearTimeout(t); throw e; }
+    }
+
+    async function loadAllPokemon(){
+      try{
+        const res=await fetchWithTimeout(`https://pokeapi.co/api/v2/pokemon?limit=${MAX_ID}`);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data=await res.json();
+        state.allPokemon=data.results.map(r=>({ id:Number(r.url.split('/').filter(Boolean).pop()), name:cap(r.name) })).filter(p=>p.id>=1 && p.id<=MAX_ID);
+      }catch(e){
+        console.warn('Fallback to Kanto',e);
+        const KANTO=["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","Nidoran♀","Nidorina","Nidoqueen","Nidoran♂","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetch’d","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","Mr. Mime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew"];
+        state.allPokemon=KANTO.map((n,i)=>({id:i+1,name:n}));
+        toast('Online list failed — using Kanto fallback.');
+      }
+      renderGrid(); autoSeedRival(); renderTeams(); updateStartButton();
+    }
+
+    /* ===== Builder ===== */
+    function wireBuilder(){
+      $('#pickA').addEventListener('click',()=>openPicker('A'));
+      $('#pickB').addEventListener('click',()=>openPicker('B'));
+      $('#btnClear').addEventListener('click',()=>{ state.teamA=[]; state.teamB=[]; autoSeedRival(); renderTeams(); updateStartButton(); });
+      $('#btnRandomize').addEventListener('click',()=>{
+        const ids=state.allPokemon.map(p=>p.id); shuffle(ids);
+        state.teamA=ids.slice(0,3).map(id=>({id,name:nameFor(id)}));
+        state.teamB=ids.slice(3,6).map(id=>({id,name:nameFor(id)}));
+        renderTeams(); updateStartButton();
+      });
+      $('#startBattle').addEventListener('click', startBattle);
+    }
+
+    function wireResults(){
+      $('#btnBack').addEventListener('click',()=>{ hideResult(); $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); });
+      $('#btnRematch').addEventListener('click',()=>{ hideResult(); startBattle(); });
+    }
+
+    function autoSeedRival(){ if(!state.allPokemon?.length) return; const ids=state.allPokemon.map(p=>p.id); shuffle(ids); state.teamB=ids.slice(0,3).map(id=>({id,name:nameFor(id)})); }
+    function nameFor(id){ const p=state.allPokemon.find(x=>x.id===id); return p?p.name:`#${id}`; }
+    function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+    function renderTeams(){
+      const moveChips=p=>{ const list=p.moves?.slice(0,4)||[]; if(!list.length) return '<span class="text-[10px] text-slate-400">No moves chosen</span>'; return list.map(n=>`<span class="tag">${cleanMoveName(n)}</span>`).join(' '); };
+      const slot=(teamKey,p,idx)=>`
+        <div class="card p-2 flex flex-col items-center">
+          <img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-16 h-16 pixel"/>
+          <div class="text-xs mt-1 text-center">${p.name}</div>
+          <div class="mt-2 flex items-center gap-2">
+            <button class="btn-ghost text-xs tap" data-mv>Moves</button>
+            <button class="btn-ghost text-xs tap text-rose-400" data-remove>Remove</button>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1 justify-center">${moveChips(p)}</div>
+        </div>`;
+      const filler=`<div class="rounded-2xl border border-dashed border-slate-700 h-24 flex items-center justify-center text-slate-500 text-xs">Empty</div>`;
+      const mount=(el,teamKey)=>{ el.innerHTML=''; const team=state[teamKey]; team.forEach((p,idx)=>{ const wrap=document.createElement('div'); wrap.innerHTML=slot(teamKey,p,idx);
+        wrap.querySelector('[data-remove]').addEventListener('click',()=>{ team.splice(idx,1); renderTeams(); updateStartButton(); });
+       wrap.querySelector('[data-mv]').addEventListener('click',()=>openMovePicker(teamKey === 'teamA' ? 'A' : 'B', p.id, p.name));
+        el.appendChild(wrap.firstElementChild);
+      }); for(let i=team.length;i<3;i++){ const d=document.createElement('div'); d.innerHTML=filler; el.appendChild(d.firstElementChild); } };
+      mount($('#teamA'),'teamA'); mount($('#teamB'),'teamB'); updateStartButton();
+    }
+    function updateStartButton(){ const ok=state.teamA.length===3 && state.teamB.length===3; $('#startBattle').disabled=!ok; $('#buildHint').textContent=ok?'Optionally edit moves, then Start Battle.':'Pick 3 for each side to begin.'; }
+
+    /* ===== Picker (w/ chips + radar preview) ===== */
+    function openPicker(team){
+      state.pickingFor=team; state.tempPick=new Set((team==='A'?state.teamA:state.teamB).map(p=>p.id));
+      $('#pickerLabel').textContent=`Pick — ${team==='A'?'You':'Rival'}`; $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
+      document.body.classList.add('no-scroll'); $('#picker').classList.remove('hidden');
+      $('#search').value=''; highlightChipSelections(); filterGrid('');
+      if(!$('#grid').children.length) renderGrid();
+
+      // hydrate preview with the first visible, or a selected one
+      queueMicrotask(()=>{
+        const first = $('#grid [data-id]:not(.hidden)');
+        if(first){ showPreview(Number(first.getAttribute('data-id'))); }
+        else if(state.tempPick.size){
+          const any = [...state.tempPick][0]; showPreview(any);
+        }
+      });
+    }
+    function closePicker(commit=false){
+      if(commit){
+        const list=Array.from(state.tempPick).slice(0,3).map(id=>{ const existing=(state.pickingFor==='A'?state.teamA:state.teamB).find(x=>x.id===id); return existing?existing:({id,name:nameFor(id)}); });
+        if(state.pickingFor==='A') state.teamA=list; else state.teamB=list; renderTeams(); updateStartButton();
+      }
+      $('#picker').classList.add('hidden'); document.body.classList.remove('no-scroll');
+    }
+    $('#donePick').addEventListener('click',()=>closePicker(true));
+    $('#picker').addEventListener('click',(e)=>{ if(e.target.hasAttribute('data-close')) closePicker(false); });
+    $('#search').addEventListener('input',(e)=>filterGrid(e.target.value.trim().toLowerCase()));
+
+    function renderGrid(){
+      const grid=$('#grid'); grid.innerHTML='';
+      state.allPokemon.forEach(p=>{
+        const card=document.createElement('button');
+        card.className='tap rounded-2xl border border-slate-700 bg-slate-800 p-2 flex flex-col items-center hover:border-emerald-400 focus:outline-none';
+        card.setAttribute('data-id',p.id);
+        card.innerHTML=`<img src="${gridSpriteURL(p.id)}" alt="${p.name}" class="w-14 h-14 pixel"/><div class="text-[11px] mt-1">${String(p.id).padStart(3,'0')} • ${p.name}</div>`;
+        card.addEventListener('click',()=>{
+          toggleTempPick(p.id,card);
+          showPreview(p.id); // update chart on tap
+        });
+        card.addEventListener('focus', ()=> showPreview(p.id));
+        grid.appendChild(card);
+      });
+    }
+    function filterGrid(q){
+      if(state.filters.types.size && !state.filters.types.has('all')) primeTypesForFilter();
+      $$('#grid [data-id]').forEach(el=>{
+        const id=Number(el.getAttribute('data-id')); const name=nameFor(id).toLowerCase();
+        let match=!q || name.includes(q) || String(id).padStart(3,'0').includes(q);
+        if(match && state.filters.gens.size && !state.filters.gens.has('all')){
+          match = [...state.filters.gens].some(g=>{ if(g==='all') return true; const [lo,hi]=GEN_RANGES[g]; return id>=lo && id<=hi; });
+        }
+        if(match && state.filters.types.size && !state.filters.types.has('all')){
+          const ty = state.typesById.get(id);
+          match = Array.isArray(ty) ? [...state.filters.types].some(t=>ty.includes(t)) : false;
+        }
+        el.classList.toggle('hidden', !match);
+        reflectPickedUI(id,el);
+      });
+
+      // keep preview sensible
+      const el = state.previewId ? $(`#grid [data-id="${state.previewId}"]`) : null;
+      const stillVisible = !!(el && !el.classList.contains('hidden'));
+      if(!stillVisible){
+        const first = $('#grid [data-id]:not(.hidden)');
+        if(first) showPreview(Number(first.getAttribute('data-id')));
+      }
+      $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
+    }
+    function toggleTempPick(id,el){
+      if(state.tempPick.has(id)) state.tempPick.delete(id);
+      else { if(state.tempPick.size>=3) return; state.tempPick.add(id); }
+      $('#pickedCount').textContent=`${state.tempPick.size} / 3 selected`;
+      reflectPickedUI(id,el);
+    }
+    function reflectPickedUI(id,el){ const picked=state.tempPick.has(id); el.style.borderColor=picked?'#10b981':'#334155'; el.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.25)':'none'; }
+
+    function wirePickerChips(){
+      $$('[data-gen]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const val=btn.getAttribute('data-gen');
+          if(val==='all'){ state.filters.gens.clear(); state.filters.gens.add('all'); }
+          else{
+            if(state.filters.gens.has('all')) state.filters.gens.delete('all');
+            if(state.filters.gens.has(val)) state.filters.gens.delete(val); else state.filters.gens.add(val);
+            if(state.filters.gens.size===0) state.filters.gens.add('all');
+          }
+          highlightChipSelections(); filterGrid($('#search').value.trim().toLowerCase());
+        });
+      });
+      $$('[data-type]').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const val=btn.getAttribute('data-type');
+          if(val==='all'){ state.filters.types.clear(); state.filters.types.add('all'); }
+          else{
+            if(state.filters.types.has('all')) state.filters.types.delete('all');
+            if(state.filters.types.has(val)) state.filters.types.delete(val); else state.filters.types.add(val);
+            if(state.filters.types.size===0) state.filters.types.add('all');
+          }
+          highlightChipSelections(); filterGrid($('#search').value.trim().toLowerCase());
+        });
+      });
+      highlightChipSelections();
+    }
+    function highlightChipSelections(){
+      $$('[data-gen]').forEach(b=>{ const v=b.getAttribute('data-gen'); b.classList.toggle('on', state.filters.gens.has(v)); });
+      $$('[data-type]').forEach(b=>{ const v=b.getAttribute('data-type'); b.classList.toggle('on', state.filters.types.has(v)); });
+    }
+
+    let typingFetchQueue=[]; let typingInFlight=0; const TYPING_CONCURRENCY=6;
+    function primeTypesForFilter(){
+      const wantTypes=!state.filters.types.has('all'); if(!wantTypes) return;
+      typingFetchQueue = $$('#grid [data-id]').map(el=>Number(el.getAttribute('data-id'))).filter(id=>!state.typesById.has(id));
+      pumpTypingQueue();
+    }
+    async function pumpTypingQueue(){
+      while(typingInFlight < TYPING_CONCURRENCY && typingFetchQueue.length){
+        const id=typingFetchQueue.shift(); typingInFlight++;
+        getPokemonDetail(id).then(d=>{ state.typesById.set(id,d.types||[]); }).catch(()=>{}).finally(()=>{ typingInFlight--; filterGrid($('#search').value.trim().toLowerCase()); pumpTypingQueue(); });
+      }
+    }
+
+    /* ===== Chart helpers ===== */
+    function deriveLv50(statsBase){
+      const L=50;
+      const maxHP = Math.floor(((2*statsBase.hp)*L)/100)+L+10;
+      const atk   = Math.floor(((2*statsBase.atk)*L)/100)+5;
+      const def   = Math.floor(((2*statsBase.def)*L)/100)+5;
+      const spa   = Math.floor(((2*statsBase.spa)*L)/100)+5;
+      const spd   = Math.floor(((2*statsBase.spd)*L)/100)+5;
+      const spe   = Math.floor(((2*statsBase.spe)*L)/100)+5;
+      return { maxHP, atk, def, spa, spd, spe };
+    }
+    function typePill(t){ return `<span class="type-badge mr-1" style="background:${typeColor(t)}">${t.toUpperCase()}</span>`; }
+
+    async function showPreview(id){
+      try{
+        const p = await getPokemonDetail(id);
+        $('#pvName').textContent = cap(p.name);
+        $('#pvSprite').src = gridSpriteURL(id);
+        $('#pvTypes').innerHTML = (p.types||[]).map(typePill).join(' ') || '—';
+        const base = {
+          hp:  p.stats.find(s=>s.stat.name==='hp').base_stat,
+          atk: p.stats.find(s=>s.stat.name==='attack').base_stat,
+          def: p.stats.find(s=>s.stat.name==='defense').base_stat,
+          spa: p.stats.find(s=>s.stat.name==='special-attack').base_stat,
+          spd: p.stats.find(s=>s.stat.name==='special-defense').base_stat,
+          spe: p.stats.find(s=>s.stat.name==='speed').base_stat,
+        };
+        const lv50 = deriveLv50(base);
+        const data = [lv50.maxHP, lv50.atk, lv50.def, lv50.spa, lv50.spd, lv50.spe];
+        const maxAxis = Math.max(120, Math.ceil(Math.max(...data)/10)*10);
+        const ctx = document.getElementById('statChart').getContext('2d');
+        if(statChart){ statChart.destroy(); }
+        statChart = new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: STAT_LABELS,
+            datasets: [{
+              label: 'Lv.50 Stats',
+              data,
+              fill: true,
+              backgroundColor: 'rgba(16,185,129,0.18)',
+              borderColor: 'rgba(16,185,129,0.9)',
+              borderWidth: 2,
+              pointBackgroundColor: 'rgba(16,185,129,1)',
+              pointRadius: 2.5,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (ctx)=> `${ctx.label}: ${ctx.formattedValue}` } }
+            },
+            scales: {
+              r: {
+                suggestedMin: 0,
+                suggestedMax: maxAxis,
+                angleLines: { color: 'rgba(148,163,184,.25)' },
+                grid: { color: 'rgba(148,163,184,.18)' },
+                pointLabels: { color: '#e5e7eb', font: { weight: 700 } },
+                ticks: { display: false }
+              }
+            }
+          }
+        });
+        state.previewId = id;
+      }catch(e){ console.warn('Preview failed', e); }
+    }
+
+    /* ===== Move editor ===== */
+    async function openMovePicker(team,id,name){
+  // normalize team to 'A' or 'B'
+  const teamShort = (team === 'A' || team === 'teamA') ? 'A' : 'B';
+
+  $('#mvTitle').textContent=`Moves — ${name} (${teamShort==='A'?'You':'Rival'})`;
+  $('#mvPickedCount').textContent=`0 / 4 selected`;
+  $('#mvSearch').value=''; $('#fltLvl').checked=true; $('#fltTM').checked=true;
+
+  state.mvContext={team:teamShort,id,name,types:null};
+  document.body.classList.add('no-scroll');
+  $('#movePicker').classList.remove('hidden');
+
+  // fetch move pool/types
+  const pool=await getMovePool(id);
+  const types=state.typesById.get(id)||[];
+
+  // the sheet could have been closed while awaiting — guard it
+  if(!state.mvContext || state.mvContext.id!==id) return;
+  state.mvContext.types=types;
+
+  const teamKey = (teamShort==='A') ? 'teamA' : 'teamB';
+  const teamArr = state[teamKey];
+  const entry   = teamArr.find(x=>x.id===id);
+
+  // mvTemp stores KEYS (strings). Convert if needed.
+  state.mvTemp = new Set(
+    (entry?.moves||[])
+      .map(v => (typeof v === 'string' ? v : v?.key))
+      .filter(Boolean)
+      .slice(0,4)
+  );
+
+  renderMoveList();
+}
+
+  function closeMovePicker(commit = false){
+  if (commit) {
+    const ctx = state.mvContext;
+    // Safety: if the sheet was torn down mid-await
+    if (!ctx) {
+      $('#movePicker').classList.add('hidden');
+      document.body.classList.remove('no-scroll');
+      state.mvTemp = new Set();
+      return;
+    }
+
+    // Normalize team key to match state keys
+    const teamKey = (ctx.team === 'A' || ctx.team === 'teamA') ? 'teamA' : 'teamB';
+    const teamArr = state[teamKey];
+    const entry   = teamArr.find(x => x.id === ctx.id);
+
+    if (entry) {
+      // Persist as STRING KEYS, not move objects
+      entry.moves = Array.from(state.mvTemp)
+        .map(v => (typeof v === 'string' ? v : v?.key))
+        .filter(Boolean)
+        .slice(0, 4);
+    }
+
+    renderTeams();
+  }
+
+  // Close & reset picker state
+  $('#movePicker').classList.add('hidden');
+  document.body.classList.remove('no-scroll');
+  state.mvContext = null;
+  state.mvTemp = new Set();
+}
+
+    $('#movePicker').classList.add('hidden'); document.body.classList.remove('no-scroll'); state.mvContext=null; state.mvTemp=new Set();
+    document.addEventListener('click',(e)=>{ if(e.target.hasAttribute?.('data-close-mv')) closeMovePicker(false); });
+    $('#mvDone').addEventListener('click',()=>closeMovePicker(true));
+    $('#mvClear').addEventListener('click',()=>{ state.mvTemp.clear(); renderMoveList(); });
+    $('#mvRecommend').addEventListener('click',()=>{ const pool=getFilteredMovePool(); const picks=recommendMoves(pool,state.mvContext.types).slice(0,4).map(m=>m.key); state.mvTemp=new Set(picks); renderMoveList(); });
+    $('#mvSearch').addEventListener('input',renderMoveList); $('#fltLvl').addEventListener('change',renderMoveList); $('#fltTM').addEventListener('change',renderMoveList);
+
+    function renderMoveList(){
+      const list=$('#mvList'); list.innerHTML=''; const q=$('#mvSearch').value.trim().toLowerCase();
+      const filtered=getFilteredMovePool().filter(m=>!q || m.display.toLowerCase().includes(q) || m.type.includes(q));
+      filtered.sort((a,b)=>{ const stabA=(state.mvContext.types||[]).includes(a.type)?1:0; const stabB=(state.mvContext.types||[]).includes(b.type)?1:0; const catA=a.category==='status'?-1:1, catB=b.category==='status'?-1:1; return (stabB-stabA)||(catB-catA)||((b.power||0)-(a.power||0))||((b.level||0)-(a.level||0))||(a.method==='machine'?1:-1); });
+      for(const m of filtered){
+        const row=document.createElement('button'); const picked=state.mvTemp.has(m.key);
+        row.className='w-full border border-slate-700 rounded-xl p-2 flex items-center gap-3 tap bg-slate-800'; row.style.boxShadow=picked?'0 0 0 3px rgba(16,185,129,.20)':'none';
+        const ail=m.ailment_code?` • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}`:'';
+        const extra=(m.stat_changes?.length?' • Stat':'')+(m.healing?' • Heal':'')+(m.priority?` • Prio ${m.priority}`:'');
+        row.innerHTML=`<span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>
+          <div class="flex-1 text-left"><div class="font-bold">${m.display}</div>
+          <div class="text-[11px] text-slate-400">${m.category==='status'?'Status':('Pow '+(m.power??'—'))} • Acc ${m.accuracy??'—'}% • ${cap(m.category)}${ail}${extra} • ${m.method==='machine'?'TM/HM':('Lv '+(m.level||'?'))}</div></div>
+          <div class="text-[11px] px-2 py-1 rounded-md ${picked?'bg-emerald-100 text-emerald-700':'bg-slate-700 text-slate-200'}">${picked?'Selected':'Select'}</div>`;
+        row.addEventListener('click',()=>{ if(picked){ state.mvTemp.delete(m.key); } else { if(state.mvTemp.size>=4){ toast('Max 4 moves.'); return; } state.mvTemp.add(m.key);} $('#mvPickedCount').textContent=`${state.mvTemp.size} / 4 selected`; renderMoveList(); });
+        list.appendChild(row);
+      }
+      $('#mvPickedCount').textContent = `${state.mvTemp.size} / 4 selected`;
+    }
+    function getFilteredMovePool(){ const pool=state.mvPoolCache.get(state.mvContext.id)||[]; const incLvl=$('#fltLvl').checked, incTM=$('#fltTM').checked; return pool.filter(m=>(m.method==='level-up'&&incLvl)||(m.method==='machine'&&incTM)); }
+
+    async function getMovePool(id){
+      if(state.mvPoolCache.has(id)) return state.mvPoolCache.get(id);
+      const cached=ls.get('pool:'+id); if(cached){ state.mvPoolCache.set(id,cached.pool||cached); if(cached.types) state.typesById.set(id,cached.types); return state.mvPoolCache.get(id); }
+      const detail=await getPokemonDetail(id); const types=detail.types; state.typesById.set(id,types);
+      const pool=await assembleMovePool(detail.moves); state.mvPoolCache.set(id,pool); ls.set('pool:'+id,{pool,types}); return pool;
+    }
+    async function getPokemonDetail(id){
+      const c=ls.get('poke:'+id); if(c) return c;
+      const res=await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`); const p=await res.json();
+      const types=p.types.sort((a,b)=>a.slot-b.slot).map(t=>t.type.name);
+      const out={id,name:cap(p.name),types,sprites:p.sprites,stats:p.stats,moves:p.moves}; ls.set('poke:'+id,out); return out;
+    }
+    async function assembleMovePool(movesArray){
+      const agg=new Map();
+      for(const m of movesArray){
+        const key=m.move.name;
+        for(const v of m.version_group_details){
+          const method=v.move_learn_method.name;
+          if(method==='level-up'&&v.level_learned_at>50) continue;
+          if(method!=='level-up'&&method!=='machine') continue;
+          if(!agg.has(key)) agg.set(key,{name:key,flags:new Set(),level:null,sources:new Set()});
+          const rec=agg.get(key); rec.flags.add(method); rec.sources.add(v.version_group.name); if(method==='level-up'){ rec.level=Math.max(rec.level||0,v.level_learned_at||0); }
+        }
+      }
+      const out=[];
+      for(const {name,flags,level,sources} of agg.values()){
+        let mv=state.moveCache.get(name)||ls.get('mv:'+name);
+        if(!mv){ const r=await fetch(`https://pokeapi.co/api/v2/move/${name}`); mv=await r.json(); state.moveCache.set(name,mv); ls.set('mv:'+name,mv); }
+        const type=mv.type?.name; if(!TYPE_COLORS[type]) continue;
+        const category=mv.damage_class?.name||'status', power=mv.power??null, accuracy=mv.accuracy??100;
+        const priority=mv.priority ?? 0;
+        const ailRaw=mv.meta?.ailment?.name||'none', ailment_chance=mv.meta?.ailment_chance ?? mv.effect_chance ?? 0, ailment_code=AIL_MAP[ailRaw] || (ailRaw==='none'?null:ailRaw);
+        const stat_changes=mv.stat_changes||[], target=mv.target?.name||'selected-pokemon', healing=mv.meta?.healing ?? 0;
+        if(flags.has('level-up')) out.push({key:name,display:cleanMoveName(name),type,category,power,accuracy,method:'level-up',level:level||1,sources:[...sources],ailment_code,ailment_chance,stat_changes,target,healing,priority});
+        if(flags.has('machine'))  out.push({key:name,display:cleanMoveName(name),type,category,power,accuracy,method:'machine',level:null,sources:[...sources],ailment_code,ailment_chance,stat_changes,target,healing,priority});
+      }
+      return out;
+    }
+    const cleanMoveName=n=>n.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    function recommendMoves(pool,types=[]){ const scored=pool.map(m=>{ const stab=types.includes(m.type)?1.5:1.0; const base=m.category==='status'?(40+(m.ailment_code?20:0)+(m.stat_changes?.length?25:0)+(m.healing?30:0)):(m.power||0)*stab; const score=base+((m.level||0)/5)+(m.method==='level-up'?1:0); return {score,m}; }); scored.sort((a,b)=>b.score-a.score); const seen=new Set(),picks=[]; for(const s of scored){ if(!seen.has(s.m.key)){ seen.add(s.m.key); picks.push(s.m);} if(picks.length>=4) break; } if(!picks.length) picks.push({key:'tackle',display:'Tackle',type:'normal',category:'physical',power:40,accuracy:100,method:'level-up',level:1,priority:0}); return picks; }
+
+    /* ===== Arena / Battle ===== */
+    function wireArena(){
+      $('#reset').addEventListener('click',()=>{ $('#arena').classList.add('hidden'); $('#builder').classList.remove('hidden'); clearLog(); });
+      $('#clearLog')?.addEventListener('click', clearLog);
+      $('#btnNext').addEventListener('click', async()=>{ if(!state.waitingForPlayerChoice && !state.lock) await resolveTurn(); });
+      $('#autoPlay').addEventListener('change', e=>{ state.autoPlay=e.target.checked; if(state.autoPlay) autoLoop(); });
+
+      $('#btnSwitch').addEventListener('click', ()=>{
+        if(state.lock || !state.waitingForPlayerChoice) return;
+        openSwitchPicker();
+      });
+      $('#switchPicker').addEventListener('click',(e)=>{ if(e.target.hasAttribute('data-close-sw')) closeSwitchPicker(); });
+      $('#swCancel').addEventListener('click', closeSwitchPicker);
+    }
+
+    async function startBattle(){
+      $('#builder').classList.add('hidden'); $('#arena').classList.remove('hidden'); clearLog();
+      state.stats={rounds:0,dmgA:0,dmgB:0,koA:0,koB:0,statusCounts:{par:0,brn:0,psn:0,frz:0,slp:0}};
+      state.rosterA=[]; state.rosterB=[]; state.aIdx=0; state.bIdx=0; state.round=1; state.waitingForPlayerChoice=true; state.queuedMove=null; state.queuedAction=null; state.lock=false;
+
+      const all6=[...state.teamA,...state.teamB];
+      const details=await Promise.all(all6.map(async p=>{ const mon=await buildMon(p.id); if(p.moves&&p.moves.length){ const want=p.moves.slice(0,4); const pool=state.mvPoolCache.get(p.id)||await getMovePool(p.id); const byKey=new Map(pool.map(x=>[x.key,x])); const chosen=[]; for(const k of want){ if(byKey.has(k)) chosen.push(byKey.get(k)); } if(chosen.length){ mon.moves=chosen; } } return mon; }));
+      state.rosterA=details.slice(0,3); state.rosterB=details.slice(3,6);
+
+      updateRosterBadges(); setActiveDisplays(); renderMoveButtons();
+      setBanner(`Your turn — choose a move for ${currA().name}.`,'your');
+      enableMoveButtons(true);
+      if(state.autoPlay) autoLoop();
+    }
+  function pickSpriteURLs(sprites, id){
+  // Try official back sprites first (some gens are missing)
+  const tryPaths = [
+    sprites?.back_default,
+    // A few common versioned locations that sometimes exist
+    sprites?.versions?.['generation-v']?.['black-white']?.back_default,
+    sprites?.versions?.['generation-iv']?.['platinum']?.back_default,
+    sprites?.versions?.['generation-iii']?.['emerald']?.back_default,
+  ].filter(Boolean);
+
+  const front = sprites?.front_default || gridSpriteURL(id);
+  const backReal = tryPaths.find(Boolean) || null;
+
+  // If we have a real back sprite, use it; otherwise mirror the front.
+  if (backReal) {
+    return { front, back: backReal, backIsMirror: false };
+  }
+  return { front, back: front, backIsMirror: true };
+  }
+    async function buildMon(id){
+      const detail=await getPokemonDetail(id);
+      const gs=k=>detail.stats.find(s=>s.stat.name===k).base_stat; const L=50;
+      const base={hp:gs('hp'),atk:gs('attack'),def:gs('defense'),spa:gs('special-attack'),spd:gs('special-defense'),spe:gs('speed')};
+      const derived={ maxHP:Math.floor(((2*base.hp)*L)/100)+L+10, atk:Math.floor(((2*base.atk)*L)/100)+5, def:Math.floor(((2*base.def)*L)/100)+5, spa:Math.floor(((2*base.spa)*L)/100)+5, spd:Math.floor(((2*base.spd)*L)/100)+5, spe:Math.floor(((2*base.spe)*L)/100)+5 };
+      const types=detail.types; state.typesById.set(id,types);
+      const pool=state.mvPoolCache.get(id)||await assembleMovePool(detail.moves); state.mvPoolCache.set(id,pool);
+     const moves = recommendMoves(pool, types).slice(0,4);
+      const picked = pickSpriteURLs(detail.sprites, id);
+      return {
+        id,
+        name: cap(detail.name),
+        types,
+        front: picked.front,
+        back: picked.back,
+        backIsMirror: picked.backIsMirror, // <-- track if we're mirroring
+        base,
+        stats: { ...derived },
+        stages: { atk:0, def:0, spa:0, spd:0, spe:0 },
+        hp: derived.maxHP,
+        moves,
+        status: null,
+        volatile: {}
+      };    
+    }
+
+    const currA=()=>state.rosterA[state.aIdx], currB=()=>state.rosterB[state.bIdx];
+
+    function updateRosterBadges(){
+      const mk=(mon,isActive)=>`<div class="slot ${isActive?'active':''} ${mon.hp>0?'':'down'}"><img class="w-7 h-7 pixel" src="${gridSpriteURL(mon.id)}" alt="${mon.name}"></div>`;
+      $('#rosterA').innerHTML=state.rosterA.map((m,i)=>mk(m,i===state.aIdx)).join('');
+      $('#rosterB').innerHTML=state.rosterB.map((m,i)=>mk(m,i===state.bIdx)).join('');
+    }
+
+    function setActiveDisplays(){
+      const A=currA(), B=currB();
+      $('#nameA').textContent=A.name; $('#nameB').textContent=B.name;
+      $('#spriteA').src = A.back;
+      $('#spriteB').src = B.front;
+      
+      // mirror only if we’re faking a back
+      $('#spriteA').classList.toggle('mirror-x', !!A.backIsMirror);
+      
+      // clear semi-inv
+      $('#spriteA').classList.remove('semi-inv');
+      $('#spriteB').classList.remove('semi-inv');      
+      setHPBars(); $('#roundTag').textContent=`Round ${state.round}`;
+      updateRosterBadges(); renderMoveButtons();
+    }
+
+    function setHPBars(){
+      const A=currA(), B=currB();
+      const pctA=Math.max(0,Math.round((A.hp/A.stats.maxHP)*100)), pctB=Math.max(0,Math.round((B.hp/B.stats.maxHP)*100));
+      const colorHP=(el,pct)=>{ if(pct>50){el.style.background='linear-gradient(90deg,#22c55e,#16a34a)';} else if(pct>20){el.style.background='linear-gradient(90deg,#f59e0b,#d97706)';} else {el.style.background='linear-gradient(90deg,#ef4444,#dc2626)';} };
+      $('#hpBarA').style.width=pctA+'%'; colorHP($('#hpBarA'),pctA);
+      $('#hpBarB').style.width=pctB+'%'; colorHP($('#hpBarB'),pctB);
+      $('#hpTextA').textContent=`${A.hp} / ${A.stats.maxHP}`; $('#hpTextB').textContent=`${B.hp} / ${B.stats.maxHP}`;
+      updateStatusUI('A',A); updateStatusUI('B',B);
+    }
+
+    function updateStatusUI(side,mon){
+      const dot=side==='A'?$('#dotA'):$('#dotB'), tag=side==='A'?$('#stTextA'):$('#stTextB');
+      let color='#10b981', label=null;
+      if(mon.status?.type){ label=mon.status.type.toUpperCase(); switch(mon.status.type){ case'par':color='#fbbf24';break; case'brn':color='#f97316';break; case'psn':color='#8b5cf6';break; case'frz':color='#22d3ee';break; case'slp':color='#94a3b8';break; default: color='#10b981'; } }
+      else { const pct=Math.round((mon.hp/mon.stats.maxHP)*100); if(pct<=20) color='#ef4444'; else if(pct<=50) color='#f59e0b'; }
+      dot.style.backgroundColor=color; if(label){ tag.textContent=label; tag.classList.remove('hidden'); } else tag.classList.add('hidden');
+    }
+
+    function renderMoveButtons(){
+      const A=currA(); const box=$('#moveButtons'); box.innerHTML='';
+      A.moves.forEach(m=>{
+        const btn=document.createElement('button');
+        btn.className='move-btn tap';
+        btn.style.background=`linear-gradient(180deg, ${typeColor(m.type)}, #1f2937)`;
+        const ail=m.ailment_code?` • ${m.ailment_code.toUpperCase()}${m.ailment_chance?(' '+m.ailment_chance+'%'):''}`:'';
+        const extra=(m.stat_changes?.length?' • Stat':'')+(m.healing?' • Heal':'')+(m.priority?` • Prio ${m.priority}`:'');
+        btn.innerHTML=`<div class="text-left">
+            <div class="font-extrabold">${m.display}</div>
+            <div class="text-[10px] opacity-90">${m.category==='status'?'Status':('Pow '+(m.power??'—'))} • Acc ${m.accuracy??'—'}% • ${cap(m.category)}${ail}${extra}</div>
+          </div>
+          <span class="type-badge" style="background:${typeColor(m.type)}">${m.type.toUpperCase()}</span>`;
+        btn.addEventListener('click', async()=>{
+          if(state.lock || !state.waitingForPlayerChoice) return;
+          state.queuedMove=m; state.queuedAction=null;
+          await resolveTurn();
+        });
+        box.appendChild(btn);
+      });
+      enableMoveButtons(state.waitingForPlayerChoice);
+    }
+
+    function enableMoveButtons(on){
+      $$('#moveButtons .move-btn').forEach(b=>{
+        b.disabled=!on; b.style.opacity=on?'1':'.65'; b.style.filter=on?'none':'grayscale(35%)'; b.style.cursor=on?'pointer':'not-allowed';
+      });
+      $('#btnSwitch').disabled=!on;
+      $('#btnSwitch').style.opacity=on?'1':'.65';
+      $('#btnSwitch').style.cursor=on?'pointer':'not-allowed';
+    }
+
+    /* ===== Switch picker ===== */
+    function openSwitchPicker(){
+      const list=$('#swList'); list.innerHTML='';
+      state.rosterA.forEach((mon,i)=>{
+        const disabled = (i===state.aIdx) || mon.hp<=0;
+        const btn=document.createElement('button');
+        btn.className='tap border border-slate-700 rounded-xl p-2 bg-slate-800 flex flex-col items-center';
+        btn.disabled=disabled; btn.style.opacity=disabled?'.45':'1';
+        btn.innerHTML=`<img src="${gridSpriteURL(mon.id)}" class="w-12 h-12 pixel"/><div class="mt-1 text-[11px]">${mon.name}</div>`;
+        btn.addEventListener('click', async ()=>{
+          if(disabled) return;
+          state.queuedAction = { type:'switch', to:i };
+          closeSwitchPicker();
+          await resolveTurn();
+        });
+        list.appendChild(btn);
+      });
+
+      document.body.classList.add('no-scroll');
+      $('#switchPicker').classList.remove('hidden');
+    }
+    function closeSwitchPicker(){
+      $('#switchPicker').classList.add('hidden');
+      document.body.classList.remove('no-scroll');
+    }
+
+    /* ===== AI helpers ===== */
+    function moveEffectivenessScore(move, atkTypes, defTypes){
+      const eff = effMultiplier(move.type, defTypes);
+      let s = 0;
+      if (eff === 0) s -= 60;
+      else if (eff < 1) s -= (1-eff) * 40;
+      else if (eff > 1) s += (eff-1) * 55;
+      if (atkTypes.includes(move.type)) s += 18;
+      return s;
+    }
+    function koPressureScore(expectedDamage, defenderHP){
+      const frac = expectedDamage / Math.max(1, defenderHP);
+      return frac >= 1 ? 120 : Math.floor(frac * 90);
+    }
+    function playersBestDamageAgainst(target, playerMon){
+      let best = 0;
+      for(const m of playerMon.moves){
+        if (m.category === 'status') continue;
+        best = Math.max(best, estimateDamage(playerMon, target, m));
+      }
+      return best;
+    }
+
+    function bestMoveAgainst(attacker, defender){
+      let best = attacker.moves[0], bestScore = -1e9;
+      for(const m of attacker.moves){
+        let score = 0;
+        if(m.category === 'status'){
+          const hasEffect = m.ailment_code || (m.stat_changes && m.stat_changes.length) || m.healing ||
+            /rest|recover|soft-boiled|moonlight|morning-sun|synthesis|roost|milk-drink|slack-off|aromatherapy|heal-bell|refresh|haze/.test(m.key);
+          score = (hasEffect ? 35 : 5) + (m.ailment_chance||0)/3 + (m.healing?22:0) + ((m.stat_changes?.length||0)*6);
+        } else {
+          const dmg = estimateDamage(attacker, defender, m);
+          score += dmg;
+          score += moveEffectivenessScore(m, attacker.types, defender.types);
+          score += koPressureScore(dmg, defender.hp);
+          score += (m.accuracy ?? 100) * 0.12;
+        }
+        score += getPriority(m) * 6; // prefer faster resolution
+        if(score > bestScore){ bestScore = score; best = m; }
+      }
+      return best;
+    }
+
+    function cpuShouldSwitch(cpu, player, bench){
+      const options = bench.map((m,i)=>({m,i})).filter(x => x.m.hp > 0 && x.i !== state.bIdx);
+      if (!options.length) return null;
+
+      const lowHP = cpu.hp / cpu.stats.maxHP <= 0.25;
+
+      let allIneffective = true;
+      for(const m of cpu.moves){
+        if(m.category === 'status') continue;
+        const eff = effMultiplier(m.type, player.types);
+        if (eff > 0.5) { allIneffective = false; break; }
+      }
+      if(!lowHP && !allIneffective) return null;
+
+      let bestIdx = null, bestScore = -1e9;
+      for(const {m: cand, i} of options){
+        const move = bestMoveAgainst(cand, player);
+        const dmg = (move.category==='status') ? 0 : estimateDamage(cand, player, move);
+        let offScore = dmg + moveEffectivenessScore(move, cand.types, player.types);
+        const threat = playersBestDamageAgainst(cand, currA());
+        const survScore = (cand.stats.maxHP ? (1 - (threat/Math.max(1,cand.stats.maxHP))) : 0) * 75;
+        const total = offScore + survScore;
+        if(total > bestScore){ bestScore = total; bestIdx = i; }
+      }
+
+      const cpuBest = bestMoveAgainst(cpu, player);
+      const cpuDmg = (cpuBest.category==='status')?0:estimateDamage(cpu, player, cpuBest);
+      const cpuScore = cpuDmg + moveEffectivenessScore(cpuBest, cpu.types, player.types);
+
+      if(bestScore >= cpuScore + 18) return bestIdx;
+      if(lowHP && bestScore > cpuScore + 5) return bestIdx;
+      return null;
+    }
+
+    /* ===== Turn engine ===== */
+    async function autoLoop(){
+      while(state.autoPlay && battleAlive()){
+        if(state.waitingForPlayerChoice){
+          const A=currA(), B=currB();
+          state.queuedMove = bestMoveAgainst(A,B);
+        }
+        await resolveTurn();
+        await sleep(P(700));
+      }
+    }
+
+    function battleAlive(){ return state.rosterA.some(m=>m.hp>0) && state.rosterB.some(m=>m.hp>0); }
+    function effectiveSpeed(mon){ let s=mon.stats.spe; if(mon.status?.type==='par') s=Math.floor(s*PAR_SPEED); s=applyStage(s,mon.stages.spe); return s; }
+
+    function setBanner(text,mode='info'){
+      const b=$('#turnBanner'), caret=$('#gbCaret'); b.textContent=text+' '; b.appendChild(caret);
+      const ring=mode==='your'?'ring-emerald-500':mode==='rival'?'ring-rose-500':'ring-slate-600';
+      b.className=`gb-box mt-4 p-3 text-sm ring-2 ${ring}`; if(mode==='your') caret.classList.remove('hidden'); else caret.classList.add('hidden');
+    }
+
+    async function resolveTurn(){
+      if(state.lock) return; state.lock=true;
+
+      if(state.waitingForPlayerChoice && !(state.queuedMove || state.queuedAction)){
+        toast('Choose a move or Pokémon.'); state.lock=false; return;
+      }
+
+      const A0=currA(), B0=currB();
+
+      // CPU decide: switch or move
+      let cpuAction=null;
+      const cpuSwitchTo = cpuShouldSwitch(B0, A0, state.rosterB);
+      if(cpuSwitchTo !== null) cpuAction = {type:'switch', to: cpuSwitchTo};
+      else cpuAction = {type:'move', move: bestMoveAgainst(B0, A0)};
+
+      await sleep(P(150));
+
+      state.waitingForPlayerChoice=false;
+      enableMoveButtons(false);
+      $('#btnNext').disabled = true;
+
+      // Cases
+      if (state.queuedAction?.type === 'switch' && cpuAction.type === 'switch') {
+        await performSwitch('A', state.queuedAction.to);
+        if (battleAlive()) await performSwitch('B', cpuAction.to);
+      }
+      else if (state.queuedAction?.type === 'switch' && cpuAction.type === 'move') {
+        await performSwitch('A', state.queuedAction.to);
+        if (battleAlive()) {
+          await takeOneAction('B', currB(), currA(), cpuAction.move);
+        }
+      }
+      else if (!state.queuedAction && cpuAction.type === 'switch') {
+        await performSwitch('B', cpuAction.to);
+        if (battleAlive()) {
+          await takeOneAction('A', currA(), currB(), state.queuedMove);
+        }
+      }
+      else {
+        // both move: priority first, then speed
+        const pA=getPriority(state.queuedMove), pB=getPriority(cpuAction.move);
+        let order=[{side:'A',move:state.queuedMove},{side:'B',move:cpuAction.move}];
+        if(pA!==pB) order.sort((x,y)=>getPriority(x.move)>getPriority(y.move)?-1:1);
+        else {
+          const aSpd=effectiveSpeed(A0), bSpd=effectiveSpeed(B0);
+          if(bSpd>aSpd || (bSpd===aSpd && Math.random()<0.5)) order.reverse();
+        }
+
+        let endTurnOnFaint=false;
+        for(const step of order){
+          if(!battleAlive() || endTurnOnFaint) break;
+          const atk = step.side==='A'? currA():currB();
+          const def = step.side==='A'? currB():currA();
+          if(step.side==='A' && (!state.queuedMove || !atk.moves.some(x=>x.key===state.queuedMove.key))){
+            log(`${atk.name} couldn’t act this turn.`); continue;
+          }
+          const fainted = await takeOneAction(step.side, atk, def, step.move);
+          if(fainted) endTurnOnFaint = true;
+        }
+      }
+
+      // Residuals
+      if(battleAlive()){ endOfTurnResidual(currA()); endOfTurnResidual(currB()); setHPBars(); }
+      if(!battleAlive()){ finishRound(); state.lock=false; return; }
+
+      // Next round
+      state.round++; setActiveDisplays();
+      state.queuedMove=null; state.queuedAction=null; state.waitingForPlayerChoice=true; $('#btnNext').disabled=false;
+      setBanner(`Your turn — choose a move for ${currA().name}.`,'your'); enableMoveButtons(true);
+      state.lock=false;
+      if(state.autoPlay) autoLoop();
+    }
+
+    async function takeOneAction(side, atk, def, move){
+      const atkSide=side, defSide=side==='A'?'B':'A';
+      if(atk.hp<=0 || def.hp<=0) return false;
+
+      setBanner(`${atk.name} is preparing to move…`, atkSide==='A'?'your':'rival');
+      if(handlePreMoveStatus(atk)){ setHPBars(); await sleep(P(420)); return false; }
+
+      // If finishing a two-turn move
+      if(atk.volatile?.charging){
+        move = atk.volatile.charging.move;
+        delete atk.volatile.charging;
+        delete atk.volatile.semiInv;
+        const atkImg = (atkSide==='A') ? $('#spriteA') : $('#spriteB');
+        atkImg.classList.remove('semi-inv');
+      } else {
+        // Start charging if semi-inv move
+        const k=(move.key||'').toLowerCase();
+        if(SEMI_INV_MOVES[k]){
+          const tag=SEMI_INV_MOVES[k].tag;
+          setBanner(`${atk.name} ${SEMI_INV_MOVES[k].phase1Msg}`, atkSide==='A'?'your':'rival');
+          atk.volatile.charging={move,tag};
+          atk.volatile.semiInv=tag;
+          const atkImg = (atkSide==='A') ? $('#spriteA') : $('#spriteB');
+          atkImg.classList.add('semi-inv');
+          await sleep(P(400));
+          return false;
+        }
+      }
+
+      setBanner(`${atk.name} used ${move.display}!`, atkSide==='A'?'your':'rival');
+
+      // Status/Heal moves
+      if(move.category==='status' && (!move.power || move.power===0) && (move.ailment_code || (move.stat_changes&&move.stat_changes.length) || move.healing || true)){
+        if(Math.random()*100 > (move.accuracy ?? 100)){
+          log(`${atk.name}'s ${move.display} missed!`); await impactMiss(defSide); await sleep(P(300));
+        } else {
+          await animateAttack(atkSide,defSide,move);
+          const acted=await applyStatusMove(atk,def,atkSide,defSide,move);
+          if(!acted) log(`But it failed!`);
+          await sleep(P(320));
+        }
+        return false;
+      }
+
+      // Damaging path with semi-inv target logic
+      let autoMiss=false, effBonus=1.0;
+      if(def.volatile?.semiInv){
+        const tag=def.volatile.semiInv;
+        const k=(move.key||'').toLowerCase();
+        const counters=SEMI_INV_COUNTERS[tag];
+        if(!counters || !counters.hits.has(k)) autoMiss=true;
+        else effBonus=counters.bonus||1.0;
+      }
+
+      await animateAttack(atkSide,defSide,move);
+      if(autoMiss || Math.random()*100 > (move.accuracy ?? 100)){
+        await impactMiss(defSide); log(`${atk.name}'s ${move.display} missed!`); setBanner(`${atk.name}'s ${move.display} missed!`,'info'); await sleep(P(300)); return false;
+      }
+
+      let dmg=computeDamage(atk,def,move);
+      if(effBonus!==1.0) dmg=Math.floor(dmg*effBonus);
+
+      const crit=Math.random()<0.1; if(crit){ dmg=Math.floor(dmg*1.75); log('Critical hit!'); await screenShake(); }
+      def.hp=Math.max(0,def.hp-dmg); if(atkSide==='A') state.stats.dmgA+=dmg; else state.stats.dmgB+=dmg;
+      await impactHit(defSide,move.type); setHPBars(); log(`${atk.name} dealt ${dmg} damage to ${def.name}.`); await sleep(P(300));
+
+      if(def.hp>0 && move.ailment_code){
+        const applied=tryApplyStatus(def,move.ailment_code,move.ailment_chance||0);
+        if(applied){ log(`${def.name} is now ${applied.toUpperCase()}!`); state.stats.statusCounts[applied]=(state.stats.statusCounts[applied]||0)+1; setBanner(`${def.name} is ${applied.toUpperCase()}!`,'info'); setHPBars(); await sleep(P(220)); }
+      }
+
+      if(def.hp<=0){
+        log(`${def.name} fainted!`); if(atkSide==='A') state.stats.koA++; else state.stats.koB++;
+        await faintSprite(defSide); await sleep(P(250));
+        if(atkSide==='A'){ const next=state.rosterB.findIndex((x,i)=>i>state.bIdx&&x.hp>0); if(next!==-1) state.bIdx=next; }
+        else            { const next=state.rosterA.findIndex((x,i)=>i>state.aIdx&&x.hp>0); if(next!==-1) state.aIdx=next; }
+        if(!battleAlive()) return true;
+        setActiveDisplays(); setBanner(`${(atkSide==='A'?currB():currA()).name} was sent out!`,'info'); await sleep(P(320));
+        return true;
+      }
+if (atkSide === 'A') {
+  const nextIdx = state.teamB.findIndex(p => p.hp > 0);
+  if (nextIdx !== -1) state.bIdx = nextIdx;
+} else {
+  const nextIdx = state.teamA.findIndex(p => p.hp > 0);
+  if (nextIdx !== -1) state.aIdx = nextIdx;
+}
+      // Post-move: recharge?
+      if(RECHARGE_MOVES.has((move.key||'').toLowerCase())){
+        atk.volatile.recharge = 1;
+      }
+
+      return false;
+    }
+
+    function finishRound(){
+      const youWin=state.rosterA.some(m=>m.hp>0); setBanner(youWin?'🏆 You win!':'🏆 Rival wins!', youWin?'your':'rival'); state.stats.rounds=state.round; showResult(youWin);
+    }
+
+    async function performSwitch(side, toIndex){
+      const isPlayer = side==='A';
+      const spriteEl = isPlayer? $('#spriteA') : $('#spriteB');
+      const stageEl = $('#stage');
+
+      // clear semi-inv on the outgoing
+      const outMon = isPlayer ? currA() : currB();
+      if(outMon?.volatile?.semiInv){ delete outMon.volatile.semiInv; delete outMon.volatile.charging; spriteEl.classList.remove('semi-inv'); }
+
+      setBanner(isPlayer?`${outMon.name}, come back!`:`${outMon.name} was withdrawn!`, isPlayer?'your':'rival');
+      await recallAnimation(spriteEl, stageEl);
+
+      if(isPlayer) state.aIdx = toIndex; else state.bIdx = toIndex;
+
+      const inMon = isPlayer ? currA() : currB();
+      inMon.volatile = inMon.volatile || {};
+      delete inMon.volatile.semiInv;
+      delete inMon.volatile.charging;
+      if (isPlayer) {
+           $('#spriteA').classList.toggle('mirror-x', !!inMon.backIsMirror);
+      }
+      setActiveDisplays();
+      setBanner(isPlayer?`Go, ${inMon.name}!`:`Foe sent out ${inMon.name}!`, isPlayer?'your':'rival');
+      await sendOutAnimation(spriteEl, stageEl);
+      await sleep(P(200));
+    }
+
+    /* ===== Damage, status, residuals ===== */
+    function applyStage(value,stage){ if(stage===0) return value; if(stage>0) return Math.floor(value*(2+stage)/2); return Math.floor(value*2/(2-stage)); }
+    function estimateDamage(attacker,defender,move){
+      let A=(move.category==='physical')? attacker.stats.atk : attacker.stats.spa;
+      let D=(move.category==='physical')? defender.stats.def : defender.stats.spd;
+      A=applyStage(A, move.category==='physical'? attacker.stages.atk : attacker.stages.spa);
+      D=applyStage(D, move.category==='physical'? defender.stages.def : defender.stages.spd);
+      if(move.category==='physical' && attacker.status?.type==='brn'){ A=Math.floor(A*0.5); }
+      const base=(((2*50/5+2)*(move.power||0)*(A/Math.max(1,D)))/50)+2;
+      const stab=attacker.types.includes(move.type)?1.5:1.0;
+      const eff=effMultiplier(move.type, defender.types);
+      const dmg=base*stab*eff*0.925; const roll=(Math.random()*0.15)+0.85;
+      return Math.max(1,Math.floor(dmg*roll));
+    }
+    const computeDamage=(a,d,m)=>estimateDamage(a,d,m);
+
+    function handlePreMoveStatus(mon){
+      // Recharge turn (e.g., Hyper Beam)
+      if(mon.volatile?.recharge){
+        mon.volatile.recharge -= 1;
+        if(mon.volatile.recharge <= 0) delete mon.volatile.recharge;
+        log(`${mon.name} must recharge!`);
+        setBanner(`${mon.name} must recharge!`, 'info');
+        return true;
+      }
+
+      if(mon.status?.type==='slp'){
+        mon.status.turns=(mon.status.turns??1);
+        if(mon.status.turns>0){ mon.status.turns--; log(`${mon.name} is fast asleep…`); setBanner(`${mon.name} is fast asleep…`,'info'); return true; }
+        log(`${mon.name} woke up!`); setBanner(`${mon.name} woke up!`,'info'); mon.status=null; return false;
+      }
+      if(mon.status?.type==='frz'){
+        if(Math.random()<0.2){ log(`${mon.name} thawed out!`); setBanner(`${mon.name} thawed out!`,'info'); mon.status=null; return false; }
+        log(`${mon.name} is frozen solid!`); setBanner(`${mon.name} is frozen solid!`,'info'); return true;
+      }
+      if(mon.status?.type==='par' && Math.random()<0.25){
+        log(`${mon.name} is fully paralyzed!`); setBanner(`${mon.name} is fully paralyzed!`,'info'); return true;
+      }
+      return false;
+    }
+
+    async function applyStatusMove(atk,def,atkSide,defSide,m){
+      const key=m.key?.toLowerCase?.()||''; const isCureAll=/aromatherapy|heal-bell/.test(key);
+      const isSelfCure=/refresh/.test(key); const isRest=/^rest$/.test(key);
+      const isHeal=m.healing>0 || /recover|soft-boiled|roost|synthesis|morning-sun|moonlight|milk-drink|slack-off|heal-order/.test(key);
+      const isHaze=/^haze$/.test(key);
+      const targetIsSelf=m.target?.includes('user')||m.target?.includes('self')||/ally/.test(m.target||'')||(m.stat_changes?.some(sc=>sc.change>0));
+      const tStat=targetIsSelf?atk:def; let acted=false;
+      if(isHaze){ ['atk','def','spa','spd','spe'].forEach(s=>{ atk.stages[s]=0; def.stages[s]=0; }); log(`All stat changes were eliminated!`); setBanner(`All stat changes were eliminated!`,'info'); acted=true; }
+      if(isRest){ atk.hp=atk.stats.maxHP; atk.status={type:'slp',turns:Math.floor(Math.random()*2)+2}; log(`${atk.name} fell asleep and restored its health!`); setBanner(`${atk.name} fell asleep and restored HP!`,'info'); setHPBars(); acted=true; }
+      else if(isHeal){ const pct=m.healing?(m.healing/100):0.5; const healed=Math.max(1,Math.floor(atk.stats.maxHP*pct)); const before=atk.hp; atk.hp=Math.min(atk.stats.maxHP,atk.hp+healed); log(`${atk.name} healed ${atk.hp-before} HP.`); setHPBars(); acted=true; }
+      if(isCureAll){ (atkSide==='A'?state.rosterA:state.rosterB).forEach(mon=>{ if(mon.status) mon.status=null; }); log(`A soothing bell echoed! Team status cured.`); setBanner(`Team status cured!`,'info'); acted=true; }
+      else if(isSelfCure){ if(atk.status){ atk.status=null; log(`${atk.name} cured its status!`); setBanner(`${atk.name} cured its status!`,'info'); acted=true; } }
+      if(m.ailment_code && !targetIsSelf){ const applied=tryApplyStatus(tStat,m.ailment_code,m.ailment_chance||100); if(applied){ log(`${tStat.name} is now ${applied.toUpperCase()}!`); setBanner(`${tStat.name} is ${applied.toUpperCase()}!`,'info'); acted=true; } }
+      if(m.stat_changes && m.stat_changes.length){ for(const sc of m.stat_changes){ const which=statKeyFromName(sc.stat?.name); if(!which) continue; tStat.stages[which]=clamp(tStat.stages[which]+sc.change,-6,6); }
+        const dir=m.stat_changes.some(s=>s.change>0)?'rose':(m.stat_changes.some(s=>s.change<0)?'fell':'changed'); log(`${tStat.name}'s stats ${dir}!`); setBanner(`${tStat.name}'s stats ${dir}!`,'info'); acted=true; }
+      setHPBars(); return acted;
+    }
+    function statKeyFromName(n){ switch(n){ case'attack':return'atk'; case'defense':return'def'; case'special-attack':return'spa'; case'special-defense':return'spd'; case'speed':return'spe'; default:return null; } }
+    function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+    function tryApplyStatus(target,code,chancePct){ if(!code || target.status?.type || target.hp<=0) return null; if(Math.random()*100>chancePct) return null; switch(code){ case'slp': target.status={type:'slp',turns:Math.floor(Math.random()*3)+1}; break; case'frz': target.status={type:'frz'}; break; case'par': target.status={type:'par'}; break; case'brn': target.status={type:'brn'}; break; case'psn': target.status={type:'psn'}; break; default: return null; } return code; }
+    function endOfTurnResidual(mon){ if(mon.hp<=0) return; if(mon.status?.type==='brn'||mon.status?.type==='psn'){ const dmg=Math.max(1,Math.floor(mon.stats.maxHP/RESIDUAL_FRACTION)); mon.hp=Math.max(0,mon.hp-dmg); log(`${mon.name} is hurt by ${mon.status.type==='brn'?'its burn':'poison'} (${dmg}).`); setBanner(`${mon.name} takes damage from ${mon.status.type==='brn'?'burn':'poison'}…`,'info'); } }
+
+    /* ===== Effects & helpers ===== */
+    async function faintSprite(side){ const img=side==='A'?$('#spriteA'):$('#spriteB'); img.classList.add('faint'); await sleep(P(500)); img.classList.remove('faint'); }
+    async function animateAttack(attackerSide,defenderSide,move){
+      const atkImg=attackerSide==='A'?$('#spriteA'):$('#spriteB'); const defImg=defenderSide==='A'?$('#spriteA'):$('#spriteB'); const stage=$('#stage');
+      const isPhysical=move.category==='physical';
+      if(isPhysical){ atkImg.classList.add(attackerSide==='A'?'lunge-right':'lunge-left'); await sleep(P(350)); atkImg.classList.remove('lunge-right','lunge-left'); }
+      else{ const atkRect=atkImg.getBoundingClientRect(), defRect=defImg.getBoundingClientRect(), stRect=stage.getBoundingClientRect();
+        const start={x:(atkRect.left+atkRect.right)/2 - stRect.left + (attackerSide==='A'?26:-26), y:(atkRect.top+atkRect.bottom)/2 - stRect.top - 8};
+        const end={x:(defRect.left+defRect.right)/2 - stRect.left + (defenderSide==='A'?26:-26), y:(defRect.top+defRect.bottom)/2 - stRect.top - 8};
+        const proj=document.createElement('div'); proj.className='proj'; proj.style.background=typeColor(move.type); stage.appendChild(proj);
+        const steps=22, dx=(end.x-start.x)/steps, dy=(end.y-start.y)/steps;
+        for(let i=0;i<=steps;i++){ const t=i/steps, arc=-30*Math.sin(Math.PI*t); proj.style.left=(start.x+dx*i)+'px'; proj.style.top=(start.y+dy*i+arc)+'px'; await sleep(P(10)); }
+        proj.remove(); }
+      await sleep(P(120));
+    }
+    async function impactHit(defenderSide,type){
+      const defImg=defenderSide==='A'?$('#spriteA'):$('#spriteB'); const stage=$('#stage');
+      defImg.classList.add('flash','shake');
+      const r=defImg.getBoundingClientRect(), st=stage.getBoundingClientRect();
+      const spark=document.createElement('div'); spark.className='spark'; spark.style.left=((r.left+r.right)/2 - st.left)+'px'; spark.style.top=((r.top+r.bottom)/2 - st.top)+'px'; spark.style.background=typeColor(type);
+      stage.appendChild(spark); await sleep(P(350)); defImg.classList.remove('flash','shake'); spark.remove(); await sleep(P(120));
+    }
+    async function impactMiss(){ const stage=$('#stage'); stage.classList.add('camshake'); await sleep(P(220)); stage.classList.remove('camshake'); }
+    async function screenShake(){ const stage=$('#stage'); stage.classList.add('camshake'); await sleep(P(260)); stage.classList.remove('camshake'); }
+
+    function log(t){ const li=document.createElement('li'); li.textContent=t; $('#log').appendChild(li); $('#log').scrollTop=$('#log').scrollHeight; }
+    function clearLog(){ $('#log').innerHTML=''; }
+    let toastTimer; function toast(msg){ clearTimeout(toastTimer); let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='fixed bottom-3 inset-x-0 mx-auto w-fit max-w-[90%] px-4 py-2 rounded-xl bg-slate-800 text-slate-100 border border-slate-700 text-sm shadow-lg'; document.body.appendChild(t); } t.textContent=msg; t.style.opacity='1'; toastTimer=setTimeout(()=>t.style.opacity='0',1800); }
+
+    /* ===== Results modal ===== */
+    function showResult(youWin){
+      $('#resultTitle').textContent = youWin ? 'You Win!' : 'Rival Wins!';
+      $('#rsRounds').textContent = state.stats.rounds;
+      $('#rsKO').textContent = `You ${state.stats.koA} — Rival ${state.stats.koB}`;
+      $('#rsDmgA').textContent = state.stats.dmgA;
+      $('#rsDmgB').textContent = state.stats.dmgB;
+      const st=$('#rsStatus'); st.innerHTML=''; for(const [k,v] of Object.entries(state.stats.statusCounts)){ if(v) { const s=document.createElement('span'); s.className='tag'; s.textContent=`${k.toUpperCase()}: ${v}`; st.appendChild(s);} }
+      $('#resultModal').classList.add('show');
+    }
+    function hideResult(){ $('#resultModal').classList.remove('show'); }
+
+    /* ===== Recall/Sendout ===== */
+    async function recallAnimation(spriteEl, stageEl){
+      const rect = spriteEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect();
+      const ball = document.createElement('div'); ball.className='ball'; ball.style.left=((rect.left+rect.right)/2 - st.left)+'px'; ball.style.top=((rect.top+rect.bottom)/2 - st.top + 12)+'px';
+      stageEl.appendChild(ball);
+      spriteEl.classList.add('recall'); ball.classList.add('ball-pop');
+      await sleep(P(320));
+      spriteEl.classList.remove('recall');
+      ball.style.opacity='1';
+      await sleep(P(100));
+      ball.remove();
+    }
+    async function sendOutAnimation(spriteEl, stageEl){
+      const rect = spriteEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect();
+      const ball = document.createElement('div'); ball.className='ball'; ball.style.left=((rect.left+rect.right)/2 - st.left)+'px'; ball.style.top=((rect.top+rect.bottom)/2 - st.top + 12)+'px';
+      stageEl.appendChild(ball);
+      ball.classList.add('ball-pop');
+      const spark=document.createElement('div'); spark.className='spark'; spark.style.left=ball.style.left; spark.style.top=ball.style.top; stageEl.appendChild(spark);
+      spriteEl.style.opacity='0'; spriteEl.style.transform='scale(0)';
+      await sleep(P(160));
+      spriteEl.classList.add('sendout');
+      spriteEl.style.opacity='1';
+      await sleep(P(320));
+      spriteEl.classList.remove('sendout');
+      spriteEl.style.transform='';
+      spark.remove(); ball.remove();
+    }
+
+    const TRAINERS = [
+  { key:'brock', name:'Brock', candidates:[74,95,76,112,111,141,139] },
+  { key:'misty', name:'Misty', candidates:[120,121,130,131,91,134] },
+  // ... rest of Gen 1 & 2 gyms, elite four, Gary, Ash as per plan
+];
+
+state.selectedTrainer = null;
+
+async function pickStrongest(ids, n=3){
+  const details = await Promise.all(ids.map(id => getPokemonDetail(id)));
+  const scored = details.map(d => ({
+    id: d.id,
+    bst: d.stats.reduce((s,st)=>s + st.base_stat, 0)
+  }));
+  scored.sort((a,b)=>b.bst - a.bst);
+  return scored.slice(0, n).map(s => ({ id:s.id, name:nameFor(s.id) }));
+}
+
+async function applyTrainerSelection(key){
+  const trainer = TRAINERS.find(t => t.key === key);
+  if (!trainer) return;
+  const mons = await pickStrongest(trainer.candidates, 3);
+  state.teamB = mons.map(m => ({ id: m.id, name: m.name, moves: [] }));
+  state.selectedTrainer = { key: trainer.key, name: trainer.name };
+  ls.set('trainer:current', state.selectedTrainer);
+  document.getElementById('trainerName').textContent = trainer.name;
+  document.getElementById('trainerChip').classList.remove('hidden');
+  renderTeams();
+  updateStartButton();
+}
+
+function clearTrainerSelection(){
+  state.selectedTrainer = null;
+  ls.remove('trainer:current');
+  document.getElementById('trainerChip').classList.add('hidden');
+}
+
+document.getElementById('btnTrainers').addEventListener('click', openTrainerPicker);
+document.getElementById('clearTrainer').addEventListener('click', clearTrainerSelection);
+
+function openTrainerPicker(){
+  // simple alert list for now, replace with bottom sheet if needed
+  const names = TRAINERS.map(t => t.name).join('\n');
+  const choice = prompt('Select trainer by name:\n' + names);
+  const found = TRAINERS.find(t => t.name.toLowerCase() === choice?.toLowerCase());
+  if (found) applyTrainerSelection(found.key);
+}
+
+// Respect selected trainer in autoSeedRival
+const originalAutoSeedRival = autoSeedRival;
+autoSeedRival = function(){
+  if (state.selectedTrainer) return;
+  originalAutoSeedRival();
+};
+
+// Show trainer name in battle label
+const originalRenderBattleHeader = renderBattleHeader;
+renderBattleHeader = function(){
+  originalRenderBattleHeader();
+  if (state.selectedTrainer){
+    document.querySelector('#opponentName').textContent = 'Trainer: ' + state.selectedTrainer.name;
+  }
+};
+
+// Restore trainer on load
+const savedTrainer = ls.get('trainer:current');
+if (savedTrainer){
+  state.selectedTrainer = savedTrainer;
+  document.getElementById('trainerName').textContent = savedTrainer.name;
+  document.getElementById('trainerChip').classList.remove('hidden');
+}
+  </script>
+</body>
+</html>
