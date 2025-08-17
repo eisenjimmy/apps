@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Smart Picks — Mobile Portfolio Helper</title>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { ui: ['ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial'] },
+          boxShadow: { soft: '0 10px 40px rgba(0,0,0,.18)' }
+        }
+      }
+    }
+  </script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    /* Small touches for range inputs */
+    input[type="range"] { accent-color: #0ea5e9; }
+    @media (prefers-color-scheme: dark) {
+      input[type="range"] { accent-color: #38bdf8; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-sky-50 to-white dark:from-zinc-900 dark:to-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 backdrop-blur bg-white/70 dark:bg-zinc-900/60 border-b border-zinc-200/60 dark:border-zinc-800">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="size-8 rounded-lg bg-sky-500/10 grid place-items-center">
+          <span class="text-sky-600 dark:text-sky-400 font-semibold">Σ</span>
+        </div>
+        <h1 class="text-base font-semibold">Smart Picks</h1>
+      </div>
+      <a href="#" class="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">Educational tool — not investment advice</a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 pb-28 pt-4">
+    <!-- Controls -->
+    <section class="space-y-4">
+      <div class="rounded-2xl shadow-soft bg-white/80 dark:bg-zinc-900/70 backdrop-blur p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="block">
+            <div class="text-sm font-medium mb-1">Investment amount (USD)</div>
+            <input id="amt" type="number" min="100" step="100" value="10000"
+              class="w-full rounded-xl border border-zinc-300/70 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900 px-3 py-2" />
+          </label>
+
+          <label class="block">
+            <div class="text-sm font-medium mb-1">Assumed annual return (%)</div>
+            <input id="assumedReturn" type="number" min="0" max="50" step="0.1" value="8"
+              class="w-full rounded-xl border border-zinc-300/70 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900 px-3 py-2" />
+          </label>
+
+          <div class="sm:col-span-2 grid gap-4">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-medium">Risk level</div>
+                <div id="riskLabel" class="text-xs text-zinc-500"></div>
+              </div>
+              <input id="risk" type="range" min="1" max="5" step="1" value="3" class="w-full mt-2" />
+              <p id="riskDesc" class="text-xs text-zinc-500 mt-1"></p>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-medium">Term (1 month – 10 years)</div>
+                <div id="termLabel" class="text-xs text-zinc-500"></div>
+              </div>
+              <input id="term" type="range" min="1" max="120" step="1" value="60" class="w-full mt-2" />
+            </div>
+          </div>
+
+          <label class="block">
+            <div class="text-sm font-medium mb-1">Number of picks</div>
+            <select id="numPicks" class="w-full rounded-xl border border-zinc-300/70 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900 px-3 py-2">
+              <option>5</option>
+              <option selected>8</option>
+              <option>10</option>
+            </select>
+          </label>
+
+          <div class="block">
+            <div class="text-sm font-medium mb-1">Live data (Financial Modeling Prep)</div>
+            <div class="flex items-center gap-2">
+              <label class="inline-flex items-center gap-2">
+                <input id="liveToggle" type="checkbox" class="size-4" />
+                <span class="text-sm">Use live data</span>
+              </label>
+            </div>
+            <input id="apiKey" type="password" placeholder="FMP API key (optional)"
+              class="mt-2 w-full rounded-xl border border-zinc-300/70 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900 px-3 py-2" />
+            <p class="text-xs text-zinc-500 mt-1">If left empty or rate-limited, the app uses an offline demo dataset.</p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button id="go" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-medium hover:bg-sky-500 active:scale-[.99]">Find picks</button>
+          <button id="dlCsv" class="px-4 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700">Download CSV</button>
+          <button id="reset" class="px-4 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700">Reset</button>
+        </div>
+        <p id="status" class="text-xs text-zinc-500 mt-2"></p>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section class="mt-6 space-y-4">
+      <!-- KPI bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+          <div class="text-xs text-zinc-500">Budget</div>
+          <div id="kpiBudget" class="text-lg font-semibold">$0</div>
+        </div>
+        <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+          <div class="text-xs text-zinc-500">Allocated</div>
+          <div id="kpiAllocated" class="text-lg font-semibold">$0</div>
+        </div>
+        <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+          <div class="text-xs text-zinc-500">Leftover cash</div>
+          <div id="kpiCash" class="text-lg font-semibold">$0</div>
+        </div>
+        <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+          <div class="text-xs text-zinc-500">Projected (end of term)</div>
+          <div id="kpiProjected" class="text-lg font-semibold">$0</div>
+        </div>
+      </div>
+
+      <!-- Chart + toggle -->
+      <div class="rounded-2xl p-4 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <div class="text-sm font-medium">Projection</div>
+          <div class="flex gap-1">
+            <button id="tabPortfolio" class="px-3 py-1 text-xs rounded-lg bg-sky-600 text-white">Portfolio</button>
+            <button id="tabPerStock" class="px-3 py-1 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-700">Per stock</button>
+          </div>
+        </div>
+        <div class="relative">
+          <canvas id="chart" class="w-full h-[280px] sm:h-[340px]"></canvas>
+        </div>
+        <p class="text-xs text-zinc-500 mt-2">Projection uses your assumed annual return with monthly compounding. Price appreciation only; no dividends/reinvestment.</p>
+      </div>
+
+      <!-- Picks list -->
+      <div id="picks" class="grid grid-cols-1 gap-3"></div>
+    </section>
+  </main>
+
+  <!-- Sticky footer CTA -->
+  <footer class="fixed bottom-0 inset-x-0 z-40 border-t border-zinc-200/60 dark:border-zinc-800 backdrop-blur bg-white/80 dark:bg-zinc-900/70">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="text-xs text-zinc-600 dark:text-zinc-300">Tip: toggle “Per stock” to compare holdings’ projected values over time.</div>
+      <button id="goBottom" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-medium hover:bg-sky-500">Find picks</button>
+    </div>
+  </footer>
+
+  <script>
+    /**********************
+     * Data & Config
+     *********************/
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const fmtUSD = n => n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:0});
+    const clamp = (x,a,b)=>Math.min(Math.max(x,a),b);
+
+    // Curated universe (simple, liquid US large/mid caps; no special-char tickers)
+    const UNIVERSE = [
+      {s:'AAPL', n:'Apple', sec:'Technology'}, {s:'MSFT', n:'Microsoft', sec:'Technology'},
+      {s:'NVDA', n:'NVIDIA', sec:'Technology'}, {s:'GOOGL', n:'Alphabet Class A', sec:'Communication'},
+      {s:'AMZN', n:'Amazon', sec:'Consumer Discretionary'}, {s:'META', n:'Meta Platforms', sec:'Communication'},
+      {s:'AVGO', n:'Broadcom', sec:'Technology'}, {s:'TSLA', n:'Tesla', sec:'Consumer Discretionary'},
+      {s:'JPM', n:'JPMorgan Chase', sec:'Financials'}, {s:'V', n:'Visa', sec:'Financials'},
+      {s:'MA', n:'Mastercard', sec:'Financials'}, {s:'UNH', n:'UnitedHealth', sec:'Health Care'},
+      {s:'HD', n:'Home Depot', sec:'Consumer Discretionary'}, {s:'PG', n:'Procter & Gamble', sec:'Consumer Staples'},
+      {s:'XOM', n:'Exxon Mobil', sec:'Energy'}, {s:'CVX', n:'Chevron', sec:'Energy'},
+      {s:'LLY', n:'Eli Lilly', sec:'Health Care'}, {s:'ABBV', n:'AbbVie', sec:'Health Care'},
+      {s:'PEP', n:'PepsiCo', sec:'Consumer Staples'}, {s:'KO', n:'Coca-Cola', sec:'Consumer Staples'},
+      {s:'PFE', n:'Pfizer', sec:'Health Care'}, {s:'MRK', n:'Merck', sec:'Health Care'},
+      {s:'COST', n:'Costco', sec:'Consumer Staples'}, {s:'NFLX', n:'Netflix', sec:'Communication'},
+      {s:'ORCL', n:'Oracle', sec:'Technology'}, {s:'ADBE', n:'Adobe', sec:'Technology'},
+      {s:'CSCO', n:'Cisco', sec:'Technology'}, {s:'INTC', n:'Intel', sec:'Technology'},
+      {s:'AMD', n:'AMD', sec:'Technology'}, {s:'TXN', n:'Texas Instruments', sec:'Technology'},
+      {s:'UNP', n:'Union Pacific', sec:'Industrials'}, {s:'CAT', n:'Caterpillar', sec:'Industrials'},
+      {s:'BA', n:'Boeing', sec:'Industrials'}, {s:'HON', n:'Honeywell', sec:'Industrials'},
+      {s:'NKE', n:'Nike', sec:'Consumer Discretionary'}, {s:'MCD', n:'McDonald\'s', sec:'Consumer Discretionary'},
+      {s:'T', n:'AT&T', sec:'Communication'}, {s:'VZ', n:'Verizon', sec:'Communication'},
+      {s:'WMT', n:'Walmart', sec:'Consumer Staples'}, {s:'DIS', n:'Disney', sec:'Communication'}
+    ];
+
+    // Offline demo data for reliability (very rough placeholders)
+    // price, marketCap (bn), beta, dividendYield (%)
+    const DEMO = {
+      AAPL:{p:220, mc:3400, b:1.2, dy:0.5}, MSFT:{p:430, mc:3400, b:0.9, dy:0.7},
+      NVDA:{p:120, mc:3000, b:1.4, dy:0.0}, GOOGL:{p:170, mc:2100, b:1.05, dy:0.0},
+      AMZN:{p:180, mc:1900, b:1.2, dy:0.0}, META:{p:500, mc:1200, b:1.25, dy:0.0},
+      AVGO:{p:1750, mc:2000, b:1.1, dy:1.6}, TSLA:{p:240, mc:760, b:1.8, dy:0.0},
+      JPM:{p:210, mc:600, b:1.1, dy:2.5}, V:{p:260, mc:560, b:0.95, dy:0.8},
+      MA:{p:510, mc:480, b:1.0, dy:0.6}, UNH:{p:520, mc:480, b:0.7, dy:1.3},
+      HD:{p:355, mc:350, b:0.95, dy:2.4}, PG:{p:165, mc:390, b:0.6, dy:2.3},
+      XOM:{p:115, mc:470, b:1.0, dy:3.2}, CVX:{p:160, mc:300, b:1.0, dy:4.0},
+      LLY:{p:900, mc:850, b:0.4, dy:0.7}, ABBV:{p:175, mc:310, b:0.6, dy:3.6},
+      PEP:{p:185, mc:260, b:0.6, dy:2.8}, KO:{p:62, mc:270, b:0.5, dy:3.0},
+      PFE:{p:30, mc:170, b:0.6, dy:6.0}, MRK:{p:130, mc:330, b:0.5, dy:2.2},
+      COST:{p:870, mc:390, b:0.7, dy:0.5}, NFLX:{p:620, mc:270, b:1.3, dy:0.0},
+      ORCL:{p:140, mc:390, b:1.0, dy:1.3}, ADBE:{p:520, mc:240, b:1.1, dy:0.0},
+      CSCO:{p:48, mc:190, b:0.9, dy:2.9}, INTC:{p:34, mc:140, b:1.1, dy:1.2},
+      AMD:{p:155, mc:250, b:1.4, dy:0.0}, TXN:{p:205, mc:190, b:1.0, dy:2.9},
+      UNP:{p:230, mc:140, b:0.9, dy:2.0}, CAT:{p:330, mc:160, b:1.1, dy:1.6},
+      BA:{p:190, mc:110, b:1.5, dy:0.0}, HON:{p:200, mc:130, b:1.0, dy:2.0},
+      NKE:{p:95, mc:140, b:1.1, dy:1.5}, MCD:{p:255, mc:190, b:0.7, dy:2.3},
+      T:{p:18, mc:130, b:0.7, dy:6.5}, VZ:{p:41, mc:170, b:0.6, dy:6.7},
+      WMT:{p:70, mc:590, b:0.5, dy:1.5}, DIS:{p:110, mc:200, b:1.2, dy:0.0}
+    };
+
+    // Risk level descriptions
+    const RISK = {
+      1:{name:'Capital Preservation', desc:'Large caps, low beta (~0.6–0.8), positive dividend.', targetBeta:0.7, tol:0.2, w:{beta:0.40, size:0.30, div:0.25, mom:0.05}},
+      2:{name:'Conservative', desc:'Large/mega caps, beta up to ~0.9, modest momentum.', targetBeta:0.9, tol:0.25, w:{beta:0.35, size:0.30, div:0.20, mom:0.15}},
+      3:{name:'Balanced', desc:'Large/mid caps, beta ~1.0, healthy momentum.', targetBeta:1.0, tol:0.35, w:{beta:0.30, size:0.25, div:0.10, mom:0.35}},
+      4:{name:'Growth', desc:'Mid/large caps, beta ~1.3, stronger momentum.', targetBeta:1.3, tol:0.45, w:{beta:0.25, size:0.15, div:0.05, mom:0.55}},
+      5:{name:'Aggressive', desc:'Mid/small caps allowed, beta 1.5+, momentum tilt.', targetBeta:1.6, tol:0.6,  w:{beta:0.20, size:0.10, div:0.00, mom:0.70}}
+    };
+
+    // Cache settings
+    const ls = {
+      get(k){ try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}},
+      set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }
+    };
+
+    /**********************
+     * UI helpers
+     *********************/
+    function renderRiskUI(){
+      const v = +$('#risk').value;
+      $('#riskLabel').textContent = `Level ${v} — ${RISK[v].name}`;
+      $('#riskDesc').textContent = RISK[v].desc;
+    }
+    function renderTermUI(){
+      const m = +$('#term').value;
+      const y = Math.floor(m/12), mo = m%12;
+      $('#termLabel').textContent = `${m} mo • ${y}y ${mo}m`;
+    }
+
+    /**********************
+     * Live data (FMP) fetchers
+     *********************/
+    const FMP = {
+      // Batch quote supports CSV of symbols
+      quote: async (symbols, key) => {
+        const url = `https://financialmodelingprep.com/api/v3/quote/${symbols.join(',')}?apikey=${encodeURIComponent(key)}`;
+        const r = await fetch(url); if(!r.ok) throw new Error('quote fail'); return r.json();
+      },
+      // Profile has beta — fetch in chunks to be safe
+      profileBatch: async (symbols, key) => {
+        const out = {};
+        const chunk = 8;
+        for(let i=0;i<symbols.length;i+=chunk){
+          const group = symbols.slice(i,i+chunk);
+          const url = `https://financialmodelingprep.com/api/v3/profile/${group.join(',')}?apikey=${encodeURIComponent(key)}`;
+          const r = await fetch(url); if(!r.ok) throw new Error('profile fail');
+          const arr = await r.json();
+          arr.forEach(o => { if(o && o.symbol) out[o.symbol] = o; });
+          $('#status').textContent = `Loaded profiles… ${Math.min(i+chunk,symbols.length)}/${symbols.length}`;
+          await new Promise(res=>setTimeout(res,200));
+        }
+        return out;
+      },
+      // Key metrics TTM for dividend yield
+      keyMetricsTTM: async (symbols, key) => {
+        const out = {};
+        const chunk = 8;
+        for(let i=0;i<symbols.length;i+=chunk){
+          const group = symbols.slice(i,i+chunk);
+          // No multi-symbol endpoint; loop inside chunk
+          await Promise.all(group.map(async s=>{
+            const url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${s}?apikey=${encodeURIComponent(key)}`;
+            const r = await fetch(url); if(!r.ok) return;
+            const arr = await r.json();
+            if(Array.isArray(arr) && arr[0]) out[s] = arr[0];
+          }));
+          $('#status').textContent = `Loaded key metrics… ${Math.min(i+chunk,symbols.length)}/${symbols.length}`;
+          await new Promise(res=>setTimeout(res,150));
+        }
+        return out;
+      }
+    };
+
+    /**********************
+     * Scoring & allocation
+     *********************/
+    function z(values){
+      const xs = values.filter(v=>Number.isFinite(v));
+      const mu = xs.reduce((a,b)=>a+b,0)/xs.length || 0;
+      const sd = Math.sqrt(xs.reduce((a,b)=>a+(b-mu)**2,0)/xs.length) || 1;
+      return v => (Number.isFinite(v)? (v-mu)/sd : 0);
+    }
+    function scoreCandidates(raw, level){
+      // raw: [{s, price, beta, div, mc, mom}]  mom optional
+      const prof = RISK[level];
+      const w = prof.w;
+      const capZ = z(raw.map(r=>Math.log(Math.max(1, r.mc||0))));
+      const divZ = z(raw.map(r=>r.div||0));
+      const momZ = z(raw.map(r=>r.mom||0));
+      return raw.map(r=>{
+        const beta = Number.isFinite(r.beta)? r.beta : 1.0;
+        const betaCloseness = 1 - Math.min(1, Math.abs(beta - prof.targetBeta) / Math.max(0.01, prof.tol));
+        const s =
+          w.beta * betaCloseness +
+          w.size * capZ(Math.log(Math.max(1, r.mc||0))) +
+          w.div  * divZ(r.div||0) +
+          w.mom  * momZ(r.mom||0);
+        return {...r, score: s, betaCloseness};
+      }).sort((a,b)=>b.score - a.score);
+    }
+    function allocate(budget, picks){
+      // Even dollar split, whole shares, carry remainder as cash
+      const n = picks.length; if(!n) return {lots:[], allocated:0, cash:budget};
+      const per = budget / n;
+      let cash = 0, allocated = 0;
+      const lots = picks.map(p=>{
+        const shares = Math.max(0, Math.floor(per / p.price));
+        const cost = shares * p.price;
+        allocated += cost;
+        return {...p, shares, cost};
+      });
+      cash = budget - allocated;
+      return {lots, allocated, cash};
+    }
+
+    /**********************
+     * Projection (monthly compounding)
+     *********************/
+    function projectSeries(presentValue, annualRatePct, months){
+      const r = (annualRatePct||0)/100;
+      const series = [];
+      for(let m=0;m<=months;m++){
+        const fv = presentValue * Math.pow(1 + r/12, m);
+        series.push({m, v: fv});
+      }
+      return series;
+    }
+
+    /**********************
+     * Chart
+     *********************/
+    let chart;
+    function ensureChart(){
+      if(chart) return chart;
+      const ctx = $('#chart');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { boxWidth: 10 } },
+            tooltip: { callbacks: {
+              label: (c)=> `${c.dataset.label}: ${fmtUSD(c.parsed.y)}`
+            }}
+          },
+          scales: {
+            x: { ticks: { callback: v => {
+              const m = chart.data.labels[v] ?? 0;
+              if(m%12===0) return `${m/12}y`; // label years
+              return '';
+            }}},
+            y: { ticks: { callback: v=>'$'+Number(v).toLocaleString() } }
+          }
+        }
+      });
+      return chart;
+    }
+    function updateChartPortfolio(months, assumedPct, lots){
+      const c = ensureChart();
+      const portfolioNow = lots.reduce((a,b)=>a + (b.shares*b.price), 0);
+      const ser = projectSeries(portfolioNow, assumedPct, months);
+      c.data.labels = ser.map(p=>p.m);
+      c.data.datasets = [{
+        label: 'Portfolio value',
+        data: ser.map(p=>p.v),
+        tension: 0.25
+      }];
+      c.update();
+      return ser.at(-1)?.v || portfolioNow;
+    }
+    function updateChartPerStock(months, assumedPct, lots){
+      const c = ensureChart();
+      c.data.labels = Array.from({length: months+1}, (_,i)=>i);
+      // Limit to top 5 lines for readability
+      const top = lots.slice(0,5);
+      c.data.datasets = top.map(l=>{
+        const start = l.shares * l.price;
+        const ser = projectSeries(start, assumedPct, months);
+        return {
+          label: `${l.s}`,
+          data: ser.map(p=>p.v),
+          tension: 0.25
+        };
+      });
+      c.update();
+    }
+
+    /**********************
+     * Render picks list
+     *********************/
+    function renderPicks(lots){
+      const wrap = $('#picks');
+      wrap.innerHTML = '';
+      if(!lots.length){
+        wrap.innerHTML = `<div class="text-sm text-zinc-500">No picks yet. Tap <b>Find picks</b>.</div>`;
+        return;
+      }
+      lots.forEach(it=>{
+        const row = document.createElement('div');
+        row.className = 'rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft';
+        row.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-sm font-semibold">${it.s} <span class="font-normal text-zinc-500">• ${it.n}</span></div>
+              <div class="text-xs text-zinc-500">${it.sec}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm">Price <span class="font-semibold">${fmtUSD(it.price)}</span></div>
+              <div class="text-xs text-zinc-500">Beta ${Number(it.beta).toFixed(2)} • Div ${Number(it.div||0).toFixed(2)}%</div>
+            </div>
+          </div>
+          <div class="mt-2 grid grid-cols-3 gap-2 text-xs">
+            <div class="rounded-xl bg-zinc-50 dark:bg-zinc-800/80 p-2">
+              <div class="text-zinc-500">Shares</div>
+              <div class="font-semibold">${it.shares}</div>
+            </div>
+            <div class="rounded-xl bg-zinc-50 dark:bg-zinc-800/80 p-2">
+              <div class="text-zinc-500">Allocated</div>
+              <div class="font-semibold">${fmtUSD(it.cost)}</div>
+            </div>
+            <div class="rounded-xl bg-zinc-50 dark:bg-zinc-800/80 p-2">
+              <div class="text-zinc-500">Score</div>
+              <div class="font-semibold">${it.score.toFixed(2)}</div>
+            </div>
+          </div>
+        `;
+        wrap.appendChild(row);
+      });
+    }
+
+    /**********************
+     * CSV
+     *********************/
+    function downloadCSV(lots){
+      const headers = ['symbol','name','sector','price','beta','dividendYield','marketCap','score','shares','allocated'];
+      const rows = lots.map(l=>[
+        l.s, `"${l.n}"`, `"${l.sec}"`, l.price, l.beta, l.div||0, l.mc||'', l.score.toFixed(4), l.shares, l.cost.toFixed(2)
+      ].join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'smart-picks.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /**********************
+     * Main flow
+     *********************/
+    async function getUniverseDataLive(apiKey){
+      $('#status').textContent = 'Loading live quotes…';
+      const symbols = UNIVERSE.map(u=>u.s);
+      // 1) quotes (batch)
+      const quotes = await FMP.quote(symbols, apiKey); // [{symbol, price, marketCap, ...}]
+      const valid = quotes.filter(q => q && q.symbol && Number.isFinite(q.price));
+      // 2) choose top 30 by market cap to enrich
+      const topSyms = valid.sort((a,b)=>(b.marketCap||0)-(a.marketCap||0)).slice(0,30).map(q=>q.symbol);
+      // 3) profiles (beta)
+      const profs = await FMP.profileBatch(topSyms, apiKey); // {SYM: {... beta ...}}
+      // 4) key metrics (dividendYieldTTM)
+      const kms = await FMP.keyMetricsTTM(topSyms, apiKey); // {SYM: {... dividendYieldTTM ...}}
+
+      // Merge back into base map
+      const map = {};
+      valid.forEach(q => {
+        const meta = UNIVERSE.find(u=>u.s===q.symbol) || {n:q.name||q.symbol, sec:''};
+        const prof = profs[q.symbol] || {};
+        const km = kms[q.symbol] || {};
+        map[q.symbol] = {
+          s: q.symbol, n: meta.n, sec: meta.sec,
+          price: Number(q.price) || DEMO[q.symbol]?.p || 0,
+          mc: Number(q.marketCap)|| (DEMO[q.symbol]?.mc||0)*1e9,
+          beta: Number(prof.beta), // might be undefined
+          div: Number(km.dividendYieldTTM)*100 || Number(prof.lastDiv)*100 || Number(DEMO[q.symbol]?.dy)||0,
+          mom: 0 // placeholder; can be enriched later if needed
+        };
+      });
+      $('#status').textContent = 'Live data ready.';
+      return Object.values(map);
+    }
+
+    function getUniverseDataDemo(){
+      $('#status').textContent = 'Using offline demo dataset.';
+      return UNIVERSE.map(u=>{
+        const d = DEMO[u.s] || {};
+        return {
+          s:u.s, n:u.n, sec:u.sec,
+          price:d.p||100, mc:(d.mc||100)*1e9, beta:d.b||1.0, div:d.dy||0, mom:0
+        };
+      });
+    }
+
+    function updateKPIs(budget, allocated, cash, projected){
+      $('#kpiBudget').textContent = fmtUSD(budget);
+      $('#kpiAllocated').textContent = fmtUSD(allocated);
+      $('#kpiCash').textContent = fmtUSD(cash);
+      $('#kpiProjected').textContent = fmtUSD(projected);
+    }
+
+    async function run(){
+      const budget = Math.max(0, +$('#amt').value||0);
+      const level = +$('#risk').value;
+      const nPicks = +$('#numPicks').value;
+      const months = +$('#term').value;
+      const assume = +$('#assumedReturn').value;
+      const live = $('#liveToggle').checked;
+      const key = $('#apiKey').value.trim();
+
+      $('#status').textContent = '';
+      $('#picks').innerHTML = '';
+      updateKPIs(budget,0,budget,0);
+
+      let universe = [];
+      try{
+        if(live && key){
+          universe = await getUniverseDataLive(key);
+        } else {
+          universe = getUniverseDataDemo();
+        }
+      }catch(e){
+        console.warn(e);
+        $('#status').textContent = 'Live data failed or rate-limited — using demo dataset.';
+        universe = getUniverseDataDemo();
+      }
+
+      const ranked = scoreCandidates(universe, level);
+      const picks = ranked.slice(0, nPicks);
+      const {lots, allocated, cash} = allocate(budget, picks);
+
+      // Render
+      renderPicks(lots);
+      $('#status').textContent = 'Computed picks and allocation.';
+
+      // Chart default: portfolio
+      const projectedEnd = updateChartPortfolio(months, assume, lots);
+      updateKPIs(budget, allocated, cash, projectedEnd);
+
+      // tab handlers
+      $('#tabPortfolio').onclick = ()=>{
+        $('#tabPortfolio').className = 'px-3 py-1 text-xs rounded-lg bg-sky-600 text-white';
+        $('#tabPerStock').className = 'px-3 py-1 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-700';
+        const end = updateChartPortfolio(months, assume, lots);
+        updateKPIs(budget, allocated, cash, end);
+      };
+      $('#tabPerStock').onclick = ()=>{
+        $('#tabPerStock').className = 'px-3 py-1 text-xs rounded-lg bg-sky-600 text-white';
+        $('#tabPortfolio').className = 'px-3 py-1 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-700';
+        updateChartPerStock(months, assume, lots);
+      };
+
+      // Recompute on slider/value changes
+      const reproject = ()=>{
+        const months2 = +$('#term').value;
+        const assume2 = +$('#assumedReturn').value;
+        const isPortfolio = $('#tabPortfolio').className.includes('bg-sky-600');
+        if(isPortfolio){
+          const end = updateChartPortfolio(months2, assume2, lots);
+          updateKPIs(budget, allocated, cash, end);
+        } else {
+          updateChartPerStock(months2, assume2, lots);
+        }
+      };
+      $('#term').oninput = ()=>{ renderTermUI(); reproject(); };
+      $('#assumedReturn').oninput = ()=> reproject();
+    }
+
+    /**********************
+     * Wire up UI
+     *********************/
+    $('#risk').addEventListener('input', renderRiskUI);
+    $('#term').addEventListener('input', renderTermUI);
+    renderRiskUI(); renderTermUI();
+
+    // Buttons
+    $('#go').addEventListener('click', run);
+    $('#goBottom').addEventListener('click', run);
+    $('#dlCsv').addEventListener('click', ()=>{
+      const cards = $$('#picks > div');
+      if(!cards.length){ alert('Run picks first.'); return; }
+      // Recreate from DOM data (kept simple, better to store last lots in state)
+      alert('CSV is generated from last computed results when available.\nIf nothing downloads, run picks first.');
+    });
+    $('#reset').addEventListener('click', ()=>{
+      $('#amt').value = 10000;
+      $('#assumedReturn').value = 8;
+      $('#risk').value = 3; renderRiskUI();
+      $('#term').value = 60; renderTermUI();
+      $('#numPicks').value = 8;
+      $('#liveToggle').checked = false; $('#apiKey').value = '';
+      $('#picks').innerHTML = '';
+      $('#status').textContent = 'Reset.';
+      updateKPIs(10000,0,10000,0);
+      if(chart){ chart.data.labels=[]; chart.data.datasets=[]; chart.update(); }
+    });
+
+    // Store/reuse last state
+    ['amt','assumedReturn','risk','term','numPicks','liveToggle','apiKey'].forEach(id=>{
+      const el = $('#'+id);
+      const key = 'sp:'+id;
+      const saved = ls.get(key);
+      if(saved!==null){
+        if(el.type==='checkbox') el.checked = !!saved;
+        else el.value = saved;
+      }
+      el.addEventListener('change', ()=>{
+        ls.set(key, el.type==='checkbox' ? el.checked : el.value);
+      });
+    });
+
+    // Enhance CSV: capture last lots
+    let _lastLots = [];
+    const _origRun = run;
+    run = async function(){
+      await _origRun.apply(this, arguments);
+      // Extract data from picks list to rebuild lots (for CSV & reproject)
+      // To keep state clean, we’ll recompute from the universe again in a real app.
+      // Here, we simply store a lightweight snapshot from DOM:
+      const cards = $$('#picks > div');
+      if(!cards.length){ _lastLots = []; return; }
+      _lastLots = cards.map(card=>{
+        const header = card.querySelector('.font-semibold').textContent;
+        const s = header.split(' ')[0];
+        const name = header.split('•')[1]?.trim() || '';
+        const meta = card.innerText;
+        const price = Number((meta.match(/Price\s+\$([\d,]+)/)||[])[1]?.replace(/,/g,'')||0);
+        const beta = Number((meta.match(/Beta\s+([\d.]+)/)||[])[1]||1);
+        const div = Number((meta.match(/Div\s+([\d.]+)%/)||[])[1]||0);
+        const shares = Number((meta.match(/Shares\s+(\d+)/)||[])[1]||0);
+        const allocated = Number((meta.match(/Allocated\s+\$([\d,]+)/)||[])[1]?.replace(/,/g,'')||0);
+        const score = Number((meta.match(/Score\s+([\d.\-]+)/)||[])[1]||0);
+        const u = UNIVERSE.find(x=>x.s===s)||{sec:''};
+        return {s, n:name, sec:u.sec, price, beta, div, shares, cost:allocated, score};
+      });
+    };
+    $('#dlCsv').onclick = ()=>{ if(!_lastLots.length) { alert('Run picks first.'); return; } downloadCSV(_lastLots); };
+
+    // Initial KPI
+    updateKPIs(+$('#amt').value,0,+$('#amt').value,0);
+  </script>
+</body>
+</html>
