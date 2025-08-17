@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Photo Structure Inspector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          fontFamily: { ui: ['Inter','ui-sans-serif','system-ui','Segoe UI','Roboto','Helvetica','Arial'] },
+          boxShadow: { soft: '0 10px 40px rgba(0,0,0,.18)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Extra tiny mobile polish */
+    * { -webkit-tap-highlight-color: transparent; }
+    canvas { touch-action: none; }
+    .handle-shadow { box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen font-ui">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur bg-white/70 dark:bg-zinc-900/60 border-b border-black/5 dark:border-white/10">
+    <div class="max-w-6xl mx-auto px-3 py-2 flex items-center gap-2">
+      <div class="flex items-center gap-2">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7a2 2 0 012-2h3l2-2h4l2 2h3a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm2 0v10h14V7h-2.586l-2-2h-4.828l-2 2H5z"/></svg>
+        <h1 class="text-base font-semibold">Photo Structure Inspector</h1>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <label class="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-medium cursor-pointer shadow-soft">
+          <input id="fileInput" type="file" accept="image/*" class="hidden" />
+          <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M5 20a2 2 0 01-2-2V8h4l2-2h6l2 2h4v10a2 2 0 01-2 2H5z"/></svg>
+          Upload Photo
+        </label>
+        <button id="resetBtn" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-sm font-medium">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Controls + Canvas -->
+  <main class="max-w-6xl mx-auto p-3 grid grid-cols-1 lg:grid-cols-5 gap-3">
+    <!-- Controls (mobile-first accordion) -->
+    <section class="lg:col-span-2 space-y-2">
+      <!-- View / Compare -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details open>
+          <summary class="cursor-pointer text-sm font-semibold">View & Compare</summary>
+          <div class="mt-3 grid gap-3">
+            <div class="flex flex-wrap gap-2">
+              <select id="viewMode" class="w-full sm:w-auto grow px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-sm">
+                <option value="original">Original</option>
+                <option value="edges">Edges</option>
+                <option value="lines">Lines</option>
+                <option value="vanishing">Vanishing Point</option>
+                <option value="grid">Grid</option>
+                <option value="thirds">Rule of Thirds</option>
+                <option value="rectified">Rectified</option>
+                <option value="measure">Measurements</option>
+                <option value="pins">Pins</option>
+              </select>
+              <label class="flex items-center gap-2 text-sm">
+                <input id="compareToggle" type="checkbox" class="accent-slate-700">
+                Compare slider
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <input id="darkBgToggle" type="checkbox" class="accent-slate-700">
+                Dark canvas bg
+              </label>
+            </div>
+            <div id="compareRow" class="hidden">
+              <input id="compareRange" type="range" min="0" max="1" step="0.01" value="0.5" class="w-full">
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="ui-btn" data-zoom="out">−</button>
+              <input id="zoomRange" type="range" min="0.25" max="3" step="0.01" value="1" class="w-full">
+              <button class="ui-btn" data-zoom="in">+</button>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Analysis toggles -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details open>
+          <summary class="cursor-pointer text-sm font-semibold">Analysis</summary>
+          <div class="mt-3 grid gap-3">
+            <div class="flex items-center justify-between text-sm">
+              <span>Edge threshold</span>
+              <input id="edgeThresh" type="range" min="5" max="100" value="35">
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span>Max lines</span>
+              <input id="maxLines" type="range" min="10" max="150" value="60">
+            </div>
+            <div class="flex flex-wrap gap-2 text-sm">
+              <label class="inline-flex items-center gap-2"><input id="showAngles" type="checkbox" class="accent-slate-700"> Show line angles</label>
+              <label class="inline-flex items-center gap-2"><input id="autofindVP" type="checkbox" checked class="accent-slate-700"> Auto vanishing point</label>
+              <label class="inline-flex items-center gap-2"><input id="useOpenCV" type="checkbox" class="accent-slate-700"> Use OpenCV.js</label>
+            </div>
+            <button id="runAnalysis" class="px-3 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-zinc-900 text-sm font-medium">Run analysis</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- Measurements -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details>
+          <summary class="cursor-pointer text-sm font-semibold">Measurements</summary>
+          <div class="mt-3 grid gap-3">
+            <div class="flex items-center gap-2">
+              <button id="setScale" class="ui-btn">Set reference</button>
+              <input id="unitLabel" type="text" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-sm w-24" placeholder="m / ft" value="m">
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="measureBtn" class="ui-btn">Measure segment</button>
+              <button id="clearMeasures" class="ui-btn">Clear</button>
+            </div>
+            <div id="measureList" class="text-xs space-y-1 max-h-32 overflow-auto"></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Pins (Landmark tagging) -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details>
+          <summary class="cursor-pointer text-sm font-semibold">Pins</summary>
+          <div class="mt-3 grid gap-3">
+            <div class="flex items-center gap-2">
+              <button id="addPin" class="ui-btn">Add pin</button>
+              <button id="clearPins" class="ui-btn">Clear</button>
+            </div>
+            <div id="pinList" class="text-xs space-y-1 max-h-28 overflow-auto"></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Materials-ish clustering (A) -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details>
+          <summary class="cursor-pointer text-sm font-semibold">Color clusters (A)</summary>
+          <div class="mt-3 grid gap-3">
+            <div class="flex items-center gap-2">
+              <label class="text-sm">K</label>
+              <input id="kClusters" type="range" min="3" max="7" value="4">
+              <span id="kClustersVal" class="text-sm">4</span>
+              <button id="runKMeans" class="ui-btn">Cluster</button>
+            </div>
+            <div id="swatches" class="grid grid-cols-4 gap-2"></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Perspective rectification (E) -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details>
+          <summary class="cursor-pointer text-sm font-semibold">Perspective rectification (E)</summary>
+          <div class="mt-3 grid gap-3">
+            <p class="text-xs opacity-80">Pick 4 corners (clockwise) of the façade rectangle.</p>
+            <div class="flex items-center gap-2">
+              <button id="rectifyPick" class="ui-btn">Pick 4 corners</button>
+              <button id="rectifyClear" class="ui-btn">Clear</button>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Export / Report -->
+      <div class="rounded-2xl p-3 bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+        <details open>
+          <summary class="cursor-pointer text-sm font-semibold">Report</summary>
+          <div class="mt-3 grid gap-3">
+            <div id="report" class="text-xs grid gap-1"></div>
+            <div class="flex flex-wrap gap-2">
+              <button id="exportPNG" class="ui-btn">Export PNG</button>
+              <button id="exportJSON" class="ui-btn">Export JSON</button>
+            </div>
+            <p class="text-[11px] opacity-70">Educational visualization only — not a structural/safety assessment.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Canvas area -->
+    <section class="lg:col-span-3 relative rounded-2xl overflow-hidden bg-white/80 dark:bg-zinc-900/70 shadow-soft">
+      <div class="relative">
+        <!-- Base (original / rectified) -->
+        <div class="relative">
+          <canvas id="base" class="w-full h-[56svh] sm:h-[68svh]"></canvas>
+          <!-- Overlay for compare slider -->
+          <canvas id="overlay" class="absolute inset-0"></canvas>
+          <!-- Interaction layer (hit testing / cursor) -->
+          <canvas id="ui" class="absolute inset-0 pointer-events-none"></canvas>
+
+          <!-- Compare handle -->
+          <div id="compareHandle" class="hidden absolute top-1/2 -translate-y-1/2 w-1 bg-slate-900/60 dark:bg-white/60">
+            <div class="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-zinc-800 border border-black/10 dark:border-white/10 flex items-center justify-center handle-shadow">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l-5 7 5 7v-5h8v5l5-7-5-7v5H8V5z"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini HUD -->
+        <div class="absolute left-2 bottom-2 text-[11px] px-2 py-1 rounded-lg bg-black/50 text-white backdrop-blur">
+          <span id="hudZoom">100%</span> · <span id="hudPos">0,0</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Reusable modal -->
+  <dialog id="modal" class="rounded-2xl w-[min(92vw,28rem)] bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 p-0 shadow-soft">
+    <form method="dialog">
+      <div class="p-3 border-b border-black/5 dark:border-white/10 flex items-center justify-between">
+        <h3 id="modalTitle" class="text-sm font-semibold">Input</h3>
+        <button class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-sm">Close</button>
+      </div>
+      <div id="modalBody" class="p-3 text-sm"></div>
+      <div class="p-3 flex justify-end gap-2">
+        <button value="cancel" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-sm">Cancel</button>
+        <button id="modalOk" value="ok" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-zinc-900 text-sm">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="styleTpl">
+    <style>
+      .ui-btn { @apply px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-sm font-medium; }
+      .tag { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-slate-100 dark:bg-zinc-800; }
+    </style>
+  </template>
+
+  <script>
+  // ===== Utilities =====
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const dist = (a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
+  const toRad = d=>d*Math.PI/180, toDeg = r=>r*180/Math.PI;
+  const download = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
+  const fmt = n => +n.toFixed(2);
+
+  // ===== State =====
+  const state = {
+    img: null, imgRectified: null,
+    w: 1, h: 1,
+    zoom: 1, ox: 0, oy: 0, darkBg: false,
+    edges: null, lines: [], vp: null, angleStats: null, symmetry: null,
+    ref: { have:false, pxPerUnit:1, unit:'m', p1:null, p2:null },
+    measures: [],
+    pins: [],
+    rectifyPts: [],
+    overlayMode: 'original',
+    compare: false, compareT: .5,
+    useCV: false, cvReady: false,
+    k: 4, clusters: []
+  };
+
+  // ===== DOM =====
+  const base = $('#base'), overlay = $('#overlay'), ui = $('#ui');
+  const bctx = base.getContext('2d'), octx = overlay.getContext('2d'), uctx = ui.getContext('2d');
+
+  // Ensure correct canvas sizing
+  function fitCanvas() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    [base, overlay, ui].forEach(c => {
+      const rect = c.getBoundingClientRect();
+      c.width = Math.max(1, Math.floor(rect.width * dpr));
+      c.height = Math.max(1, Math.floor(rect.height * dpr));
+      c.style.width = rect.width + 'px';
+      c.style.height = rect.height + 'px';
+      c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+    });
+    render();
+  }
+  window.addEventListener('resize', fitCanvas);
+
+  // ===== Image loading (EXIF-aware via createImageBitmap fallback) =====
+  async function loadImage(file) {
+    const url = URL.createObjectURL(file);
+    let bmp = null;
+    try {
+      bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch {
+      const img = new Image(); img.src = url; await img.decode(); // fallback (no EXIF correction)
+      // draw directly to bitmap-equivalent on canvas
+      const c = document.createElement('canvas'), x = c.getContext('2d');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      x.drawImage(img, 0, 0);
+      bmp = await createImageBitmap(c);
+    }
+    state.img = bmp; state.imgRectified = null;
+    state.w = bmp.width; state.h = bmp.height;
+    // fit to view
+    const rect = base.getBoundingClientRect();
+    const scale = Math.min(rect.width/state.w, rect.height/state.h);
+    state.zoom = clamp(scale, .25, 3);
+    state.ox = (rect.width - state.w*state.zoom)/2;
+    state.oy = (rect.height - state.h*state.zoom)/2;
+    URL.revokeObjectURL(url);
+    state.edges = null; state.lines = []; state.vp = null; state.angleStats = null; state.symmetry = null;
+    state.measures = []; state.pins = []; state.rectifyPts = []; state.clusters = [];
+    render();
+  }
+
+  // ===== Rendering =====
+  function clear(ctx) {
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+    ctx.restore();
+  }
+
+  function drawImageOn(ctx, img) {
+    const W = ctx.canvas.getBoundingClientRect().width;
+    const H = ctx.canvas.getBoundingClientRect().height;
+    // bg
+    ctx.save();
+    ctx.fillStyle = state.darkBg ? '#0a0a0a' : '#f2f5f9';
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+    // image
+    ctx.save();
+    ctx.translate(state.ox, state.oy);
+    ctx.scale(state.zoom, state.zoom);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+  }
+
+  function imgToCanvasXY(x, y) {
+    // image coords -> canvas CSS coords
+    return { x: state.ox + x*state.zoom, y: state.oy + y*state.zoom };
+  }
+  function canvasToImgXY(cx, cy) {
+    return { x: (cx - state.ox)/state.zoom, y: (cy - state.oy)/state.zoom };
+  }
+
+  function drawGrid(ctx) {
+    const W = ctx.canvas.getBoundingClientRect().width;
+    const H = ctx.canvas.getBoundingClientRect().height;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,.25)';
+    if (state.darkBg) ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.lineWidth = 1;
+    const step = 80;
+    for (let x=0; x<=W; x+=step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y=0; y<=H; y+=step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function drawThirds(ctx) {
+    const W = ctx.canvas.getBoundingClientRect().width;
+    const H = ctx.canvas.getBoundingClientRect().height;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,165,0,.8)';
+    ctx.lineWidth = 2;
+    const xs = [W/3, 2*W/3], ys = [H/3, 2*H/3];
+    xs.forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); });
+    ys.forEach(y=>{ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); });
+    ctx.restore();
+  }
+
+  function drawLines(ctx, lines, showAngles=false) {
+    ctx.save();
+    ctx.translate(state.ox, state.oy);
+    ctx.scale(state.zoom, state.zoom);
+    ctx.lineWidth = 2/state.zoom;
+    for (const L of lines) {
+      ctx.strokeStyle = L.style || 'rgba(0,128,255,.9)';
+      ctx.beginPath();
+      ctx.moveTo(L.x1, L.y1); ctx.lineTo(L.x2, L.y2);
+      ctx.stroke();
+      if (showAngles) {
+        const ang = toDeg(Math.atan2(L.y2-L.y1, L.x2-L.x1));
+        const mid = { x:(L.x1+L.x2)/2, y:(L.y1+L.y2)/2 };
+        ctx.fillStyle = 'rgba(0,0,0,.7)'; if (state.darkBg) ctx.fillStyle='rgba(255,255,255,.8)';
+        ctx.font = `${12/state.zoom}px ui-sans-serif`;
+        ctx.fillText(`${fmt((ang+360)%180)}°`, mid.x+4/state.zoom, mid.y-4/state.zoom);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawVP(ctx, vp) {
+    if (!vp) return;
+    ctx.save();
+    ctx.translate(state.ox, state.oy);
+    ctx.scale(state.zoom, state.zoom);
+    ctx.fillStyle = '#f43f5e';
+    ctx.strokeStyle = 'rgba(244,63,94,.5)';
+    ctx.lineWidth = 2/state.zoom;
+    // crosshair
+    ctx.beginPath(); ctx.arc(vp.x, vp.y, 6/state.zoom, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(vp.x-16/state.zoom, vp.y); ctx.lineTo(vp.x+16/state.zoom, vp.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(vp.x, vp.y-16/state.zoom); ctx.lineTo(vp.x, vp.y+16/state.zoom); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawMeasures(ctx) {
+    ctx.save();
+    ctx.translate(state.ox, state.oy);
+    ctx.scale(state.zoom, state.zoom);
+    ctx.lineWidth = 2/state.zoom;
+    ctx.strokeStyle = '#22c55e';
+    ctx.fillStyle = state.darkBg ? 'white' : 'black';
+    ctx.font = `${12/state.zoom}px ui-sans-serif`;
+    for (const m of state.measures) {
+      ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(m.p2.x, m.p2.y); ctx.stroke();
+      const mid = { x:(m.p1.x+m.p2.x)/2, y:(m.p1.y+m.p2.y)/2 };
+      ctx.fillText(`${fmt(m.len)} ${state.ref.unit}`, mid.x+4/state.zoom, mid.y-4/state.zoom);
+    }
+    if (state.ref.p1 && state.ref.p2) {
+      ctx.strokeStyle = '#eab308';
+      ctx.beginPath(); ctx.moveTo(state.ref.p1.x, state.ref.p1.y); ctx.lineTo(state.ref.p2.x, state.ref.p2.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPins(ctx) {
+    ctx.save(); ctx.translate(state.ox, state.oy); ctx.scale(state.zoom, state.zoom);
+    for (const p of state.pins) {
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 5/state.zoom, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = state.darkBg ? 'white' : 'black';
+      ctx.font = `${12/state.zoom}px ui-sans-serif`;
+      ctx.fillText(p.note || 'Pin', p.x+6/state.zoom, p.y-6/state.zoom);
+    }
+    ctx.restore();
+  }
+
+  function render() {
+    clear(bctx); clear(octx); clear(uctx);
+    const img = (state.overlayMode==='rectified' && state.imgRectified) ? state.imgRectified : state.img;
+    if (!img) return;
+    drawImageOn(bctx, img);
+
+    // Prepare overlay buffer
+    clear(octx);
+    switch (state.overlayMode) {
+      case 'edges':
+        drawImageOn(octx, img);
+        if (state.edges) drawEdges(octx, state.edges);
+        break;
+      case 'lines':
+        drawImageOn(octx, img);
+        drawLines(octx, state.lines, $('#showAngles').checked);
+        break;
+      case 'vanishing':
+        drawImageOn(octx, img);
+        drawLines(octx, state.lines, false);
+        drawVP(octx, state.vp);
+        break;
+      case 'grid':
+        drawImageOn(octx, img);
+        drawGrid(octx);
+        break;
+      case 'thirds':
+        drawImageOn(octx, img);
+        drawThirds(octx);
+        break;
+      case 'measure':
+        drawImageOn(octx, img);
+        drawMeasures(octx);
+        break;
+      case 'pins':
+        drawImageOn(octx, img);
+        drawPins(octx);
+        break;
+      case 'rectified':
+      case 'original':
+      default:
+        // nothing, base already drawn
+        break;
+    }
+
+    // Measurements overlay always visible in non-rectified original if chosen
+    if (state.overlayMode!=='measure' && state.overlayMode!=='rectified') {
+      drawMeasures(octx);
+      drawPins(octx);
+    }
+
+    // Compare slider
+    const handle = $('#compareHandle');
+    if (state.compare) {
+      $('#compareRow').classList.remove('hidden');
+      handle.classList.remove('hidden');
+      const W = overlay.getBoundingClientRect().width;
+      const cut = W * state.compareT;
+      overlay.style.clipPath = `inset(0 ${W-cut}px 0 0)`;
+      handle.style.left = `${cut-0.5}px`;
+    } else {
+      $('#compareRow').classList.add('hidden');
+      handle.classList.add('hidden');
+      overlay.style.clipPath = 'none';
+    }
+
+    // HUD
+    $('#hudZoom').textContent = `${Math.round(state.zoom*100)}%`;
+    $('#hudPos').textContent = `${fmt(state.ox)},${fmt(state.oy)}`;
+
+    // Report quick stats
+    updateReport();
+  }
+
+  function drawEdges(ctx, edges) {
+    // edges in image space -> draw as alpha overlay
+    ctx.save();
+    const rect = ctx.canvas.getBoundingClientRect();
+    ctx.translate(state.ox, state.oy);
+    ctx.scale(state.zoom, state.zoom);
+    const id = ctx.createImageData(state.w, state.h);
+    for (let i=0;i<edges.length;i++) {
+      const v = edges[i];
+      id.data[i*4+0] = 30;  // bluish
+      id.data[i*4+1] = 150;
+      id.data[i*4+2] = 255;
+      id.data[i*4+3] = v ? 180 : 0;
+    }
+    ctx.putImageData(id,0,0);
+    ctx.restore();
+  }
+
+  // ===== Analysis (Sobel, Hough, VP, Symmetry) =====
+  function getImageData(img) {
+    // Draw current image to an offscreen canvas and get data (downscale to max 1280 px on long side for speed)
+    const maxSide = 1280;
+    const scale = Math.min(1, maxSide/Math.max(img.width, img.height));
+    const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0,0,w,h);
+    return { data: c.getContext('2d').getImageData(0,0,w,h), scale, w, h, canvas: c };
+  }
+
+  function sobelEdges(img, thresh=35) {
+    const { data, w, h } = getImageData(img);
+    const gray = new Uint8ClampedArray(w*h);
+    for (let i=0, j=0; i<data.data.length; i+=4, j++) {
+      const r = data.data[i], g=data.data[i+1], b=data.data[i+2];
+      gray[j] = (r*0.299 + g*0.587 + b*0.114)|0;
+    }
+    const G = new Uint8ClampedArray(w*h);
+    const gxk = [-1,0,1, -2,0,2, -1,0,1];
+    const gyk = [-1,-2,-1, 0,0,0, 1,2,1];
+    for (let y=1;y<h-1;y++){
+      for (let x=1;x<w-1;x++){
+        let sx=0, sy=0;
+        let k=0;
+        for (let yy=-1; yy<=1; yy++){
+          for (let xx=-1; xx<=1; xx++, k++){
+            const v = gray[(y+yy)*w + (x+xx)];
+            sx += gxk[k]*v; sy += gyk[k]*v;
+          }
+        }
+        const mag = Math.hypot(sx, sy);
+        G[y*w+x] = mag>thresh ? 255 : 0;
+      }
+    }
+    return { edges: G, w, h };
+  }
+
+  function houghLines(edges, w, h, maxLines=60) {
+    // Classic Hough for infinite lines, then clip to image bounds
+    const thetas = []; const thetaStep = Math.PI/180; // 1°
+    for (let t=-Math.PI/2; t<Math.PI/2; t+=thetaStep) thetas.push(t);
+    const diag = Math.hypot(w, h);
+    const rhos = Math.ceil(diag);
+    const acc = Array.from({length: thetas.length}, ()=> new Int32Array(rhos*2+1));
+    for (let y=0;y<h;y++){
+      for (let x=0;x<w;x++){
+        if (!edges[y*w+x]) continue;
+        for (let ti=0; ti<thetas.length; ti++){
+          const rho = Math.round(x*Math.cos(thetas[ti]) + y*Math.sin(thetas[ti]));
+          acc[ti][rho + rhos]++;
+        }
+      }
+    }
+    // pick peaks
+    const peaks = [];
+    for (let ti=0; ti<thetas.length; ti++){
+      for (let r=-rhos; r<=rhos; r++){
+        const v = acc[ti][r+rhos];
+        if (v<50) continue; // min votes
+        // local maxima check
+        let isMax = true;
+        for (let dt=-2; dt<=2; dt++){
+          for (let dr=-2; dr<=2; dr++){
+            if (dt===0 && dr===0) continue;
+            const tt = ti+dt; const rr = r+dr;
+            if (tt<0 || tt>=thetas.length || rr<-rhos || rr>rhos) continue;
+            if (acc[tt][rr+rhos] > v) { isMax = false; break; }
+          }
+          if (!isMax) break;
+        }
+        if (isMax) peaks.push({ti, theta: thetas[ti], rho: r, votes: v});
+      }
+    }
+    peaks.sort((a,b)=>b.votes-a.votes);
+    const res = [];
+    for (const p of peaks.slice(0, maxLines*4)) {
+      // Convert (rho, theta) to segment clipped to image
+      const {theta, rho} = p;
+      // Compute intersections with image rectangle
+      const pts = [];
+      // x=0..w, y from formula y = (rho - x cos t)/sin t
+      const sin = Math.sin(theta), cos = Math.cos(theta);
+      const candidates = [
+        {x:0, y:(rho - 0*cos)/sin},
+        {x:w, y:(rho - w*cos)/sin},
+        {y:0, x:(rho - 0*sin)/cos},
+        {y:h, x:(rho - h*sin)/cos},
+      ];
+      for (const c of candidates) {
+        const x = 'x' in c ? c.x : c.x;
+        const y = 'y' in c ? c.y : c.y;
+        if (isFinite(x) && isFinite(y) && x>=0 && x<=w && y>=0 && y<=h) pts.push({x,y});
+      }
+      // ensure two farthest points
+      if (pts.length>=2) {
+        // Deduplicate approx
+        const uniq = [];
+        for (const q of pts) {
+          if (!uniq.some(u=>Math.hypot(u.x-q.x,u.y-q.y)<1)) uniq.push(q);
+        }
+        let best = null, bestd = -1;
+        for (let i=0;i<uniq.length;i++){
+          for (let j=i+1;j<uniq.length;j++){
+            const d = Math.hypot(uniq[i].x-uniq[j].x, uniq[i].y-uniq[j].y);
+            if (d>bestd) { bestd = d; best = [uniq[i], uniq[j]]; }
+          }
+        }
+        if (best) {
+          res.push({ x1:best[0].x, y1:best[0].y, x2:best[1].x, y2:best[1].y, theta, rho, votes:p.votes });
+          if (res.length>=maxLines) break;
+        }
+      }
+    }
+    return res;
+  }
+
+  function estimateVP(lines, w, h) {
+    // Pairwise intersections -> cluster by 2D histogram
+    const pts = [];
+    for (let i=0;i<lines.length;i++){
+      for (let j=i+1;j<lines.length;j++){
+        const a = lines[i], b = lines[j];
+        // Skip near-parallel
+        if (Math.abs(Math.sin(a.theta - b.theta)) < 0.02) continue;
+        const p = intersect(a,b);
+        if (!p) continue;
+        if (p.x>=-w*2 && p.x<=w*3 && p.y>=-h*2 && p.y<=h*3) pts.push(p);
+      }
+    }
+    if (!pts.length) return null;
+    // Grid cluster
+    const bins = 60, xmin=-w, xmax=2*w, ymin=-h, ymax=2*h;
+    const acc = Array.from({length:bins*bins}, ()=>0);
+    const idx = (x,y)=> clamp(Math.floor((x-xmin)/(xmax-xmin)*bins),0,bins-1)
+                      + clamp(Math.floor((y-ymin)/(ymax-ymin)*bins),0,bins-1)*bins;
+    let bestI = 0, bestV = 0;
+    pts.forEach(p=>{ const i = idx(p.x,p.y); acc[i]++; if (acc[i]>bestV){bestV=acc[i]; bestI=i;} });
+    const bx = (bestI%bins), by = Math.floor(bestI/bins);
+    const vp = { x: xmin + (bx+0.5)*(xmax-xmin)/bins, y: ymin + (by+0.5)*(ymax-ymin)/bins };
+    return vp;
+  }
+
+  function intersect(L1, L2) {
+    // using point form
+    const x1=L1.x1, y1=L1.y1, x2=L1.x2, y2=L1.y2;
+    const x3=L2.x1, y3=L2.y1, x4=L2.x2, y4=L2.y2;
+    const den = (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);
+    if (Math.abs(den)<1e-6) return null;
+    const px = ((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/den;
+    const py = ((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/den;
+    return {x:px,y:py};
+  }
+
+  function verticalityStats(lines) {
+    // Angle wrt x-axis -> distance to vertical 90°
+    const angles = lines.map(L=> Math.abs(((toDeg(Math.atan2(L.y2-L.y1, L.x2-L.x1))+360)%180)-90));
+    const mean = angles.reduce((a,b)=>a+b,0)/Math.max(1,angles.length);
+    const med = angles.slice().sort((a,b)=>a-b)[Math.floor(angles.length/2)] || 0;
+    return { mean, median: med, count: angles.length };
+  }
+
+  function symmetryScore(edges, w, h) {
+    // Compare left and mirrored right halves on edge map
+    if (!edges) return null;
+    const mid = Math.floor(w/2);
+    let sum=0, diff=0, cnt=0;
+    for (let y=0;y<h;y++){
+      for (let x=0;x<mid;x++){
+        const a = edges[y*w + x] ? 1 : 0;
+        const b = edges[y*w + (w-1-x)] ? 1 : 0;
+        sum += (a||b) ? 1 : 0;
+        diff += (a^b) ? 1 : 0;
+        cnt++;
+      }
+    }
+    const sc = sum ? 1 - diff/sum : 0;
+    return { score: sc, width:w, height:h };
+  }
+
+  // ===== OpenCV.js integration (D & E stronger) =====
+  function ensureOpenCV() {
+    if (state.cvReady) return Promise.resolve();
+    if (!$('#useOpenCV').checked) return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      if (window.cv && cv['getBuildInformation']) { state.cvReady = true; resolve(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://docs.opencv.org/4.x/opencv.js';
+      s.async = true;
+      s.onload = () => {
+        cv['onRuntimeInitialized'] = () => { state.cvReady = true; resolve(); };
+      };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  function cvEdgesAndLines(img, edgeThresh, maxLines) {
+    const { canvas, w, h } = getImageData(img);
+    const src = cv.imread(canvas);
+    const gray = new cv.Mat(); cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    const edges = new cv.Mat();
+    const low= edgeThresh, high = edgeThresh*3;
+    cv.Canny(gray, edges, low, high);
+    const lines = new cv.Mat();
+    cv.HoughLinesP(edges, lines, 1, Math.PI/180, 60, 30, 10); // rho, theta, threshold, minLineLength, maxLineGap
+    // Convert
+    const out = [];
+    for (let i=0; i<lines.rows; i++){
+      const [x1,y1,x2,y2] = lines.intPtr(i);
+      const theta = Math.atan2(y2-y1, x2-x1);
+      out.push({x1,y1,x2,y2, theta, rho: 0, votes: 0});
+      if (out.length >= maxLines) break;
+    }
+    // edges map -> Uint8 array
+    const bytes = new Uint8ClampedArray(w*h);
+    for (let y=0;y<h;y++){
+      for (let x=0;x<w;x++){
+        bytes[y*w+x] = edges.ucharAt(y, x) ? 255 : 0;
+      }
+    }
+    src.delete(); gray.delete(); edges.delete(); lines.delete();
+    return { edges: bytes, w, h, lines: out };
+  }
+
+  function cvRectify(img, pts) {
+    // pts: 4 points in image coords (clockwise). Output to a tight rectangle
+    const { w, h } = getImageData(img);
+    const widthA = Math.hypot(pts[1].x-pts[0].x, pts[1].y-pts[0].y);
+    const widthB = Math.hypot(pts[2].x-pts[3].x, pts[2].y-pts[3].y);
+    const heightA = Math.hypot(pts[3].x-pts[0].x, pts[3].y-pts[0].y);
+    const heightB = Math.hypot(pts[2].x-pts[1].x, pts[2].y-pts[1].y);
+    const maxW = Math.max(widthA, widthB);
+    const maxH = Math.max(heightA, heightB);
+
+    const s = getImageData(img);
+    const src = cv.imread(s.canvas);
+    const dsize = new cv.Size(Math.round(maxW), Math.round(maxH));
+    const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y]);
+    const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0,0, maxW,0, maxW,maxH, 0,maxH]);
+    const M = cv.getPerspectiveTransform(srcTri, dstTri);
+    const dst = new cv.Mat();
+    cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_REPLICATE);
+    const canvas = document.createElement('canvas'); canvas.width=dsize.width; canvas.height=dsize.height;
+    cv.imshow(canvas, dst);
+    const bmpPromise = createImageBitmap(canvas);
+    src.delete(); dst.delete(); M.delete(); srcTri.delete(); dstTri.delete();
+    return bmpPromise;
+  }
+
+  // ===== K-means clustering (A) =====
+  function kmeans(img, K=4) {
+    const { data, w, h } = getImageData(img);
+    const N = Math.min(2000, Math.floor(w*h/10));
+    const pts = [];
+    for (let i=0;i<N;i++) {
+      const x = (Math.random()*w)|0, y=(Math.random()*h)|0;
+      const j = (y*w + x)*4;
+      pts.push([data.data[j], data.data[j+1], data.data[j+2]]);
+    }
+    // init centers at random pts
+    const centers = Array.from({length:K}, ()=> pts[(Math.random()*pts.length)|0].slice());
+    const assign = new Array(pts.length).fill(0);
+    for (let it=0; it<10; it++){
+      // assign
+      for (let i=0;i<pts.length;i++){
+        let bi=0, bd=1e9;
+        for (let k=0;k<K;k++){
+          const d = (pts[i][0]-centers[k][0])**2 + (pts[i][1]-centers[k][1])**2 + (pts[i][2]-centers[k][2])**2;
+          if (d<bd){bd=d; bi=k;}
+        }
+        assign[i]=bi;
+      }
+      // update
+      const sum = Array.from({length:K}, ()=>[0,0,0,0]);
+      for (let i=0;i<pts.length;i++){
+        const k = assign[i]; sum[k][0]+=pts[i][0]; sum[k][1]+=pts[i][1]; sum[k][2]+=pts[i][2]; sum[k][3]++;
+      }
+      for (let k=0;k<K;k++){
+        if (sum[k][3]) centers[k] = [sum[k][0]/sum[k][3], sum[k][1]/sum[k][3], sum[k][2]/sum[k][3]];
+      }
+    }
+    // proportions
+    const counts = new Array(K).fill(0); assign.forEach(k=>counts[k]++);
+    const out = centers.map((c,i)=>({ rgb: c.map(v=>Math.round(v)), share: counts[i]/assign.length }));
+    out.sort((a,b)=>b.share-a.share);
+    return out;
+  }
+
+  // ===== Interaction (pan/zoom & modes) =====
+  let dragging = false, last = {x:0,y:0};
+  base.addEventListener('pointerdown', e=>{
+    dragging=true; last={x:e.clientX, y:e.clientY}; base.setPointerCapture(e.pointerId);
+  });
+  base.addEventListener('pointermove', e=>{
+    if (!dragging) return;
+    const dx = e.clientX - last.x, dy = e.clientY - last.y;
+    state.ox += dx; state.oy += dy;
+    last = {x:e.clientX, y:e.clientY};
+    render();
+  });
+  base.addEventListener('pointerup', e=>{ dragging=false; base.releasePointerCapture(e.pointerId); });
+  base.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const rect = base.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    const before = canvasToImgXY(cx, cy);
+    const factor = Math.pow(1.1, -Math.sign(e.deltaY));
+    state.zoom = clamp(state.zoom*factor, .25, 3);
+    const after = imgToCanvasXY(before.x, before.y);
+    state.ox += cx - after.x; state.oy += cy - after.y;
+    $('#zoomRange').value = state.zoom;
+    render();
+  }, {passive:false});
+
+  // ===== Modes: scale, measure, pins, rectify pick =====
+  let pickMode = null; // 'ref1','ref2','measure1','measure2','pin','rectify'
+  overlay.addEventListener('pointerdown', e=>{
+    if (!state.img) return;
+    const rect = overlay.getBoundingClientRect();
+    const p = canvasToImgXY(e.clientX - rect.left, e.clientY - rect.top);
+    if (pickMode==='ref1') { state.ref.p1 = p; pickMode='ref2'; toast('Pick 2nd reference point'); }
+    else if (pickMode==='ref2') {
+      state.ref.p2 = p;
+      pickMode=null;
+      openModal('Reference length', `
+        <label class="block text-sm mb-2">Enter real-world distance</label>
+        <div class="flex gap-2">
+          <input id="refLen" type="number" step="0.01" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 w-28" value="2.0">
+          <input id="refUnit" type="text" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 w-20" value="${state.ref.unit}">
+        </div>
+      `, (vals)=>{
+        const L = dist(state.ref.p1, state.ref.p2);
+        const real = parseFloat(vals.refLen); const unit = vals.refUnit || 'm';
+        if (real>0 && L>0) {
+          state.ref.pxPerUnit = L/real; state.ref.unit = unit; state.ref.have=true;
+          $('#unitLabel').value = unit;
+          toast(`Scale set: ${fmt(L)} px ↔ ${real} ${unit}`);
+          render();
+        }
+      });
+    }
+    else if (pickMode==='measure1') { state._m1 = p; pickMode='measure2'; toast('Pick segment end'); }
+    else if (pickMode==='measure2') {
+      const m = { p1: state._m1, p2: p, len: 0 };
+      const Lpx = dist(m.p1, m.p2);
+      const unit = state.ref.unit;
+      m.len = state.ref.have ? (Lpx/state.ref.pxPerUnit) : Lpx;
+      state.measures.push(m); delete state._m1;
+      pickMode=null; toast(`Added measurement: ${fmt(m.len)} ${state.ref.have?unit:'px'}`);
+      refreshMeasureList(); render();
+    }
+    else if (pickMode==='pin') {
+      pickMode=null;
+      openModal('Add pin', `
+        <label class="block text-sm mb-2">Note</label>
+        <input id="pinNote" type="text" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 w-full" placeholder="e.g., crack, window mullion, column line">
+      `, (vals)=>{
+        state.pins.push({ x:p.x, y:p.y, note: vals.pinNote || '' });
+        refreshPinList(); render();
+      });
+    }
+    else if (pickMode==='rectify') {
+      state.rectifyPts.push(p);
+      if (state.rectifyPts.length===4) {
+        pickMode=null;
+        rectifyNow();
+      } else {
+        toast(`Corner ${state.rectifyPts.length}/4 picked`);
+      }
+      render();
+    }
+  });
+
+  function refreshMeasureList() {
+    const list = $('#measureList'); list.innerHTML = '';
+    state.measures.forEach((m,i)=>{
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="tag">${fmt(m.len)} ${state.ref.have?state.ref.unit:'px'}</span>
+                       <span class="opacity-60">(${i+1})</span>`;
+      list.appendChild(div);
+    });
+  }
+  function refreshPinList() {
+    const list = $('#pinList'); list.innerHTML = '';
+    state.pins.forEach((p,i)=>{
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="tag">Pin ${i+1}</span> <span class="opacity-60">${p.note||''}</span>`;
+      list.appendChild(div);
+    });
+  }
+
+  // ===== Modal helper =====
+  function openModal(title, html, onOK) {
+    const dlg = $('#modal');
+    $('#modalTitle').textContent = title;
+    $('#modalBody').innerHTML = html;
+    dlg.showModal();
+    const ok = $('#modalOk');
+    const handler = (e)=>{
+      if (e.target.value==='ok') {
+        const vals = {};
+        $('#modalBody').querySelectorAll('input').forEach(inp=> vals[inp.id] = inp.value);
+        onOK && onOK(vals);
+      }
+      dlg.close();
+      ok.removeEventListener('click', handler);
+    };
+    ok.addEventListener('click', handler);
+  }
+
+  function toast(msg) {
+    const div = document.createElement('div');
+    div.textContent = msg;
+    div.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-black/80 text-white text-xs backdrop-blur z-50';
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(), 1600);
+  }
+
+  // ===== Report =====
+  function updateReport() {
+    const R = $('#report'); R.innerHTML = '';
+    const add = (k,v)=> {
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between gap-4';
+      row.innerHTML = `<span class="opacity-70">${k}</span><strong>${v}</strong>`;
+      R.appendChild(row);
+    };
+    add('Lines detected', state.lines?.length || 0);
+    if (state.angleStats) add('Vertical tilt (median)', `${fmt(state.angleStats.median)}°`);
+    if (state.vp) add('Vanishing point', `${fmt(state.vp.x)}, ${fmt(state.vp.y)}`);
+    if (state.symmetry) add('Symmetry score', `${fmt(state.symmetry.score*100)}%`);
+    if (state.ref.have) add('Scale', `1 ${state.ref.unit} = ${fmt(state.ref.pxPerUnit)} px`);
+    if (state.clusters.length) add('Top color', rgbToHex(state.clusters[0].rgb));
+  }
+
+  function rgbToHex([r,g,b]) {
+    return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+
+  // ===== Rectify (E) =====
+  async function rectifyNow() {
+    if (!state.img || state.rectifyPts.length!==4) return;
+    await ensureOpenCV(); // prefer cv if enabled
+    try {
+      if (state.cvReady && $('#useOpenCV').checked) {
+        state.imgRectified = await cvRectify(state.img, state.rectifyPts);
+      } else {
+        state.imgRectified = await rectifyJS(state.img, state.rectifyPts); // lightweight JS fallback
+      }
+      $('#viewMode').value = 'rectified';
+      state.overlayMode = 'rectified';
+      toast('Rectified view ready'); render();
+    } catch (e) {
+      console.error(e); toast('Rectify failed');
+    }
+  }
+
+  // Minimal JS homography fallback (E)
+  async function rectifyJS(img, pts) {
+    // Solve projective transform to rectangle (same dest sizing as cvRectify)
+    const widthA = Math.hypot(pts[1].x-pts[0].x, pts[1].y-pts[0].y);
+    const widthB = Math.hypot(pts[2].x-pts[3].x, pts[2].y-pts[3].y);
+    const heightA = Math.hypot(pts[3].x-pts[0].x, pts[3].y-pts[0].y);
+    const heightB = Math.hypot(pts[2].x-pts[1].x, pts[2].y-pts[1].y);
+    const W = Math.round(Math.max(widthA, widthB));
+    const H = Math.round(Math.max(heightA, heightB));
+    const src = getImageData(img);
+    const sctx = src.canvas.getContext('2d');
+
+    // Compute homography matrix H (8 unknowns)
+    const dstPts = [{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}];
+    const Hm = computeHomography(pts, dstPts); // maps src->dst
+
+    const out = document.createElement('canvas'); out.width=W; out.height=H;
+    const octx = out.getContext('2d');
+    const outData = octx.createImageData(W,H);
+    const sData = sctx.getImageData(0,0,src.w,src.h).data;
+
+    // inverse map dst->src
+    const Hi = invert3x3(Hm);
+    for (let y=0;y<H;y++){
+      for (let x=0;x<W;x++){
+        const v = applyHomography(Hi, {x,y});
+        const sx = v.x, sy = v.y;
+        // bilinear sample
+        const ix = Math.floor(sx), iy = Math.floor(sy);
+        if (ix>=0 && iy>=0 && ix+1<src.w && iy+1<src.h){
+          const tx = sx-ix, ty=sy-iy;
+          const p = (iy*src.w + ix)*4;
+          const p1 = p, p2 = p+4, p3 = p+src.w*4, p4 = p3+4;
+          for (let c=0;c<4;c++){
+            const v = (1-tx)*(1-ty)*sData[p1+c] + tx*(1-ty)*sData[p2+c] + (1-tx)*ty*sData[p3+c] + tx*ty*sData[p4+c];
+            outData.data[(y*W+x)*4+c] = v|0;
+          }
+        }
+      }
+    }
+    octx.putImageData(outData,0,0);
+    return await createImageBitmap(out);
+  }
+
+  function computeHomography(srcPts, dstPts) {
+    const A = [];
+    for (let i=0;i<4;i++){
+      const {x:xs,y:ys}=srcPts[i], {x:xd,y:yd}=dstPts[i];
+      A.push([-xs,-ys,-1, 0,0,0, xs*xd, ys*xd, xd]);
+      A.push([ 0,0,0, -xs,-ys,-1, xs*yd, ys*yd, yd]);
+    }
+    // Solve Ah=0 with SVD-lite via Gaussian elimination on A^T A
+    const ATA = Array.from({length:9}, ()=>Array(9).fill(0));
+    for (const r of A){
+      for (let i=0;i<9;i++) for (let j=0;j<9;j++) ATA[i][j]+=r[i]*r[j];
+    }
+    // Find smallest eigenvector ~ naive power on inverse (small problem)
+    // Use numeric.js style fallback: set h[8]=1 and solve 8x8
+    const B = ATA.slice(0,8).map(row=>row.slice(0,8));
+    const b = ATA.slice(0,8).map(row=> -row[8]);
+    const h8 = solveLinear(B,b);
+    const h = [...h8,1];
+    // reshape 3x3
+    return [h[0],h[1],h[2], h[3],h[4],h[5], h[6],h[7],h[8]];
+  }
+  function solveLinear(M,b){
+    const n = M.length;
+    // Gaussian elimination
+    for (let i=0;i<n;i++){
+      // pivot
+      let max=i;
+      for (let k=i+1;k<n;k++) if (Math.abs(M[k][i])>Math.abs(M[max][i])) max=k;
+      [M[i],M[max]]=[M[max],M[i]]; [b[i],b[max]]=[b[max],b[i]];
+      const piv = M[i][i] || 1e-12;
+      for (let j=i;j<n;j++) M[i][j]/=piv; b[i]/=piv;
+      for (let r=0;r<n;r++) if (r!==i){
+        const f = M[r][i];
+        for (let j=i;j<n;j++) M[r][j]-=f*M[i][j];
+        b[r]-=f*b[i];
+      }
+    }
+    return b;
+  }
+  function invert3x3(H){
+    const [a,b,c,d,e,f,g,h,i] = H;
+    const A = e*i - f*h, B = -(d*i - f*g), C = d*h - e*g;
+    const D = -(b*i - c*h), E = a*i - c*g, F = -(a*h - b*g);
+    const G = b*f - c*e, Hh = -(a*f - c*d), I = a*e - b*d;
+    const det = a*A + b*B + c*C || 1e-12;
+    return [A/det, D/det, G/det, B/det, E/det, Hh/det, C/det, F/det, I/det];
+  }
+  function applyHomography(H, p){
+    const x = H[0]*p.x + H[1]*p.y + H[2];
+    const y = H[3]*p.x + H[4]*p.y + H[5];
+    const w = H[6]*p.x + H[7]*p.y + H[8];
+    return { x: x/w, y: y/w };
+  }
+
+  // ===== Wire UI =====
+  $('#fileInput').addEventListener('change', e=>{
+    const f = e.target.files[0]; if (f) loadImage(f).then(()=>fitCanvas());
+  });
+  $('#resetBtn').addEventListener('click', ()=>{
+    if (state.img) { state.ox=0; state.oy=0; state.zoom=1; $('#zoomRange').value=1; render(); }
+  });
+  $('#viewMode').addEventListener('change', e=>{ state.overlayMode = e.target.value; render(); });
+  $('#compareToggle').addEventListener('change', e=>{ state.compare = e.target.checked; render(); });
+  $('#compareRange').addEventListener('input', e=>{ state.compareT = +e.target.value; render(); });
+  $('#darkBgToggle').addEventListener('change', e=>{ state.darkBg = e.target.checked; render(); });
+  $('#zoomRange').addEventListener('input', e=>{
+    const rect = base.getBoundingClientRect();
+    const cx = rect.width/2, cy = rect.height/2;
+    const before = canvasToImgXY(cx, cy);
+    state.zoom = +e.target.value;
+    const after = imgToCanvasXY(before.x, before.y);
+    state.ox += cx - after.x; state.oy += cy - after.y; render();
+  });
+  $$('[data-zoom]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const dir = btn.dataset.zoom==='in' ? 1 : -1;
+    state.zoom = clamp(state.zoom * (dir>0?1.2:1/1.2), .25, 3);
+    $('#zoomRange').value = state.zoom; render();
+  }));
+
+  $('#useOpenCV').addEventListener('change', async (e)=>{
+    state.useCV = e.target.checked;
+    if (state.useCV) {
+      toast('Loading OpenCV.js...');
+      try {
+        await ensureOpenCV();
+        toast('OpenCV.js ready');
+      } catch {
+        toast('Failed to load OpenCV.js');
+        $('#useOpenCV').checked = false;
+      }
+    }
+  });
+
+  $('#runAnalysis').addEventListener('click', async ()=>{
+    if (!state.img) { toast('Upload a photo first'); return; }
+    const T = +$('#edgeThresh').value, ML = +$('#maxLines').value;
+    await ensureOpenCV();
+    let eRes, lines;
+    if (state.cvReady && $('#useOpenCV').checked) {
+      const r = cvEdgesAndLines(state.img, T, ML); eRes = { edges:r.edges, w:r.w, h:r.h }; lines = r.lines;
+    } else {
+      const r = sobelEdges(state.img, T); eRes = r; lines = houghLines(r.edges, r.w, r.h, ML);
+    }
+    state.edges = remapEdgesToImage(eRes, state.img.width, state.img.height);
+    // Scale line coords to original image size (if we downscaled)
+    const scaleX = state.img.width / eRes.w, scaleY = state.img.height / eRes.h;
+    state.lines = lines.map(L=>({
+      x1:L.x1*scaleX, y1:L.y1*scaleY, x2:L.x2*scaleX, y2:L.y2*scaleY,
+      theta: L.theta, rho: L.rho, votes: L.votes
+    }));
+    if ($('#autofindVP').checked) state.vp = estimateVP(state.lines, state.img.width, state.img.height);
+    state.angleStats = verticalityStats(state.lines);
+    state.symmetry = symmetryScore(state.edges, state.img.width, state.img.height);
+    render();
+  });
+
+  function remapEdgesToImage(eRes, W, H) {
+    const {edges, w, h} = eRes;
+    if (w===W && h===H) return edges;
+    // scale up using nearest neighbor
+    const out = new Uint8ClampedArray(W*H);
+    for (let y=0;y<H;y++){
+      const sy = Math.floor(y*h/H);
+      for (let x=0;x<W;x++){
+        const sx = Math.floor(x*w/W);
+        out[y*W+x] = edges[sy*w+sx];
+      }
+    }
+    return out;
+  }
+
+  // Measurements UI
+  $('#setScale').addEventListener('click', ()=>{ pickMode='ref1'; toast('Pick 1st reference point'); });
+  $('#measureBtn').addEventListener('click', ()=>{ pickMode='measure1'; toast('Pick segment start'); });
+  $('#clearMeasures').addEventListener('click', ()=>{ state.measures=[]; render(); refreshMeasureList(); });
+  $('#unitLabel').addEventListener('input', e=>{ state.ref.unit = e.target.value || 'm'; render(); });
+
+  // Pins UI
+  $('#addPin').addEventListener('click', ()=>{ pickMode='pin'; toast('Tap to place pin'); });
+  $('#clearPins').addEventListener('click', ()=>{ state.pins=[]; refreshPinList(); render(); });
+
+  // K-means
+  $('#kClusters').addEventListener('input', e=>{ state.k = +e.target.value; $('#kClustersVal').textContent = e.target.value; });
+  $('#runKMeans').addEventListener('click', ()=>{
+    if (!state.img) { toast('Upload a photo first'); return; }
+    state.clusters = kmeans(state.img, state.k);
+    const S = $('#swatches'); S.innerHTML = '';
+    state.clusters.forEach(c=>{
+      const div = document.createElement('div');
+      div.className = 'rounded-xl overflow-hidden border border-black/5 dark:border-white/10';
+      const hex = rgbToHex(c.rgb);
+      div.innerHTML = `
+        <div style="background:${hex}; aspect-ratio: 2/1;"></div>
+        <div class="p-1 text-[11px] flex items-center justify-between">
+          <span>${hex}</span>
+          <span>${Math.round(c.share*100)}%</span>
+        </div>`;
+      S.appendChild(div);
+    });
+    updateReport();
+  });
+
+  // Rectify
+  $('#rectifyPick').addEventListener('click', ()=>{ state.rectifyPts=[]; pickMode='rectify'; toast('Pick 4 corners (clockwise)'); });
+  $('#rectifyClear').addEventListener('click', ()=>{ state.rectifyPts=[]; if (state.imgRectified) { state.imgRectified=null; toast('Cleared rectified view'); } render(); });
+
+  // Export
+  $('#exportPNG').addEventListener('click', ()=>{
+    if (!state.img) { toast('Nothing to export'); return; }
+    // Compose on offscreen canvas at image resolution
+    const c = document.createElement('canvas'); c.width = state.img.width; c.height = state.img.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(state.overlayMode==='rectified' && state.imgRectified ? state.imgRectified : state.img, 0, 0);
+    // Always draw lines/pins/measures on export
+    drawLines(ctx, state.lines);
+    if (state.vp) drawVP(ctx, state.vp);
+    drawMeasures(ctx); drawPins(ctx);
+    c.toBlob(b=> download(b, 'analysis.png'));
+  });
+
+  $('#exportJSON').addEventListener('click', ()=>{
+    const data = {
+      lines: state.lines.map(L=>({x1:fmt(L.x1),y1:fmt(L.y1),x2:fmt(L.x2),y2:fmt(L.y2),theta:fmt(L.theta)})),
+      vp: state.vp,
+      angleStats: state.angleStats,
+      symmetry: state.symmetry,
+      scale: state.ref.have ? {pxPerUnit: state.ref.pxPerUnit, unit: state.ref.unit} : null,
+      measures: state.measures.map(m=>({p1:m.p1,p2:m.p2,len:fmt(m.len)})),
+      pins: state.pins,
+      clusters: state.clusters
+    };
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    download(blob, 'analysis.json');
+  });
+
+  // Compare handle drag
+  (function initHandle(){
+    const handle = $('#compareHandle');
+    const range = $('#compareRange');
+    let dragging=false;
+    handle.addEventListener('pointerdown', e=>{ dragging=true; handle.setPointerCapture(e.pointerId); });
+    handle.addEventListener('pointermove', e=>{
+      if (!dragging) return;
+      const rect = overlay.getBoundingClientRect();
+      const t = clamp((e.clientX - rect.left)/rect.width, 0, 1);
+      range.value = t; state.compareT = t; render();
+    });
+    handle.addEventListener('pointerup', e=>{ dragging=false; handle.releasePointerCapture(e.pointerId); });
+  })();
+
+  // Boot
+  (function init(){
+    document.head.appendChild($('#styleTpl').content.cloneNode(true));
+    fitCanvas();
+  })();
+  </script>
+</body>
+</html>
